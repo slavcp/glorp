@@ -1,0 +1,81 @@
+import cSettings from "./cSettings.json";
+
+class SettingsManager {
+    constructor() {
+        this.settingsWindow = window.windows[0];
+        this.init();
+    }
+
+    searchMatches(setting) {
+        const query = this.settingsWindow.settingSearch.toLowerCase() || "";
+        return (
+            (setting.name.toLowerCase() || "").includes(query) ||
+            (setting.category.toLowerCase() || "").includes(query)
+        );
+    }
+
+    generateHtml(option) {
+        const value = window.glorpClient.config[option.id];
+        switch (option.type) {
+            case "checkbox":
+                return `<label class='switch'>
+                    <input id="${option.id}" type='checkbox'
+                           onclick='window.glorpClient.setCSetting("${option.id}", this.checked)'
+                           ${value ? "checked" : ""}>
+                    <span class='slider'></span>
+                </label>
+                ${option.button ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>` : ""}`;
+            case "selector":
+                return
+        }
+    }
+
+    getCSettings() {
+        if (this.settingsWindow.tabs.advanced.length !== this.settingsWindow.tabIndex + 1 &&
+            !this.settingsWindow.settingSearch) {
+            return "";
+        }
+
+        let tempHTML = "";
+        let previousCategory = null;
+
+        Object.keys(cSettings).forEach((entry) => {
+            const setting = cSettings[entry];
+            setting.html = this.generateHtml(setting);
+
+            if (this.settingsWindow.settingSearch && !this.searchMatches(setting)) return;
+
+            if (previousCategory !== setting.category) {
+                if (previousCategory) tempHTML += "</div>";
+
+                previousCategory = setting.category;
+                tempHTML += `<div class='setHed' id='setHed_glorpClient' onclick='window.windows[0].collapseFolder(this)'>
+                    <span class='material-icons plusOrMinus'>keyboard_arrow_down</span>${setting.category}</div>
+                    <div class='setBodH' id='setBod_glorpClient'>`;
+            }
+
+            tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""}>
+                ${setting.name}
+                ${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""} 
+                ${setting.html}</div>`;
+        });
+
+        return tempHTML ? tempHTML + "</div></div>" : "";
+    }
+
+    init() {
+        window.glorpClient.setCSetting = (id, value) => {
+            window.glorpClient.config[id] = value;
+            window.chrome.webview.postMessage(`setConfig,${id},${value}`);
+        };
+
+        const origGetSettings = this.settingsWindow.getSettings;
+        this.settingsWindow.getSettings = (...args) =>
+            origGetSettings.call(this.settingsWindow, ...args).replace(/^<\/div>/, "") +
+            this.getCSettings();
+
+        this.settingsWindow.getCSettings = () => this.getCSettings();
+    }
+}
+
+new SettingsManager();

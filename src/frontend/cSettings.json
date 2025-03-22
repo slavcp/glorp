@@ -1,0 +1,114 @@
+{
+  "uncapFps": {
+    "name": "Uncap FPS",
+    "id": "uncapFps",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": true
+  },
+  "swapper": {
+    "name": "Resource swapper",
+    "id": "swapper",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": "Open folder",
+    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/swapper')",
+    "needsRestart": true
+  },
+  "blocklist": {
+    "name": "URL blocklist",
+    "id": "blocklist",
+    "description": "Blocks connection to the sites listed in the filter list, defaults offer a safe and efficient set.",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": "Open file",
+    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/blocklist.json')",
+    "needsRestart": true
+  },
+  "userscripts": {
+    "name": "Userscripts",
+    "id": "userscripts",
+    "description": "it really just loads files from a folder userscripts is an overstatement",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": false,
+    "button": "Open folder",
+    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/scripts')",
+    "needsRestart": true
+  },
+  "checkUpdates": {
+    "name": "Check for updates on launch",
+    "id": "checkUpdates",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": true
+  },
+  "accountManager": {
+    "name": "Account manager",
+    "id": "accountManager",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+  "compHPEnemyCounter": {
+    "name": "Hardpoint enemy counter",
+    "id": "compHPEnemyCounter",
+    "description": "Shows the number of enemies present on the hardpoint during competitive matches",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+  "hideBundles": {
+    "name": "Hide bundle popups",
+    "id": "hideBundles",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+  "exitButton": {
+    "name": "Exit button",
+    "id": "exitButton",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+  "rawInput": {
+    "name": "Raw input (!)",
+    "id": "rawInput",
+    "description": "Actually working implementation of raw input, hooks requestPointerLock so use at your own risk, theres clients that do way worse things though, so it should be fine",
+    "type": "checkbox",
+    "category": "Tweaks",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+  "hardFlip": {
+    "name": "Hardware Flip swapchain",
+    "id": "hardFlip",
+    "description": "Mimics fullscreen mode by flipping the swapchain instead of copying to it, Majour latency reduction with only slight overhead",
+    "type": "checkbox",
+    "category": "Tweaks",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": true
+  }
+}

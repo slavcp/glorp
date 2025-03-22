@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "scripts": {
+    "esbuild": "esbuild ./src/frontend/main.js --bundle --minify --format=esm --tree-shaking=true --minify-whitespace --minify-syntax --ignore-annotations --loader:.json=json --loader:.css=text --loader:.html=text --outfile=./target/bundle.js",
+    "esbuild:prod": "pnpm esbuild --drop:console --drop:debugger",
+    "dev": "pnpm esbuild && cargo build --workspace && cargo run",
+    "build": "pnpm esbuild:prod && cargo build --workspace --release --target x86_64-pc-windows-msvc",
+    "package": "pnpm build && makensis ./resources/installer_script.nsi",
+    "deploy": "pnpm ship && git push origin main --follow-tags"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0"
+  },
+  "packageManager": "pnpm@9.10.0+sha512.73a29afa36a0d092ece5271de5177ecbf8318d454ecd701343131b8ebc0c1a91c487da46ab77c8e596d6acf1461e3594ced4becedf8921b074fbd8653ed7051c"
+}
