@@ -26,8 +26,8 @@ SilentUnInstall silent
 
     CreateShortCut "$SMPROGRAMS/${Name}.lnk" "$INSTDIR/${Name}.exe"
     CreateShortCut "$DESKTOP/${Name}.lnk" "$INSTDIR/${Name}.exe"
-
-    ExecShell "" "$INSTDIR/${Name}.exe" ; launch after install
+    Sleep 1000 ; wait 1 second for files to be written
+    ExecShell "" "$INSTDIR/${Name}.exe" ;
 SectionEnd
 
 Section "Uninstall"

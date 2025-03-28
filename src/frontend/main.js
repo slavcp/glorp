@@ -1,12 +1,17 @@
 import styles from "./components/base.css";
+
 window.OffCliV = true;
-window.canShowAds = false;
 window.closeClient = () => window.chrome.webview.postMessage("close");
-window.glorpClient = {};
+window.glorpClient = {
+  settings: {},
+  newConsole: {
+    log: console.log.bind(console),
+  }
+};
 
 (async () => {
   try {
-    window.glorpClient.config = await new Promise((resolve) => {
+    window.glorpClient.settings.config = await new Promise((resolve) => {
       window.chrome.webview.addEventListener('message', (event) => {
         resolve(event.data);
       }, { once: true });
@@ -17,22 +22,18 @@ window.glorpClient = {};
   }
 })();
 
-/*
-const newConsole = {
-  log: console.log.bind(console),
-} 
-  */
+
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (window.glorpClient?.config?.rawInput) {
+  if (window.glorpClient?.settings.config?.rawInput) {
     const originalRequestPointerLock = Element.prototype.requestPointerLock;
     Element.prototype.requestPointerLock = function (options = {}) {
       options.unadjustedMovement = true;
       return originalRequestPointerLock.call(this, options);
     }
   }
-  if (window.glorpClient?.config?.exitButton) document.querySelector("#clientExit").style.display = "flex";
-  if (window.glorpClient?.config?.hideBundles) {
+  if (window.glorpClient?.settings.config?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+  if (window.glorpClient?.settings.config?.hideBundles) {
     const bundlePopupObserver = new MutationObserver(() => {
       window.clearPops();
     }
@@ -62,9 +63,9 @@ Object.defineProperty(window, 'gameLoaded', {
         window.selectAttachment(-1);
         window.closWind();
       }
-      import("./settingsMenu.js");
-      if (window.glorpClient.config.compHPEnemyCounter) import("./hpEnemyCounter.js");
-      if (window.glorpClient.config.accountManager) import("./accountManager.js");
+      import("./settings.js");
+      if (window.glorpClient.settings.config.compHPEnemyCounter) import("./modules/hpEnemyCounter.js");
+      if (window.glorpClient.settings.config.accountManager) import("./modules/accountManager.js");
       //import("./notifications.js").
     }
   },

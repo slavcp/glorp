@@ -1,9 +1,39 @@
 import cSettings from "./cSettings.json";
 
+window.glorpClient.settings.changeSetting = (id, value) => {
+    if (id === "exitButton") {
+        document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"}`
+    }
+    else {
+        const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)}`;
+        if (typeof window.glorpClient.settings[toggleFunctionName] !== 'function') {
+            try {
+                import(`./modules/${id}.js`);
+            } catch {
+                /*  */
+            }
+        } else {
+            window.glorpClient.settings[toggleFunctionName](value);
+        }
+
+    }
+
+    window.glorpClient.settings.config[id] = value;
+    window.chrome.webview.postMessage(`setConfig,${id},${value}`);
+}
+
 class SettingsManager {
     constructor() {
         this.settingsWindow = window.windows[0];
         this.init();
+    }
+    init() {
+        const origGetSettings = this.settingsWindow.getSettings;
+        this.settingsWindow.getSettings = (...args) =>
+            origGetSettings.call(this.settingsWindow, ...args).replace(/^<\/div>/, "") +
+            this.getCSettings();
+
+        this.settingsWindow.getCSettings = () => this.getCSettings();
     }
 
     searchMatches(setting) {
@@ -15,12 +45,12 @@ class SettingsManager {
     }
 
     generateHtml(option) {
-        const value = window.glorpClient.config[option.id];
+        const value = window.glorpClient.settings.config[option.id];
         switch (option.type) {
             case "checkbox":
                 return `<label class='switch'>
                     <input id="${option.id}" type='checkbox'
-                           onclick='window.glorpClient.setCSetting("${option.id}", this.checked)'
+                           onclick='window.glorpClient.settings.changeSetting("${option.id}", this.checked)'
                            ${value ? "checked" : ""}>
                     <span class='slider'></span>
                 </label>
@@ -63,19 +93,6 @@ class SettingsManager {
         return tempHTML ? tempHTML + "</div></div>" : "";
     }
 
-    init() {
-        window.glorpClient.setCSetting = (id, value) => {
-            window.glorpClient.config[id] = value;
-            window.chrome.webview.postMessage(`setConfig,${id},${value}`);
-        };
-
-        const origGetSettings = this.settingsWindow.getSettings;
-        this.settingsWindow.getSettings = (...args) =>
-            origGetSettings.call(this.settingsWindow, ...args).replace(/^<\/div>/, "") +
-            this.getCSettings();
-
-        this.settingsWindow.getCSettings = () => this.getCSettings();
-    }
 }
 
 new SettingsManager();

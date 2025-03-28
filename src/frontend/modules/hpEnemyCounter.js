@@ -1,4 +1,4 @@
-class HPEnemyCounter {
+class HpEnemyCounter {
     constructor() {
         this.numberDisplay = document.createElement("div");
         this.enemyOBJ = 0;
@@ -6,7 +6,9 @@ class HPEnemyCounter {
         this.observer = null;
         this.pointCounter = null;
         this.gameUpdateListener = null;
-        this.init();
+
+        window.glorpClient.settings.toggleHpEnemyCounter = (enabled) => this.toggle(enabled);
+        this.toggle(true);
     }
 
     processTeamScores = () => {
@@ -37,10 +39,6 @@ class HPEnemyCounter {
     }
 
     setupDisplay() {
-        if (this.gameUpdateListener) {
-            this.gameUpdateListener.remove();
-        }
-
         this.numberDisplay.classList.add("statIcon");
         this.numberDisplay.style.display = "block";
         this.numberDisplay.style.backgroundColor = "transparent";
@@ -60,15 +58,20 @@ class HPEnemyCounter {
         });
     }
 
-    init() {
-        this.gameUpdateListener = window.chrome.webview.addEventListener('message', (event) => {
-            if (event.data === 'game-updated') {
-                setTimeout(() => this.checkComp(), 500);
-            }
-        });
-
-        this.checkComp();
+    toggle(enabled) {
+        if (enabled) {
+            this.gameUpdateListener = window.chrome.webview.addEventListener('message', (event) => {
+                if (event.data === 'game-updated') {
+                    setTimeout(() => this.checkComp(), 500);
+                }
+            });
+            this.checkComp();
+        } else {
+            window.chrome.webview.removeEventListener('message', this.gameUpdateListener);
+            this.observer.disconnect();
+            this.numberDisplay.remove();
+        }
     }
 }
 
-new HPEnemyCounter()
+new HpEnemyCounter()
