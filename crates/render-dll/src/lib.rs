@@ -15,15 +15,17 @@ use windows::core::*;
 #[unsafe(no_mangle)]
 extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
     if call_reason == DLL_PROCESS_ATTACH {
-        unsafe {
-            std::thread::spawn(|| {
-                attach();
-            });
-        }
+        std::thread::spawn(|| {
+            attach();
+        });
     }
 }
+fn debug_print(msg: &str) {
+    let wide: Vec<u16> = msg.encode_utf16().collect();
+    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
+}
 
-fn get_factory() -> IDXGIFactory2 {
+fn get_factory() -> Result<IDXGIFactory2> {
     unsafe {
         let window = CreateWindowExW(
             WINDOW_EX_STYLE(0),
@@ -40,26 +42,6 @@ fn get_factory() -> IDXGIFactory2 {
             None,
         )
         .unwrap();
-
-        let mut desc = DXGI_SWAP_CHAIN_DESC1 {
-            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-            SampleDesc: DXGI_SAMPLE_DESC {
-                Count: 1,
-                Quality: 0,
-            },
-            BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
-            BufferCount: 2,
-            SwapEffect: DXGI_SWAP_EFFECT_DISCARD,
-            Flags: 0,
-            ..Default::default()
-        };
-        desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        desc.SampleDesc.Count = 1;
-        desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        desc.BufferCount = 2;
-        desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-        desc.Flags = 0;
-
         let mut device: Option<ID3D11Device> = None;
 
         if let Err(e) = D3D11CreateDevice(
@@ -73,36 +55,63 @@ fn get_factory() -> IDXGIFactory2 {
             None,
             None,
         ) {
-            let error_msg = format!("d3d11 create device failed: {:?}", e);
-            let wide: Vec<u16> = error_msg.encode_utf16().collect();
-            OutputDebugStringW(PCWSTR(wide.as_ptr()));
+            debug_print(format!("d3d11 create device failed: {:?}", e).as_str());
         }
 
-        let device = device.unwrap();
-        let dxgi_device: IDXGIDevice = device.cast().unwrap();
-        let dxgi_adapter: IDXGIAdapter = dxgi_device.GetAdapter().unwrap();
-        let factory: IDXGIFactory2 = dxgi_adapter.GetParent().unwrap();
+        let device = device.ok_or_else(|| {
+            debug_print("D3D11 device creation failed");
+            Error::from_win32()
+        })?;
+
+        let dxgi_device: IDXGIDevice = device.cast().map_err(|e| {
+            debug_print(format!("Failed to cast device to IDXGIDevice: {:?}", e).as_str());
+            e
+        })?;
+
+        let dxgi_adapter: IDXGIAdapter = dxgi_device.GetAdapter().map_err(|e| {
+            let error_msg = format!("Failed to get adapter: {:?}", e);
+            let wide: Vec<u16> = error_msg.encode_utf16().collect();
+            OutputDebugStringW(PCWSTR(wide.as_ptr()));
+            e
+        })?;
+
+        let factory: IDXGIFactory2 = dxgi_adapter.GetParent().map_err(|e| {
+            let error_msg = format!("Failed to get factory: {:?}", e);
+            let wide: Vec<u16> = error_msg.encode_utf16().collect();
+            OutputDebugStringW(PCWSTR(wide.as_ptr()));
+            e
+        })?;
 
         PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).unwrap();
-        factory
+        Ok(factory)
     }
 }
 
 static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
-    unsafe extern "system" fn(
-        IDXGIFactory2,
-        IUnknown,
+    unsafe fn(
+        *mut c_void,
+        *mut c_void,
         *const DXGI_SWAP_CHAIN_DESC1,
-        IDXGIOutput,
-    ) -> windows::core::Result<IDXGISwapChain1>,
+        *mut c_void,
+        *mut *mut c_void,
+    ) -> HRESULT,
 > = None;
 
 fn attach() {
     unsafe {
-        let factory = get_factory();
+        let factory = match get_factory() {
+            Ok(f) => f,
+            Err(e) => {
+                let error_msg = format!("Failed to get factory: {:?}", e);
+                let wide: Vec<u16> = error_msg.encode_utf16().collect();
+                OutputDebugStringW(PCWSTR(wide.as_ptr()));
+                panic!("Failed to get factory");
+            }
+        };
+
         let vtable = factory.vtable();
 
-        let hook = MinHook::create_hook(
+        let original_fn = MinHook::create_hook(
             vtable.CreateSwapChainForComposition as *mut c_void,
             create_swapchain_hk as *mut c_void,
         )
@@ -116,43 +125,55 @@ fn attach() {
         let error_msg = format!("factory: {:?}", factory);
         let wide: Vec<u16> = error_msg.encode_utf16().collect();
         OutputDebugStringW(PCWSTR(wide.as_ptr()));
-
-        ORIGINAL_CREATE_SWAPCHAIN = Some(std::mem::transmute::<
-            *mut c_void,
-            unsafe extern "system" fn(
-                IDXGIFactory2,
-                IUnknown,
-                *const DXGI_SWAP_CHAIN_DESC1,
-                IDXGIOutput,
-            ) -> windows::core::Result<IDXGISwapChain1>,
-        >(hook));
         MinHook::enable_all_hooks().unwrap();
+
+        ORIGINAL_CREATE_SWAPCHAIN = Some(std::mem::transmute(original_fn));
     }
 }
 
 unsafe extern "system" fn create_swapchain_hk(
-    this: IDXGIFactory2,
-    pdevice: IUnknown,
-    pdesc: *const DXGI_SWAP_CHAIN_DESC1,
-    ppswapchain: IDXGIOutput,
-) -> windows::core::Result<IDXGISwapChain1> {
+    this: *mut c_void,
+    pdevice: *mut c_void,
+    _pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+    prestricttooutput: *mut c_void,
+    ppswapchain: *mut *mut c_void,
+) -> HRESULT {
     unsafe {
-        let mut modified_desc = *pdesc;
-        modified_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        modified_desc.BufferCount = 2;
-        modified_desc.Flags |= (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0
-            | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0)
-            as u32;
-        modified_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        let desc = DXGI_SWAP_CHAIN_DESC1 {
+            Width: 0,
+            Height: 0,
+            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+            Stereo: windows::Win32::Foundation::BOOL(1),
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
+            BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
+            BufferCount: 1,
+            Scaling: DXGI_SCALING_NONE,
+            SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+            AlphaMode: DXGI_ALPHA_MODE_IGNORE,
+            Flags: (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0
+                | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0) as u32,
+        };
 
-        let swap_chain = unsafe {
-            ORIGINAL_CREATE_SWAPCHAIN.unwrap()(this, pdevice, &modified_desc, ppswapchain)
-        }?;
+        let original_fn = match ORIGINAL_CREATE_SWAPCHAIN {
+            Some(f) => f,
+            None => {
+                debug_print("Original function is None");
+                return HRESULT(0);
+            }
+        };
 
-        if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
-            swap_chain2.SetMaximumFrameLatency(1).ok();
+        let result = original_fn(this, pdevice, &desc, prestricttooutput, ppswapchain);
+
+        //cast from the default IDXGISwapChain1 to IDXGISwapChain2
+        if let Some(swap_chain) = (*ppswapchain as *mut IDXGISwapChain2).as_mut() {
+            swap_chain.SetMaximumFrameLatency(1).ok();
         }
 
-        Ok(swap_chain)
+        debug_print("SUCCESS!");
+
+        result
     }
 }

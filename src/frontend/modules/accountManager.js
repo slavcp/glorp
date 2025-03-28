@@ -1,31 +1,37 @@
 class AccountManager {
     constructor() {
         this.button = document.createElement("div");
+        this.button.textContent = "Accounts";
+        this.button.classList.add("button", "buttonB", "bigShadowT");
+        this.button.style.cssText = "display: block; padding-top: 7px; padding-bottom: 22px; font-size: 25px!important; padding-bottom: 22px; margin-top: 7px; height: 21px; line-height: 35px; width: 162px; font-size:20px!important; margin-left: 3px;";
+
         this.container = document.createElement("div");
         this.accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 
         this.boundHandleMenuClick = this.handleMenuClick.bind(this);
         this.boundRemoveAccount = this.removeAccount.bind(this);
-        this.boundCreateMenu = () => this.createMenu();
+        this.boundCreateMenu = this.createMenu.bind(this);
+        this.button.addEventListener("click", this.boundCreateMenu);
 
-        this.gameUpdateListener = window.chrome.webview.addEventListener(
-            "message",
-            (event) => {
-                if (event.data === "game-updated") {
-                    setTimeout(() => this.checkComp(), 500);
-                }
+        this.gameUpdateListener = window.chrome.webview.addEventListener("message", (event) => {
+            if (event.data === "game-updated") {
+                setTimeout(() => this.checkComp(), 500);
             }
-        );
-        this.init();
+        });
+        window.glorpClient.settings.toggleAccountManager = (enabled) => this.toggle(enabled);
+
+        this.toggle(true)
     }
 
-    init() {
-        this.button.textContent = "Accounts";
-        this.button.classList.add("button", "buttonB", "bigShadowT");
-        this.button.addEventListener("click", this.boundCreateMenu);
-        this.button.style.cssText = "display: block; padding-top: 7px; padding-bottom: 22px; font-size: 25px!important; padding-bottom: 22px; margin-top: 7px; height: 21px; line-height: 35px; width: 162px; font-size:20px!important; margin-left: 3px;";
-        document.querySelector('#signedOutHeaderBar').appendChild(this.button);
-        this.checkComp();
+    toggle(enabled) {
+        if (enabled) {
+            document.querySelector('#signedOutHeaderBar')?.appendChild(this.button);
+            this.checkComp();
+        } else {
+            window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+            this.button.removeEventListener("click", this.boundCreateMenu);
+            this.button.remove();
+        }
     }
     handleMenuClick(event) {
         const clickedElement = event.target;
@@ -113,12 +119,13 @@ class AccountManager {
             const passInput = document.querySelector("#accPass");
             nameInput.value = this.decode(account.username);
             passInput.value = this.decode(account.password);
+            // send input otherwise it thinks its empty
             nameInput.dispatchEvent(new Event('input', { bubbles: true }));
             passInput.dispatchEvent(new Event('input', { bubbles: true }));
+
             document.querySelector("#accName").value = this.decode(account.username);
             document.querySelector("#accPass").value = this.decode(account.password);
             document.querySelector(".io-button.io-button--accept.svelte-13ld0w6").click();
-
             this.checkCaptcha();
         }, 1);
     }
@@ -158,7 +165,7 @@ class AccountManager {
         this.container.remove();
     }
     createMenu() {
-        import("./components/accountManager.html").then((html) => {
+        import("../components/accountManager.html").then((html) => {
             this.container.innerHTML = html.default;
             document.body.appendChild(this.container);
             this.updateAccounts();
@@ -191,13 +198,9 @@ class AccountManager {
         const gameStatus = window.getGameActivity();
         if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
             if (this.gameUpdateListener) {
-                window.chrome.webview.removeEventListener(
-                    "message",
-                    this.gameUpdateListener
-                );
+                window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
             }
-            this.button.style.cssText =
-                "display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
+            this.button.style.cssText = "display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
             document.querySelector("#compBtnLst").appendChild(this.button);
         }
     }

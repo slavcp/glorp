@@ -117,7 +117,7 @@ class Notification {
             const handleKeyDown = (event) => {
                 if (event.key === 'y' || event.key === 'n') {
                     const action = event.key === 'y';
-                    
+
                     this.notificationEl.classList.add('slide-out');
                     this.notificationEl.querySelector(`#${event.key}`).classList.add('bounce');
                     document.removeEventListener('keydown', handleKeyDown);
@@ -132,9 +132,9 @@ class Notification {
                 }
             };
             document.addEventListener('keydown', handleKeyDown);
-            
+
             // Auto-resolve with false if no response within duration
-            setTimeout(() => {  
+            setTimeout(() => {
                 this.notificationEl.classList.add('slide-out');
                 document.removeEventListener('keydown', handleKeyDown);
                 if (this.resolvePromise) {
@@ -145,7 +145,7 @@ class Notification {
                 }, 2000);
             }, this.duration * 1000);
         } else {
-            setTimeout(() => {  
+            setTimeout(() => {
                 this.notificationEl.classList.add('slide-out');
                 setTimeout(() => {
                     this.notificationEl.remove();
@@ -159,6 +159,8 @@ export function showNotification(message, type, seconds) {
     return new Notification(message, type, seconds);
 }
 
+/*
 window.glorpClient.event.listen('notification', ({ message, type, seconds }) => {
     return new Notification(message, type, seconds);
 });
+*/

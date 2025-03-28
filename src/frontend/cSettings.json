@@ -49,7 +49,7 @@
     "category": "Main",
     "defaultValue": true,
     "button": false,
-    "needsRestart": true
+    "needsRestart": false
   },
   "accountManager": {
     "name": "Account manager",
@@ -61,9 +61,9 @@
     "button": false,
     "needsRestart": false
   },
-  "compHPEnemyCounter": {
+  "hpEnemyCounter": {
     "name": "Hardpoint enemy counter",
-    "id": "compHPEnemyCounter",
+    "id": "hpEnemyCounter",
     "description": "Shows the number of enemies present on the hardpoint during competitive matches",
     "type": "checkbox",
     "category": "Main",
@@ -94,17 +94,17 @@
   "rawInput": {
     "name": "Raw input (!)",
     "id": "rawInput",
-    "description": "Actually working implementation of raw input, hooks requestPointerLock so use at your own risk, theres clients that do way worse things though, so it should be fine",
+    "description": "Working implementation of raw input, hooks requestPointerLock so use at your own risk; although clients that do way worse things, so it should be fine",
     "type": "checkbox",
     "category": "Tweaks",
     "defaultValue": false,
     "button": false,
-    "needsRestart": false
+    "needsRestart": true
   },
   "hardFlip": {
-    "name": "Hardware Flip swapchain",
+    "name": "Hook DXGI swapchain creation",
     "id": "hardFlip",
-    "description": "Mimics fullscreen mode by flipping the swapchain instead of copying to it, Majour latency reduction with only slight overhead",
+    "description": "Reduce latency by tweaking swapchain settings",
     "type": "checkbox",
     "category": "Tweaks",
     "defaultValue": true,

@@ -139,18 +139,15 @@ pub fn check_update() {
         std::io::copy(&mut response.into_body().as_reader(), &mut out).ok();
 
         unsafe {
-            match MessageBoxW(
+            if let MESSAGEBOX_RESULT(6) = MessageBoxW(
                 None,
                 w!("A new version is available. Would you like to install it?"),
                 w!("Update Available"),
                 MB_ICONINFORMATION | MB_YESNO | MB_SYSTEMMODAL,
             ) {
-                MESSAGEBOX_RESULT(6) => {
-                    if let Ok(mut command) = std::process::Command::new(&output_path).spawn() {
-                        let _ = command.wait();
-                    }
+                if let Ok(mut command) = std::process::Command::new(&output_path).spawn() {
+                    let _ = command.wait();
                 }
-                _ => return,
             }
         }
     });
