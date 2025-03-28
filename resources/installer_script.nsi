@@ -3,7 +3,7 @@
 !addplugindir "./plugins"
 Name "${Name}"
 OutFile "../target/${Name}-silent-setup-x64.exe"
-InstallDir "$LOCALAPPDATA/${Name}"
+InstallDir "$LOCALAPPDATA\${Name}"
 
 SetCompressor lzma
 SilentInstall silent
@@ -26,7 +26,7 @@ SilentUnInstall silent
 
     CreateShortCut "$SMPROGRAMS/${Name}.lnk" "$INSTDIR/${Name}.exe"
     CreateShortCut "$DESKTOP/${Name}.lnk" "$INSTDIR/${Name}.exe"
-    Sleep 1000 ; wait 1 second for files to be written
+    Sleep 3000 ; wait 3 second for files to be written
     ExecShell "" "$INSTDIR/${Name}.exe" ;
 SectionEnd
 
