@@ -20,7 +20,7 @@ pub struct Config {
 impl Config {
     pub fn load() -> Config {
         fn load_defaults() -> HashMap<String, bool> {
-            let defaults_json = include_str!("./frontend/cSettings.json");
+            let defaults_json = include_str!("./cSettings.json");
             let settings_info: HashMap<String, SettingInfo> =
                 serde_json::from_str(defaults_json).unwrap_or_else(|_| HashMap::new());
 

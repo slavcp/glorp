@@ -49,6 +49,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("pointerlockchange", () => {
   window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`);
+
+  // safeguard 
+  setTimeout(() => {
+      window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement!== null}`);
+  }, 1000);
+  
 })
 
 Object.defineProperty(window, 'gameLoaded', {
@@ -64,7 +70,7 @@ Object.defineProperty(window, 'gameLoaded', {
         window.closWind();
       }
       import("./settings.js");
-      if (window.glorpClient.settings.config.compHPEnemyCounter) import("./modules/hpEnemyCounter.js");
+      if (window.glorpClient.settings.config.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
       if (window.glorpClient.settings.config.accountManager) import("./modules/accountManager.js");
       //import("./notifications.js").
     }

@@ -48,7 +48,7 @@ fn get_factory() -> Result<IDXGIFactory2> {
             None,
             D3D_DRIVER_TYPE_HARDWARE,
             HMODULE::default(),
-            D3D11_CREATE_DEVICE_DEBUG,
+            D3D11_CREATE_DEVICE_SINGLETHREADED,
             Some(&[D3D_FEATURE_LEVEL_11_0]),
             D3D11_SDK_VERSION,
             Some(&mut device),
@@ -63,24 +63,20 @@ fn get_factory() -> Result<IDXGIFactory2> {
             Error::from_win32()
         })?;
 
-        let dxgi_device: IDXGIDevice = device.cast().map_err(|e| {
+        let dxgi_device: IDXGIDevice = device.cast().unwrap_or_else(|e| {
             debug_print(format!("Failed to cast device to IDXGIDevice: {:?}", e).as_str());
-            e
-        })?;
+            panic!("Failed to get device");
+        });
 
-        let dxgi_adapter: IDXGIAdapter = dxgi_device.GetAdapter().map_err(|e| {
-            let error_msg = format!("Failed to get adapter: {:?}", e);
-            let wide: Vec<u16> = error_msg.encode_utf16().collect();
-            OutputDebugStringW(PCWSTR(wide.as_ptr()));
-            e
-        })?;
+        let dxgi_adapter: IDXGIAdapter = dxgi_device.GetAdapter().unwrap_or_else(|e| {
+            debug_print(format!("Failed to get adapter: {:?}", e).as_str());
+            panic!("Failed to get adapter");
+        });
 
-        let factory: IDXGIFactory2 = dxgi_adapter.GetParent().map_err(|e| {
-            let error_msg = format!("Failed to get factory: {:?}", e);
-            let wide: Vec<u16> = error_msg.encode_utf16().collect();
-            OutputDebugStringW(PCWSTR(wide.as_ptr()));
-            e
-        })?;
+        let factory: IDXGIFactory2 = dxgi_adapter.GetParent().unwrap_or_else(|e| {
+            debug_print(format!("Failed to get factory: {:?}", e).as_str());
+            panic!("Failed to get factory");
+        });
 
         PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).unwrap();
         Ok(factory)
@@ -99,15 +95,10 @@ static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
 
 fn attach() {
     unsafe {
-        let factory = match get_factory() {
-            Ok(f) => f,
-            Err(e) => {
-                let error_msg = format!("Failed to get factory: {:?}", e);
-                let wide: Vec<u16> = error_msg.encode_utf16().collect();
-                OutputDebugStringW(PCWSTR(wide.as_ptr()));
-                panic!("Failed to get factory");
-            }
-        };
+        let factory = get_factory().unwrap_or_else(|e| {
+            debug_print(format!("Failed to get factory: {:?}", e).as_str());
+            panic!("Failed to get factory");
+        });
 
         let vtable = factory.vtable();
 
@@ -165,15 +156,16 @@ unsafe extern "system" fn create_swapchain_hk(
             }
         };
 
-        let result = original_fn(this, pdevice, &desc, prestricttooutput, ppswapchain);
-
-        //cast from the default IDXGISwapChain1 to IDXGISwapChain2
+        // cast and set maximum frame latency
         if let Some(swap_chain) = (*ppswapchain as *mut IDXGISwapChain2).as_mut() {
-            swap_chain.SetMaximumFrameLatency(1).ok();
+            if let Err(e) = swap_chain.SetMaximumFrameLatency(1) {
+                debug_print(format!("Failed to set maximum frame latency: {:?}", e).as_str());
+            }
         }
 
         debug_print("SUCCESS!");
 
-        result
+        //  result
+        original_fn(this, pdevice, &desc, prestricttooutput, ppswapchain)
     }
 }

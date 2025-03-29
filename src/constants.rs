@@ -22,7 +22,6 @@ pub const DEFAULT_BLOCKLIST: &str = r#"[
         "*://krunker.io/libs/frvr-channel-web*",
         "*://krunker.io/manifest.json*",
         "*://krunker.io/css/google-play.css*",
-        "*://krunker.io/libs/zip.js*",
         "*://krunker.io/img/btc_icn.png*",
         "*://krunker.io/img/app_1.png*",
         "*://assets.krunker.io/img/guide/*",
