@@ -5,12 +5,27 @@ class HpEnemyCounter {
         this.enemyTimeout = null;
         this.observer = null;
         this.pointCounter = null;
-        this.gameUpdateListener = null;
+        this.gameUpdateListener =  (event) => {
+            if (event.data === "game-updated") {
+                setTimeout(() => this.checkComp(), 500);
+            }
+        };
+
 
         window.glorpClient.settings.toggleHpEnemyCounter = (enabled) => this.toggle(enabled);
         this.toggle(true);
     }
-
+    toggle(enabled) {
+        window.glorpClient.newConsole.log("hpenemycounter", enabled);
+        if (enabled) {
+            window.chrome.webview.addEventListener("message", this.gameUpdateListener);
+            this.checkComp();
+        } else {
+            removeEventListener('message', this.gameUpdateListener);
+            this.numberDisplay.remove();
+        }
+    }
+    
     processTeamScores = () => {
         document.querySelectorAll("#tScoreC1, #tScoreC2").forEach((team) => {
             if (team && !team.className.includes("you")) {
@@ -32,15 +47,17 @@ class HpEnemyCounter {
 
     checkComp = () => {
         const gameStatus = window.getGameActivity();
-        if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
-            window.chrome.webview.removeEventListener('message', this.gameUpdateListener);
+        if (gameStatus.custom && gameStatus.mode == "Hardpoint") {
+            if (this.gameUpdateListener) {
+                window.chrome.webview.removeEventListener('message', this.gameUpdateListener);
+            }
             this.setupDisplay();
         }
     }
 
     setupDisplay() {
         this.numberDisplay.classList.add("statIcon");
-        this.numberDisplay.style.display = "block";
+        this.numberDisplay.style.display = "inline-block";
         this.numberDisplay.style.backgroundColor = "transparent";
         this.numberDisplay.innerHTML = `
             <div class="greyInner" style="background-color:transparent">
@@ -58,20 +75,6 @@ class HpEnemyCounter {
         });
     }
 
-    toggle(enabled) {
-        if (enabled) {
-            this.gameUpdateListener = window.chrome.webview.addEventListener('message', (event) => {
-                if (event.data === 'game-updated') {
-                    setTimeout(() => this.checkComp(), 500);
-                }
-            });
-            this.checkComp();
-        } else {
-            window.chrome.webview.removeEventListener('message', this.gameUpdateListener);
-            this.observer.disconnect();
-            this.numberDisplay.remove();
-        }
-    }
 }
 
 new HpEnemyCounter()

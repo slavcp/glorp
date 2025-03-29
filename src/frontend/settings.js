@@ -1,10 +1,10 @@
-import cSettings from "./cSettings.json";
+import cSettings from "../cSettings.json";
 
 window.glorpClient.settings.changeSetting = (id, value) => {
     if (id === "exitButton") {
         document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"}`
     }
-    else {
+
         const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)}`;
         if (typeof window.glorpClient.settings[toggleFunctionName] !== 'function') {
             try {
@@ -16,7 +16,7 @@ window.glorpClient.settings.changeSetting = (id, value) => {
             window.glorpClient.settings[toggleFunctionName](value);
         }
 
-    }
+    
 
     window.glorpClient.settings.config[id] = value;
     window.chrome.webview.postMessage(`setConfig,${id},${value}`);

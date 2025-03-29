@@ -11,13 +11,12 @@ class AccountManager {
         this.boundHandleMenuClick = this.handleMenuClick.bind(this);
         this.boundRemoveAccount = this.removeAccount.bind(this);
         this.boundCreateMenu = this.createMenu.bind(this);
-        this.button.addEventListener("click", this.boundCreateMenu);
-
-        this.gameUpdateListener = window.chrome.webview.addEventListener("message", (event) => {
+        this.gameUpdateListener = (event) => {
             if (event.data === "game-updated") {
                 setTimeout(() => this.checkComp(), 500);
             }
-        });
+        };
+
         window.glorpClient.settings.toggleAccountManager = (enabled) => this.toggle(enabled);
 
         this.toggle(true)
@@ -25,10 +24,12 @@ class AccountManager {
 
     toggle(enabled) {
         if (enabled) {
+            window.chrome.webview.addEventListener("message", this.gameUpdateListener);
             document.querySelector('#signedOutHeaderBar')?.appendChild(this.button);
+            this.button.addEventListener("click", this.boundCreateMenu);
             this.checkComp();
         } else {
-            window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+            removeEventListener("message", this.gameUpdateListener);
             this.button.removeEventListener("click", this.boundCreateMenu);
             this.button.remove();
         }
@@ -71,7 +72,7 @@ class AccountManager {
             .split("")
             .map((char) => String.fromCharCode(char.charCodeAt(0) + key))
             .join("");
-        return btoa(unescape(encodeURIComponent(encoded)));
+        return encodeURIComponent(encoded);
     }
 
     createNewAccount() {
@@ -100,7 +101,7 @@ class AccountManager {
         this.switchTabs();
     }
     decode(encoded) {
-        let username = decodeURIComponent(escape(atob(encoded)));
+        let username = decodeURIComponent(encoded);
         const key = username.length;
         return username
             .split("")
@@ -196,7 +197,7 @@ class AccountManager {
     }
     checkComp() {
         const gameStatus = window.getGameActivity();
-        if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
+        if (gameStatus.custom && gameStatus.mode == "Hardpoint") {
             if (this.gameUpdateListener) {
                 window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
             }
