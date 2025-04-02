@@ -59,7 +59,7 @@ impl ChromeWindows {
     #[allow(clippy::fn_to_numeric_cast)]
     unsafe fn set_window_procs(&self) {
         unsafe {
-            // Set proc for chrome_window
+            // set proc for chrome_window
             let original_proc_1 = GetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC);
             PREV_WNDPROC_1 = transmute::<
                 isize,
@@ -67,7 +67,7 @@ impl ChromeWindows {
             >(original_proc_1);
             SetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC, wnd_proc_1 as isize);
 
-            // Set proc for chrome_renderwidget
+            // set proc for chrome_renderwidget
             let original_proc_2 = GetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC);
             PREV_WNDPROC_2 = transmute::<
                 isize,

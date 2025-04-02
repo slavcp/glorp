@@ -94,20 +94,20 @@
   "rawInput": {
     "name": "Raw input (!)",
     "id": "rawInput",
-    "description": "Working implementation of raw input, hooks requestPointerLock so use at your own risk; although theres clients that do worse things, so it should be fine",
+    "description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk",
     "type": "checkbox",
     "category": "Tweaks",
-    "defaultValue": true,
+    "defaultValue": false,
     "button": false,
     "needsRestart": true
   },
   "hardFlip": {
     "name": "Hook DXGI swapchain creation",
     "id": "hardFlip",
-    "description": "Reduce latency by tweaking swapchain settings | experimental",
+    "description": "Reduce latency by tweaking swapchain settings; keep on unless experiencing crashes",
     "type": "checkbox",
     "category": "Tweaks",
-    "defaultValue": false,
+    "defaultValue": true,
     "button": false,
     "needsRestart": true
   }

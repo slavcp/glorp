@@ -22,9 +22,10 @@ window.glorpClient = {
   }
 })();
 
-
-
 document.addEventListener("DOMContentLoaded", () => {
+  localStorage.setItem("kro_setngss_mouseAccel", false);
+  localStorage.setItem("kro_setngss_mouseFlick", false);
+
   if (window.glorpClient?.settings.config?.rawInput) {
     const originalRequestPointerLock = Element.prototype.requestPointerLock;
     Element.prototype.requestPointerLock = function (options = {}) {
@@ -69,10 +70,23 @@ Object.defineProperty(window, 'gameLoaded', {
         window.selectAttachment(-1);
         window.closWind();
       }
-      import("./settings.js");
-      if (window.glorpClient.settings.config.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
-      if (window.glorpClient.settings.config.accountManager) import("./modules/accountManager.js");
-      //import("./notifications.js").
+
+
+      import("./notifications.js").then(() => {
+              // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
+        const originalExportSettings = window.exportSettings;
+        window.exportSettings = () => {
+        window.glorpClient.showNotification('Settings exported to Downloads!', false, 3);
+        return originalExportSettings();
+};
+
+      });
+      
+      import("./settings.js").then(() => {
+        if (window.glorpClient.settings.config.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
+        if (window.glorpClient.settings.config.accountManager) import("./modules/accountManager.js");
+      });
+
     }
   },
 });

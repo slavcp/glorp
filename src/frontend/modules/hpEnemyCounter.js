@@ -1,6 +1,15 @@
 class HpEnemyCounter {
     constructor() {
         this.numberDisplay = document.createElement("div");
+        this.numberDisplay.id = "hpEnemyCounter";
+        this.numberDisplay.classList.add("statIcon");
+        this.numberDisplay.style.cssText = "inline-block; transform: translate(0, -2.7px);";
+        this.numberDisplay.innerHTML = `
+            <div class="greyInner" style="display: flex">
+                <span style="color:white; font-size:15px; margin-right: 4px;">on</span>
+                <span id="myScoreVal" class="pointVal">0</span>
+            </div>`;
+
         this.enemyOBJ = 0;
         this.enemyTimeout = null;
         this.observer = null;
@@ -16,7 +25,6 @@ class HpEnemyCounter {
         this.toggle(true);
     }
     toggle(enabled) {
-        window.glorpClient.newConsole.log("hpenemycounter", enabled);
         if (enabled) {
             window.chrome.webview.addEventListener("message", this.gameUpdateListener);
             this.checkComp();
@@ -47,24 +55,17 @@ class HpEnemyCounter {
 
     checkComp = () => {
         const gameStatus = window.getGameActivity();
+
         if (gameStatus.custom && gameStatus.mode == "Hardpoint") {
             if (this.gameUpdateListener) {
                 window.chrome.webview.removeEventListener('message', this.gameUpdateListener);
             }
+
             this.setupDisplay();
         }
     }
 
     setupDisplay() {
-        this.numberDisplay.classList.add("statIcon");
-        this.numberDisplay.style.display = "inline-block";
-        this.numberDisplay.style.backgroundColor = "transparent";
-        this.numberDisplay.innerHTML = `
-            <div class="greyInner" style="background-color:transparent">
-                <span style="color:white;font-size:14px">on</span>
-                <span id="myScoreVal" class="pointVal">0</span>
-            </div>`;
-
         this.pointCounter = this.numberDisplay.querySelector(".pointVal");
         document.querySelector(".topRightCounters").appendChild(this.numberDisplay);
 

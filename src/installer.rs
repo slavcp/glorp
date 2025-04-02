@@ -7,6 +7,7 @@ const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
 const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/placeholder/releases/latest";
 
+#[rustfmt::skip]
 include!("../target/version.rs");
 
 pub fn check_webview2() {

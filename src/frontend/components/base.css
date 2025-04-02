@@ -4,6 +4,7 @@
  .advancedSwitch,
  .clientPop,
  .menuSocialB,
+ .serverHostOpH,
  .settingsBtn[style*='width:auto;background-color:#994cd1'],
  #settHolder div.setHed:not([id]),
  #homeStoreAd,
@@ -46,10 +47,21 @@ div #setHed_local, #setHed_glorpClient {
      margin-top: 10px;
  }
  
+ .setBodH {
+    margin-top: 5px;
+ }
+
  #uiBase.onMenu #spectButton {
      top: 94%;
  }
  
- #headerBarRight {
+ .headerBarRight {
      right: -23px;
  }
+ .verticalSeparator, .verticalSeparatorInline {
+    visibility: hidden;
+ }
+ 
+ #mLevelCont {
+    background-color: transparent;
+ } 
