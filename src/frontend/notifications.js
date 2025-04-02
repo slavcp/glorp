@@ -24,10 +24,9 @@ class Notification {
                     top: 50px;
                     right: -350px;
                     background-color: #333;
-                    color: white;
                     padding: 15px 20px;
                     border-radius: 8px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                    box-shadow: 0px 0px 8px 2px black;
                     font-family: gamefont;
                     font-size: 14px;
                     width: 300px;
@@ -84,10 +83,8 @@ class Notification {
             <div id="notification-content">${this.message}</div>
             <div id="notification-timer">${this.duration}</div>
             <div id="notification-actions" style="${this.type === 1 ? '' : 'display: none;'}">
-                <div>
-                    <span id="y" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">Y</span>
-                    <span id="n" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">N</span>
-                </div>
+                <span id="y" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">Y</span>
+                <span id="n" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">N</span>
             </div>
         `;
         document.body.appendChild(this.notificationEl);
@@ -155,12 +152,6 @@ class Notification {
     }
 }
 
-export function showNotification(message, type, seconds) {
+window.glorpClient.showNotification = (message, type, seconds) => {
     return new Notification(message, type, seconds);
 }
-
-/*
-window.glorpClient.event.listen('notification', ({ message, type, seconds }) => {
-    return new Notification(message, type, seconds);
-});
-*/

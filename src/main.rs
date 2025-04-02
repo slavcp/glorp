@@ -30,6 +30,7 @@ fn main() {
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
     let mut args: String = String::new();
+
     for flag in constants::DEFAULT_FLAGS {
         args.push_str(flag);
         args.push(' ');
@@ -49,16 +50,15 @@ fn main() {
         let webview_window: ICoreWebView2 = controller.CoreWebView2().unwrap();
 
         if config.lock().unwrap().get("checkUpdates") {
-            installer::check_webview2();
+            installer::check_update();
         }
 
-        installer::check_update();
         let mut rect: RECT = RECT::default();
         let controller = controller.cast::<ICoreWebView2Controller4>().unwrap();
         let webview_window = webview_window.cast::<ICoreWebView2_22>().unwrap();
 
-        GetWindowRect(hwnd, &mut rect).expect("cant get window rect");
-        controller.SetBounds(rect).expect("cant set bounds");
+        GetWindowRect(hwnd, &mut rect).ok();
+        controller.SetBounds(rect).ok();
 
         controller.SetAllowExternalDrop(false).unwrap();
         controller
@@ -68,7 +68,7 @@ fn main() {
                 G: 0,
                 B: 0,
             })
-            .expect("cant set background color");
+            .ok();
 
         let result = (|| -> std::result::Result<(), windows::core::Error> {
             let webview2_settings = webview_window
@@ -231,7 +231,7 @@ fn main() {
                             }
                             Some(&"open") => {
                                 std::process::Command::new("cmd")
-                                    .args(["/C", "start", parts[1]])
+                                    .args(["/C", "start", "", parts[1]])
                                     .spawn()
                                     .ok();
                             }
@@ -261,9 +261,23 @@ fn main() {
                         match VIRTUAL_KEY(pressed_key as u16) {
                             VK_F4 | VK_F6 => {
                                 webview_window.Navigate(w!("https://krunker.io")).ok();
+                                PostMessageW(
+                                    widget_wnd,
+                                    WM_USER,
+                                    WPARAM(false as usize),
+                                    LPARAM(0),
+                                )
+                                .ok();
                             }
                             VK_F5 => {
                                 webview_window.Reload().ok();
+                                PostMessageW(
+                                    widget_wnd,
+                                    WM_USER,
+                                    WPARAM(false as usize),
+                                    LPARAM(0),
+                                )
+                                .ok();
                             }
                             VK_F11 => {
                                 window::toggle_fullscreen(hwnd);
