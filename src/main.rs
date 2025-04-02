@@ -100,6 +100,7 @@ fn main() {
             }
         }
 
+        #[rustfmt::skip]
         webview_window
             .AddScriptToExecuteOnDocumentCreated(
                 PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
