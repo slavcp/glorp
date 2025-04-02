@@ -5,7 +5,7 @@
   - [Microsoft Visual C++](https://visualstudio.microsoft.com/downloads/)
   - [Node](https://nodejs.org/)
   - [pnpm](https://pnpm.io/installation)
-  - [NSIS **(If packaging)**](https://nsis.sourceforge.io/)
+  - [NSIS **(if packaging)**](https://nsis.sourceforge.io/)
 
 1. `git clone https://github.com/slavcp/glorp.git`
 2. `cd glorp`
