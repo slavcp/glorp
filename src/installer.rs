@@ -5,7 +5,7 @@ use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
 const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
-const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/placeholder/releases/latest";
+const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
 #[rustfmt::skip]
 include!("../target/version.rs");
