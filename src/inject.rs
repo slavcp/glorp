@@ -22,11 +22,11 @@ impl DllInjector {
             dll_path: dll_path.to_string(),
             renderer,
         };
-        unsafe { injector.inject() };
+        injector.inject();
         injector
     }
 
-    pub unsafe fn inject(&self) {
+    pub fn inject(&self) {
         unsafe {
             if let Some(process_id) = self.get_proc_id() {
                 let process_handle = OpenProcess(PROCESS_ALL_ACCESS, false, process_id).unwrap();
@@ -78,28 +78,39 @@ impl DllInjector {
         }
     }
 
-    unsafe fn get_proc_id(&self) -> Option<u32> {
+    fn get_proc_id(&self) -> Option<u32> {
         unsafe {
             let mut process_entry = PROCESSENTRY32W {
                 dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
                 ..PROCESSENTRY32W::default()
             };
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).unwrap();
-
+            // find the target parent process ID
+            let mut parent_pid = None;
             if Process32FirstW(snapshot, &mut process_entry).is_ok() {
-                let mut last_process_name = String::new();
                 loop {
-                    let found_process_name = String::from_utf16_lossy(&process_entry.szExeFile);
+                    let process_name = String::from_utf16_lossy(&process_entry.szExeFile);
+                    if process_name.contains("glorp.exe") {
+                        parent_pid = Some(process_entry.th32ProcessID);
+                        break;
+                    }
+                    if Process32NextW(snapshot, &mut process_entry).is_err() {
+                        break;
+                    }
+                }
+            }
+            Process32FirstW(snapshot, &mut process_entry).ok();
 
-                    if found_process_name.contains(&self.process_name)
+            if let Some(parent_pid) = parent_pid {
+                loop {
+                    let process_name = String::from_utf16_lossy(&process_entry.szExeFile);
+                    if process_name.contains(&self.process_name)
                         && ((self.renderer && is_renderer(process_entry.th32ProcessID))
-                            || (!self.renderer && last_process_name.contains("glorp.exe")))
+                            || (!self.renderer && process_entry.th32ParentProcessID == parent_pid))
                     {
                         CloseHandle(snapshot).ok();
                         return Some(process_entry.th32ProcessID);
                     }
-
-                    last_process_name = found_process_name;
                     if Process32NextW(snapshot, &mut process_entry).is_err() {
                         break;
                     }
@@ -113,7 +124,7 @@ impl DllInjector {
 }
 
 // check if d3d11.dll is loaded
-unsafe fn is_renderer(pid: u32) -> bool {
+fn is_renderer(pid: u32) -> bool {
     unsafe {
         let mut module_entry = MODULEENTRY32W {
             dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
@@ -140,7 +151,7 @@ unsafe fn is_renderer(pid: u32) -> bool {
         false
     }
 }
-pub unsafe fn hook_webview2(config: &std::sync::Arc<std::sync::Mutex<Config>>) {
+pub fn hook_webview2(config: &std::sync::Arc<std::sync::Mutex<Config>>) {
     let current_exe = std::env::current_exe().unwrap();
     DllInjector::new(
         "msedgewebview2.exe",
