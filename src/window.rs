@@ -152,7 +152,16 @@ pub fn create_webview2(
                         Ok(())
                     }),
                 )
-                .unwrap();
+                .unwrap_or_else(|e| {
+                    let error_msg = format!("Failed to create WebView2 environment: {:?}", e);
+                    MessageBoxW(
+                        None,
+                        PCWSTR(utils::create_utf_string(&error_msg).as_ptr()),
+                        w!("Error"),
+                        MB_OK | MB_ICONERROR,
+                    );
+                    panic!("{}", error_msg);
+                });
 
                 Ok(())
             }),
