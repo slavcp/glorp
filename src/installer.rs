@@ -149,7 +149,7 @@ pub fn check_update() {
                 MB_ICONINFORMATION | MB_YESNO | MB_SYSTEMMODAL,
             ) {
                 if let Ok(mut command) = std::process::Command::new(&output_path).spawn() {
-                    let _ = command.wait();
+                    command.wait();
                 }
             }
         }
