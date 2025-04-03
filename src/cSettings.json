@@ -33,7 +33,7 @@
   "userscripts": {
     "name": "Userscripts",
     "id": "userscripts",
-    "description": "it really just loads files from a folder userscripts is an overstatement",
+    "description": "it really just loads files from a folder, userscripts is an overstatement",
     "type": "checkbox",
     "category": "Main",
     "defaultValue": false,
@@ -94,10 +94,10 @@
   "rawInput": {
     "name": "Raw input (!)",
     "id": "rawInput",
-    "description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk",
+    "description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk. Should be safe",
     "type": "checkbox",
     "category": "Tweaks",
-    "defaultValue": false,
+    "defaultValue": true,
     "button": false,
     "needsRestart": true
   },

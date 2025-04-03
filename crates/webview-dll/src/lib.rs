@@ -1,5 +1,7 @@
+use once_cell::sync::Lazy;
 use std::mem::transmute;
 use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
 use windows::Win32::{
@@ -9,6 +11,21 @@ use windows::Win32::{
     UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
 };
 use windows::core::*;
+
+static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
+    let (tx, rx) = channel();
+    std::thread::spawn(move || {
+        while let Ok(_) = rx.recv() {
+            unsafe {
+                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
+                Sleep(1);
+                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
+            }
+        }
+    });
+    tx
+});
+
 static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
 
@@ -174,13 +191,18 @@ unsafe extern "system" fn wnd_proc_1(
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_MOUSEMOVE | WM_LBUTTONDOWN => CallWindowProcW(
-                PREV_WNDPROC_1,
-                window,
-                message,
-                WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                lparam,
-            ),
+            WM_MOUSEMOVE | WM_LBUTTONDOWN => {
+                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                    return CallWindowProcW(
+                        PREV_WNDPROC_1,
+                        window,
+                        message,
+                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
+                        lparam,
+                    );
+                }
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+            }
             WM_INPUT => {
                 let raw_input_handle = HRAWINPUT(lparam.0 as _);
                 let mut buffer: [u8; 48] = [0; 48];
@@ -221,13 +243,8 @@ unsafe extern "system" fn wnd_proc_widget(
             }
             WM_MOUSEWHEEL => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    // krunker has a delay on how fast you can release the space key (?),
-                    // spawning a thread is expensive but necessary unless another option is found
-                    std::thread::spawn(move || {
-                        SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
-                        Sleep(5);
-                        SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
-                    });
+                    // Send a message to the persistent thread to handle the scroll event
+                    SCROLL_SENDER.send(()).ok();
                     return LRESULT(1);
                 }
                 CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)

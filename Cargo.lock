@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "glorp"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "embed-resource",
  "once_cell",
@@ -562,6 +562,7 @@ dependencies = [
 name = "webview-dll"
 version = "0.1.0"
 dependencies = [
+ "once_cell",
  "windows",
 ]
 
