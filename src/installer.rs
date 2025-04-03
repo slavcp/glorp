@@ -1,13 +1,14 @@
-use std::io::Read;
-
+#![allow(unused)]
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
 const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
+
+use std::io::Read;
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
-#[rustfmt::skip]
+#[cfg(not(debug_assertions))]
 include!("../target/version.rs");
 
 pub fn check_webview2() {
@@ -93,6 +94,7 @@ fn install_webview2() {
     }
 }
 
+#[cfg(not(debug_assertions))]
 pub fn check_update() {
     std::thread::spawn(|| {
         let mut response = match ureq::get(UPDATE_URL).call() {

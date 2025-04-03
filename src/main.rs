@@ -49,8 +49,11 @@ fn main() {
 
         let webview_window: ICoreWebView2 = controller.CoreWebView2().unwrap();
 
-        if config.lock().unwrap().get("checkUpdates") {
-            installer::check_update();
+        #[cfg(not(debug_assertions))]
+        {
+            if config.lock().unwrap().get("checkUpdates") {
+                installer::check_update();
+            }
         }
 
         let mut rect: RECT = RECT::default();
