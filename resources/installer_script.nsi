@@ -12,9 +12,9 @@ SilentUnInstall silent
     Section "Install"
     nsis_process::KillProcess "${Name}.exe"
     SetOutPath "$INSTDIR"
-    File "..\target\x86_64-pc-windows-msvc\release\${Name}.exe"
     File "..\target\x86_64-pc-windows-msvc\release\render.dll"
     File "..\target\x86_64-pc-windows-msvc\release\webview.dll"
+    File "..\target\x86_64-pc-windows-msvc\release\${Name}.exe"
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
@@ -26,7 +26,6 @@ SilentUnInstall silent
 
     CreateShortCut "$SMPROGRAMS\${Name}.lnk" "$INSTDIR\${Name}.exe"
     CreateShortCut "$DESKTOP\${Name}.lnk" "$INSTDIR\${Name}.exe"
-    Sleep 5000 ; wait 5 second for files to be written
     ExecShell "" "$INSTDIR\${Name}.exe" ;
 SectionEnd
 

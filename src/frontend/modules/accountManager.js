@@ -13,7 +13,7 @@ class AccountManager {
         this.boundCreateMenu = this.createMenu.bind(this);
         this.gameUpdateListener = (event) => {
             if (event.data === "game-updated") {
-                setTimeout(() => this.checkComp(), 500);
+                setTimeout(() => this.checkComp(), 2000);
             }
         };
 

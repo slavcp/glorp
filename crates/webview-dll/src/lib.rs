@@ -243,7 +243,6 @@ unsafe extern "system" fn wnd_proc_widget(
             }
             WM_MOUSEWHEEL => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    // Send a message to the persistent thread to handle the scroll event
                     SCROLL_SENDER.send(()).ok();
                     return LRESULT(1);
                 }
