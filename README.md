@@ -1,3 +1,5 @@
+ glorp is a krunker client that uses dll injection to improve your gaming experience
+
 ## Building
 
 - Prerequisites:
