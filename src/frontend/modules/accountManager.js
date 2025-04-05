@@ -114,18 +114,22 @@ class AccountManager {
         );
         this.removeWindow();
         window.loginOrRegister();
-        document.querySelector(".auth-toggle-btn.svelte-13ld0w6").click();
+        if (document.querySelector(".auth-toggle-btn").textContent.includes("username")) {
+            document.querySelector(".auth-toggle-btn").click();
+          };
         setTimeout(() => {
+
             const nameInput = document.querySelector("#accName");
             const passInput = document.querySelector("#accPass");
             nameInput.value = this.decode(account.username);
             passInput.value = this.decode(account.password);
             // send input otherwise it thinks its empty
-            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-            passInput.dispatchEvent(new Event('input', { bubbles: true }));
+
 
             document.querySelector("#accName").value = this.decode(account.username);
             document.querySelector("#accPass").value = this.decode(account.password);
+            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            passInput.dispatchEvent(new Event('input', { bubbles: true }));
             document.querySelector(".io-button.io-button--accept.svelte-13ld0w6").click();
             this.checkCaptcha();
         }, 1);

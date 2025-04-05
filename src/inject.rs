@@ -99,6 +99,7 @@ impl DllInjector {
                     }
                 }
             }
+            // restart the snapshot
             Process32FirstW(snapshot, &mut process_entry).ok();
 
             if let Some(parent_pid) = parent_pid {
