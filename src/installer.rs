@@ -1,14 +1,14 @@
 #![allow(unused)]
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
+use windows::Win32::Storage::FileSystem::*;
+use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
-
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
 const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
 
 use std::io::Read;
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
-#[cfg(not(debug_assertions))]
 include!("../target/version.rs");
 
 pub fn check_webview2() {
@@ -124,33 +124,28 @@ pub fn check_update() {
         output_path.pop();
         output_path.push(format!("version.{}.exe", newest_version));
 
-        let response = match ureq::get(download_url).call() {
-            Ok(response) => response,
-            Err(_) => return,
+        let res = match ureq::get(download_url).call() {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to download: {:?}", e),
         };
 
-        let mut out = match std::fs::File::options()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&output_path)
-        {
+        let mut file = match std::fs::File::create(&output_path) {
             Ok(file) => file,
-            Err(_) => return,
+            Err(e) => panic!("Failed to download: {:?}", e),
         };
 
-        std::io::copy(&mut response.into_body().as_reader(), &mut out).ok();
-
+        if let Err(e) = std::io::copy(&mut res.into_body().as_reader(), &mut file) {
+            panic!("Failed to download: {:?}", e)
+        }
+        drop(file);
         unsafe {
             if let MESSAGEBOX_RESULT(6) = MessageBoxW(
                 None,
-                w!("A new version is available. Would you like to install it?"),
+                w!("A new version is available, install?"),
                 w!("Update Available"),
                 MB_ICONINFORMATION | MB_YESNO | MB_SYSTEMMODAL,
             ) {
-                if let Ok(mut command) = std::process::Command::new(&output_path).spawn() {
-                    command.wait();
-                }
+                std::process::Command::new(&output_path).spawn();
             }
         }
     });
