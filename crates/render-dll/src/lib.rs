@@ -27,12 +27,13 @@ extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
         _ => (),
     }
 }
+
 fn debug_print<T: AsRef<str>>(msg: T) {
     let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
     unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
 
-fn get_factory() -> Result<IDXGIFactory2> {
+fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
     unsafe {
         let window = CreateWindowExW(
             WINDOW_EX_STYLE(0),
@@ -85,8 +86,37 @@ fn get_factory() -> Result<IDXGIFactory2> {
             panic!("Failed to get factory");
         });
 
+        let swap_chain: IDXGISwapChain1 = factory
+            .CreateSwapChainForComposition(
+                &dxgi_device,
+                &DXGI_SWAP_CHAIN_DESC1 {
+                    Width: 1,
+                    Height: 1,
+                    Format: DXGI_FORMAT_B8G8R8A8_UNORM,
+                    Stereo: BOOL(0),
+                    SampleDesc: DXGI_SAMPLE_DESC {
+                        Count: 1,
+                        Quality: 0,
+                    },
+                    BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                    BufferCount: 2,
+                    Scaling: DXGI_SCALING_STRETCH,
+                    SwapEffect: DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+                    AlphaMode: DXGI_ALPHA_MODE_PREMULTIPLIED,
+                    Flags: 0,
+                },
+                None,
+            )
+            .unwrap_or_else(|e| {
+                debug_print(format!("Failed to create swapchain: {:?}", e));
+                panic!("Failed to create swapchain");
+            });
+
+        let present1_fn = swap_chain.vtable().Present1 as *const c_void;
+        debug_print(format!("Present1 function pointer: {:?}", present1_fn));
+
         PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).unwrap();
-        Ok(factory)
+        Ok((factory, swap_chain))
     }
 }
 
@@ -100,17 +130,31 @@ static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
     ) -> HRESULT,
 > = None;
 
+// static mut ORIGINAL_PRESENT: unsafe fn(
+//     *mut c_void,
+//     u32,
+//     DXGI_PRESENT,
+//     *const DXGI_PRESENT_PARAMETERS,
+// ) -> HRESULT = dummy_present_hk;
+
+// unsafe fn dummy_present_hk(
+//     _: *mut c_void,
+//     _: u32,
+//     _: DXGI_PRESENT,
+//     _: *const DXGI_PRESENT_PARAMETERS,
+// ) -> HRESULT {
+//     panic!("ORIGINAL_PRESENT called before initialization");
+// }
+
 fn attach() {
     unsafe {
-        let factory = get_factory().unwrap_or_else(|e| {
-            debug_print(format!("Failed to get factory: {:?}", e));
-            panic!("Failed to get factory");
+        let (factory, _swap_chain) = get_idxgi().unwrap_or_else(|e| {
+            debug_print(format!("Failed to get factory and swap chain: {:?}", e));
+            panic!("Failed to get factory and swap chain");
         });
 
-        let vtable = factory.vtable();
-
-        let original_fn = MinHook::create_hook(
-            vtable.CreateSwapChainForComposition as *mut c_void,
+        let original_create_swapchain = MinHook::create_hook(
+            factory.vtable().CreateSwapChainForComposition as *mut c_void,
             create_swapchain_hk as *mut c_void,
         )
         .unwrap_or_else(|e| {
@@ -118,13 +162,24 @@ fn attach() {
             panic!("hh")
         });
 
+        // let original_present = MinHook::create_hook(
+        //     swap_chain.vtable().Present1 as *mut c_void,
+        //     present_hk as *mut c_void,
+        // )
+        // .unwrap_or_else(|e| {
+        //     debug_print(format!("d3d11 hook failed: {:?}", e));
+        //     panic!("hh")
+        // });
+
         debug_print(format!("factory: {:?}", factory));
 
         MinHook::enable_all_hooks().unwrap();
-        ORIGINAL_CREATE_SWAPCHAIN = Some(std::mem::transmute(original_fn));
+        ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute(original_create_swapchain);
+        // ORIGINAL_PRESENT = std::mem::transmute(original_present);
     }
 }
 
+// In create_swapchain_hk, remove the unwrap()
 unsafe extern "system" fn create_swapchain_hk(
     this: *mut c_void,
     pdevice: *mut c_void,
@@ -158,12 +213,75 @@ unsafe extern "system" fn create_swapchain_hk(
                 if let Err(e) = swap_chain2.SetMaximumFrameLatency(1) {
                     debug_print(format!("Failed to set latency: {:?}", e));
                 }
-            } else {
-                debug_print("Failed to cast to IDXGISwapChain2");
+                // not releasing the swapchain leads to breaking the present hook
+                std::mem::forget(swap_chain2);
             }
         } else {
             debug_print("Failed to create swap chain");
         }
+        //  HRESULT(0) is success
+        debug_print(format!("result: {:?}", result));
         result
     }
 }
+
+// static mut RENDER_FPS: f64 = 0.0;
+// static mut FRAME_COUNT: f64 = 0.0;
+// static mut LAST_FPS_UPDATE: Option<Instant> = None;
+// static FRAME_TIME_NS: u64 = 16 * 1000 * 1000;
+// static TIME_OF_LAST_PRESENT_NS: AtomicU64 = AtomicU64::new(0);
+
+// unsafe extern "system" fn present_hk(
+//     p_this: *mut c_void,
+//     sync_interval: u32,
+//     present_flags: DXGI_PRESENT,
+//     p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+// ) -> HRESULT {
+//     unsafe {
+//         FRAME_COUNT += 1.0;
+//         let now = Instant::now();
+//         if let None = LAST_FPS_UPDATE {
+//             LAST_FPS_UPDATE = Some(now);
+//         }
+//         if now.duration_since(LAST_FPS_UPDATE.unwrap()).as_secs_f64() >= 0.5 {
+//             RENDER_FPS = FRAME_COUNT * 2.0;
+//             FRAME_COUNT = 0.0;
+//             LAST_FPS_UPDATE = Some(now);
+//             debug_print(format!("Render FPS: {}", unsafe { RENDER_FPS }));
+//         }
+
+//         let frame_time_ns = FRAME_TIME_NS;
+//         if frame_time_ns != 0 {
+//             let current_time_ns = SystemTime::now()
+//                 .duration_since(SystemTime::UNIX_EPOCH)
+//                 .unwrap()
+//                 .as_nanos() as u64;
+//             let time_between_last_present_call =
+//                 current_time_ns - TIME_OF_LAST_PRESENT_NS.load(Ordering::Relaxed);
+
+//             if time_between_last_present_call < frame_time_ns {
+//                 let sleep_duration =
+//                     Duration::from_nanos(frame_time_ns - time_between_last_present_call);
+
+//                 if sleep_duration > Duration::from_millis(1) {
+//                     std::thread::sleep(sleep_duration - Duration::from_millis(1));
+//                 }
+
+//                 let spin_start = Instant::now();
+//                 while spin_start.elapsed() < Duration::from_millis(1) {
+//                     std::hint::spin_loop();
+//                 }
+//             }
+
+//             TIME_OF_LAST_PRESENT_NS.store(
+//                 SystemTime::now()
+//                     .duration_since(SystemTime::UNIX_EPOCH)
+//                     .unwrap()
+//                     .as_nanos() as u64,
+//                 Ordering::Relaxed,
+//             );
+//         }
+
+//         ORIGINAL_PRESENT(p_this, sync_interval, present_flags, p_present_parameters)
+//     }
+// }

@@ -46,6 +46,7 @@ windows = { version = "0.59.*", features = [
        "Win32_Graphics_Direct3D11",
        "Win32_Graphics_CompositionSwapchain",
        "Win32_Storage_FileSystem",
+       "Win32_System_Performance",
 ] }
 
 webview2-com = { version = "0.35.*", default-features = false }

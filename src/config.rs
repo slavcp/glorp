@@ -69,15 +69,23 @@ impl Config {
         settings_file.seek(SeekFrom::Start(0)).unwrap();
         settings_file.read_to_string(&mut settings_string).unwrap();
 
-        match serde_json::from_str(&settings_string) {
-            Ok(data) => Config { data },
+        let mut data = match serde_json::from_str(&settings_string) {
+            Ok(data) => data,
             Err(e) => {
                 println!("Error: {}", e);
-                Config {
-                    data: load_defaults(),
-                }
+                load_defaults()
+            }
+        };
+
+        // Check for new entries in cSettings.json and add them with default values
+        let defaults = load_defaults();
+        for (key, default_value) in defaults {
+            if !data.contains_key(&key) {
+                data.insert(key, default_value);
             }
         }
+
+        Config { data }
     }
 
     pub fn get(&self, setting: &str) -> bool {

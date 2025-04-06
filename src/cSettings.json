@@ -52,7 +52,7 @@
     "needsRestart": false
   },
   "accountManager": {
-    "name": "Account manager",
+    "name": "Account Manager",
     "id": "accountManager",
     "description": false,
     "type": "checkbox",
@@ -62,7 +62,7 @@
     "needsRestart": false
   },
   "hpEnemyCounter": {
-    "name": "Hardpoint enemy counter",
+    "name": "Hardpoint Enemy counter",
     "id": "hpEnemyCounter",
     "description": "Shows the number of enemies present on the hardpoint during competitive matches",
     "type": "checkbox",
@@ -72,7 +72,7 @@
     "needsRestart": false
   },
   "hideBundles": {
-    "name": "Hide bundle popups",
+    "name": "Hide Bundle popups",
     "id": "hideBundles",
     "description": false,
     "type": "checkbox",
@@ -82,7 +82,7 @@
     "needsRestart": false
   },
   "exitButton": {
-    "name": "Exit button",
+    "name": "Exit Button",
     "id": "exitButton",
     "description": false,
     "type": "checkbox",
@@ -92,7 +92,7 @@
     "needsRestart": false
   },
   "rawInput": {
-    "name": "Raw input (!)",
+    "name": "Raw Input (!)",
     "id": "rawInput",
     "description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk. Should be safe",
     "type": "checkbox",
@@ -102,7 +102,7 @@
     "needsRestart": true
   },
   "hardFlip": {
-    "name": "Hook DXGI swapchain creation",
+    "name": "Hook DXGI Swapchain Creation",
     "id": "hardFlip",
     "description": "Reduce latency by tweaking swapchain settings; keep on unless experiencing crashes",
     "type": "checkbox",
@@ -110,5 +110,15 @@
     "defaultValue": true,
     "button": false,
     "needsRestart": true
+  },
+  "menuFpsCap": {
+    "name": "Framerate Limit in Menus",
+    "id": "menuFpsCap",
+    "description": "Use Krunker's broken fps cap in menus to fix the severe fps drop bug that ocasionally happens in menus",
+    "type": "checkbox",
+    "category": "Tweaks",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
   }
 }
