@@ -1,8 +1,41 @@
+use once_cell::sync::Lazy;
+use regex::Regex;
 use std::io::Read;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
+static USERSCRIPT_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
+static IIFE_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap()
+});
 
-pub fn load(webview: &ICoreWebView2) -> windows::core::Result<()> {
+// TODO: make proper
+fn parse_metadata(content: &mut String) {
+    if let Some(metadata_block) = USERSCRIPT_REGEX.find(content) {
+        let metadata = metadata_block.as_str();
+
+        if metadata.contains("// @run-at document-end") {
+            *content = format!(
+                "document.addEventListener('DOMContentLoaded', function() {{\n{}\n}});",
+                content
+            );
+        }
+    }
+}
+
+fn parse(mut content: String) -> String {
+    if USERSCRIPT_REGEX.is_match(&content) {
+        parse_metadata(&mut content);
+    }
+
+    if IIFE_REGEX.is_match(content.as_str()) {
+        return content.clone();
+    }
+
+    format!("(function() {{\n{}\n}})();", content)
+}
+
+pub fn load(webview: &ICoreWebView2) -> Result<()> {
     let scripts_dir = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts";
 
     if let Ok(entries) = std::fs::read_dir(scripts_dir) {
@@ -18,9 +51,11 @@ pub fn load(webview: &ICoreWebView2) -> windows::core::Result<()> {
             let mut content = String::new();
             file.read_to_string(&mut content)?;
 
+            let parsed = parse(content);
+
             unsafe {
                 webview.AddScriptToExecuteOnDocumentCreated(
-                    PCWSTR(super::utils::create_utf_string(&content).as_ptr()),
+                    PCWSTR(super::utils::create_utf_string(&parsed).as_ptr()),
                     None,
                 )?
             }
