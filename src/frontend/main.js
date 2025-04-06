@@ -60,11 +60,23 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("pointerlockchange", () => {
+  
   window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`);
+  if (document.pointerLockElement == null && window.glorpClient.settings.config.menuFpsCap) {
+    window.setSetting("updateRate", 500)
+  } else {
+    window.setSetting("updateRate", 0)
+  } 
+
 
   // safeguard 
   setTimeout(() => {
       window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement!== null}`);
+      if (document.pointerLockElement == null && window.glorpClient.settings.config.menuFpsCap) {
+        window.setSetting("updateRate", 500)
+      } else {
+        window.setSetting("updateRate", 0)
+      } 
   }, 1000);
   
 })
@@ -73,6 +85,7 @@ Object.defineProperty(window, 'gameLoaded', {
   set(value) {
     if (value) {
       if (localStorage.getItem("firstLaunch") === null) {
+
         localStorage.setItem("kro_setngss_mouseAccel", false);
         localStorage.setItem("kro_setngss_mouseFlick", false);
         window.localStorage.setItem("firstLaunch", false);
@@ -84,6 +97,9 @@ Object.defineProperty(window, 'gameLoaded', {
         window.closWind();
       }
 
+      if  (window.glorpClient.settings.config.menuFpsCap) {
+        window.setSetting("updateRate", 500) 
+      }
 
       import("./notifications.js").then(() => {
         // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads

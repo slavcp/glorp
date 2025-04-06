@@ -141,7 +141,7 @@ unsafe extern "system" fn wnd_proc_1(
             WM_CHAR => LRESULT(1),
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             // avoid it by just losing focus
-            WM_KEYDOWN => {
+            WM_KEYDOWN | WM_KEYUP => {
                 if wparam.0 == VK_ESCAPE.0 as usize
                     && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)
                 {

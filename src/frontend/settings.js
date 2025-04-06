@@ -1,10 +1,15 @@
 import cSettings from "../cSettings.json";
 
 window.glorpClient.settings.changeSetting = (id, value) => {
-    if (id === "exitButton") {
-        document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"}`
-    }
 
+switch (id) {
+    case "exitButton":
+        document.querySelector("#clientExit").style.display = `${value? "flex" : "none"}`;
+        break;
+    case "menuFpsCap":
+        window.setSetting("updateRate", value ? 500 : 0);
+        break;
+}
         const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)}`;
         if (typeof window.glorpClient.settings[toggleFunctionName] !== 'function') {
             try {
@@ -55,8 +60,8 @@ class SettingsManager {
                     <span class='slider'></span>
                 </label>
                 ${option.button ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>` : ""}`;
-            case "selector":
-                return
+            case "none":
+                return ""
         }
     }
 
