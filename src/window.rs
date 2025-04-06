@@ -243,6 +243,30 @@ unsafe extern "system" fn wnd_proc(
 ) -> LRESULT {
     unsafe {
         match msg {
+            WM_MOUSEWHEEL => {
+                let webview_ptr = WEBVIEW.load(Ordering::Relaxed);
+                if !webview_ptr.is_null() {
+                    let webview = &*webview_ptr;
+                    let delta = utils::HIWORD(wparam.0 as usize) as i32;
+                    let scroll_amount = (delta as f32 / WHEEL_DELTA as f32) * 80.0;
+
+                    webview
+                        .ExecuteScript(
+                            PCWSTR(
+                                utils::create_utf_string(
+                                    format!(
+                                        "window.glorpClient.handleMouseWheel({})",
+                                        scroll_amount
+                                    )
+                                    .as_str(),
+                                )
+                                .as_ptr(),
+                            ),
+                            None,
+                        )
+                        .unwrap();
+                }
+            }
             WM_DESTROY => {
                 PostQuitMessage(0);
             }
