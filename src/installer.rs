@@ -9,6 +9,7 @@ const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
 use std::io::Read;
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
+#[cfg(not(debug_assertions))]
 include!("../target/version.rs");
 
 pub fn check_webview2() {
