@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use std::mem::transmute;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicPtr};
 use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
@@ -30,6 +30,7 @@ static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
 
 static LOCK_STATUS: AtomicBool = AtomicBool::new(false);
+static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
 
 static SPACE_DOWN: INPUT = INPUT {
     r#type: INPUT_KEYBOARD,
@@ -125,6 +126,8 @@ extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
 fn attach() {
     unsafe {
         let parent = FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap();
+        let handle_ptr = Box::into_raw(Box::new(parent)); // store on the heap so it stays alive
+        WINDOW_HANDLE.store(handle_ptr, std::sync::atomic::Ordering::Relaxed);
         let chrome_windows = ChromeWindows::get(parent);
         chrome_windows.set_window_procs();
 
@@ -180,14 +183,13 @@ unsafe extern "system" fn wnd_proc_1(
             WM_CHAR => LRESULT(1),
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             // avoid it by just losing focus
-            WM_KEYDOWN | WM_KEYUP => {
+            WM_KEYDOWN => {
                 if wparam.0 == VK_ESCAPE.0 as usize
                     && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)
                 {
                     //CallWindowProcW(PREV_WNDPROC_1, window, WM_KILLFOCUS, wparam, lparam);
-                    if let Ok(webview) = FindWindowW(w!("krunker_webview"), PCWSTR::null()) {
-                        SetFocus(Some(webview)).ok();
-                    }
+                    let webview = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                    SetFocus(Some(*webview)).ok();
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -206,7 +208,7 @@ unsafe extern "system" fn wnd_proc_1(
             WM_INPUT => {
                 let raw_input_handle = HRAWINPUT(lparam.0 as _);
                 let mut buffer: [u8; 48] = [0; 48];
-                let mut size = 48u32;
+                let mut size = 48;
 
                 GetRawInputData(
                     raw_input_handle,
