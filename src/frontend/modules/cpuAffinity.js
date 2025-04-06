@@ -98,8 +98,6 @@ window.glorpClient.settings.applyAffinity = () => {
   window.chrome.webview.postMessage(`setAffinity,${gpuMask},${webpageMask}`);
   window.glorpClient.settings.closeAffinityPanel();
 };
-
-// Toggle function for the setting
 window.glorpClient.settings.toggleCpuAffinity = (enabled) => {
   if (!enabled) {
     window.chrome.webview.postMessage('resetAffinity');

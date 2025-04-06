@@ -26,13 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let baseCSS = document.createElement("style");
   baseCSS.innerHTML = styles;
   document.body.appendChild(baseCSS);
-  
+
   const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
   HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
     if (type === "wheel") {
       window.glorpClient.handleMouseWheel = (deltaY) => {
         listener(new WheelEvent("wheel", { deltaY }));
-    }  ;
+      };
     }
     return originalAddEventListener.call(this, type, listener, options);
   }
@@ -60,25 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("pointerlockchange", () => {
-  
   window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`);
-  if (document.pointerLockElement == null && window.glorpClient.settings.config.menuFpsCap) {
-    window.setSetting("updateRate", 500)
-  } else {
-    window.setSetting("updateRate", 0)
-  } 
-
 
   // safeguard 
   setTimeout(() => {
-      window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement!== null}`);
-      if (document.pointerLockElement == null && window.glorpClient.settings.config.menuFpsCap) {
-        window.setSetting("updateRate", 500)
-      } else {
-        window.setSetting("updateRate", 0)
-      } 
+    window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`);
   }, 1000);
-  
+
 })
 
 Object.defineProperty(window, 'gameLoaded', {
@@ -97,20 +85,17 @@ Object.defineProperty(window, 'gameLoaded', {
         window.closWind();
       }
 
-      if  (window.glorpClient.settings.config.menuFpsCap) {
-        window.setSetting("updateRate", 500) 
-      }
 
       import("./notifications.js").then(() => {
         // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
         const originalExportSettings = window.exportSettings;
         window.exportSettings = () => {
-        window.glorpClient.showNotification('Settings exported to Downloads!', false, 3);
-        return originalExportSettings();
-};
+          window.glorpClient.showNotification('Settings exported to Downloads!', false, 3);
+          return originalExportSettings();
+        };
 
       });
-      
+
       import("./settings.js").then(() => {
         if (window.glorpClient.settings.config.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
         if (window.glorpClient.settings.config.accountManager) import("./modules/accountManager.js");
