@@ -110,15 +110,5 @@
     "defaultValue": true,
     "button": false,
     "needsRestart": true
-  },
-  "menuFpsCap": {
-    "name": "Framerate Limit in Menus",
-    "id": "menuFpsCap",
-    "description": "Use Krunker's broken fps cap in menus to fix the severe fps drop bug that ocasionally happens in menus",
-    "type": "checkbox",
-    "category": "Tweaks",
-    "defaultValue": true,
-    "button": false,
-    "needsRestart": false
   }
 }

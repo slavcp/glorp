@@ -1,6 +1,6 @@
 [package]
 name = "glorp"
-version = "0.2.4"
+version = "0.2.5"
 description = "krunker"
 authors = ["slav"]
 edition = "2024"
@@ -47,6 +47,7 @@ windows = { version = "0.59.*", features = [
        "Win32_Graphics_CompositionSwapchain",
        "Win32_Storage_FileSystem",
        "Win32_System_Performance",
+       "Win32_Security_Authorization",
 ] }
 
 webview2-com = { version = "0.35.*", default-features = false }

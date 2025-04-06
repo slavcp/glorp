@@ -1,6 +1,7 @@
 #![allow(unused)]
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::Win32::Storage::FileSystem::*;
+use windows::Win32::UI::Shell::IsUserAnAdmin;
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
@@ -140,13 +141,27 @@ pub fn check_update() {
         }
         drop(file);
         unsafe {
+            if IsUserAnAdmin().as_bool() {
+                std::process::Command::new(&output_path).spawn();
+                return;
+            }
+
             if let MESSAGEBOX_RESULT(6) = MessageBoxW(
                 None,
-                w!("A new version is available, install?"),
+                w!("This update requires administrator privileges. Continue?"),
                 w!("Update Available"),
                 MB_ICONINFORMATION | MB_YESNO | MB_SYSTEMMODAL,
             ) {
-                std::process::Command::new(&output_path).spawn();
+                let current_exe = std::env::current_exe().unwrap();
+                ShellExecuteW(
+                    None,
+                    w!("runas"),
+                    PCWSTR(super::utils::create_utf_string(current_exe.to_str().unwrap()).as_ptr()),
+                    None,
+                    None,
+                    SW_NORMAL,
+                );
+                std::process::exit(0);
             }
         }
     });
