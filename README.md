@@ -1,3 +1,7 @@
+ glorp is a krunker client that uses dll injection to improve your gaming experience <br>
+ *it will trigger your antivirus*
+
+ for some people it works wonders, for some it lags like crazy
 ## Building
 
 - Prerequisites:
