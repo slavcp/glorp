@@ -23,14 +23,30 @@ window.glorpClient = {
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
+  let baseCSS = document.createElement("style");
+  baseCSS.innerHTML = styles;
+  document.body.appendChild(baseCSS);
+  
+  const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
+  HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
+    if (type === "wheel") {
+      window.glorpClient.handleMouseWheel = (deltaY) => {
+        listener(new WheelEvent("wheel", { deltaY }));
+    }  ;
+    }
+    return originalAddEventListener.call(this, type, listener, options);
+  }
+
   if (window.glorpClient?.settings.config?.rawInput) {
-    const originalRequestPointerLock = Element.prototype.requestPointerLock;
-    Element.prototype.requestPointerLock = function (options = {}) {
+    const originalRequestPointerLock = HTMLCanvasElement.prototype.requestPointerLock;
+    HTMLCanvasElement.prototype.requestPointerLock = function (options = {}) {
       options.unadjustedMovement = true;
       return originalRequestPointerLock.call(this, options);
     }
   }
+
   if (window.glorpClient?.settings.config?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+
   if (window.glorpClient?.settings.config?.hideBundles) {
     const bundlePopupObserver = new MutationObserver(() => {
       window.clearPops();
@@ -40,9 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bundlePopupObserver.observe(document.querySelector("#bundlePop"), { childList: true });
     setTimeout(() => bundlePopupObserver.disconnect(), 5000);
   };
-  let baseCSS = document.createElement("style");
-  baseCSS.innerHTML = styles;
-  document.body.appendChild(baseCSS);
+
 });
 
 document.addEventListener("pointerlockchange", () => {
@@ -72,7 +86,7 @@ Object.defineProperty(window, 'gameLoaded', {
 
 
       import("./notifications.js").then(() => {
-              // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
+        // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
         const originalExportSettings = window.exportSettings;
         window.exportSettings = () => {
         window.glorpClient.showNotification('Settings exported to Downloads!', false, 3);

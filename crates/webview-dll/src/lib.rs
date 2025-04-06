@@ -1,7 +1,5 @@
-use once_cell::sync::Lazy;
 use std::mem::transmute;
 use std::sync::atomic::{AtomicBool, AtomicPtr};
-use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
 use windows::Win32::{
@@ -12,51 +10,11 @@ use windows::Win32::{
 };
 use windows::core::*;
 
-static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
-    let (tx, rx) = channel();
-    std::thread::spawn(move || {
-        while let Ok(_) = rx.recv() {
-            unsafe {
-                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
-                Sleep(1);
-                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
-            }
-        }
-    });
-    tx
-});
-
 static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
 
 static LOCK_STATUS: AtomicBool = AtomicBool::new(false);
 static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
-
-static SPACE_DOWN: INPUT = INPUT {
-    r#type: INPUT_KEYBOARD,
-    Anonymous: INPUT_0 {
-        ki: KEYBDINPUT {
-            wVk: VK_SPACE,
-            wScan: 0,
-            dwFlags: KEYBD_EVENT_FLAGS(0),
-            time: 0,
-            dwExtraInfo: 0,
-        },
-    },
-};
-
-static SPACE_UP: INPUT = INPUT {
-    r#type: INPUT_KEYBOARD,
-    Anonymous: INPUT_0 {
-        ki: KEYBDINPUT {
-            wVk: VK_SPACE,
-            wScan: 0,
-            dwFlags: KEYEVENTF_KEYUP,
-            time: 0,
-            dwExtraInfo: 0,
-        },
-    },
-};
 
 struct ChromeWindows {
     chrome_window: HWND,
@@ -187,9 +145,9 @@ unsafe extern "system" fn wnd_proc_1(
                 if wparam.0 == VK_ESCAPE.0 as usize
                     && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)
                 {
-                    //CallWindowProcW(PREV_WNDPROC_1, window, WM_KILLFOCUS, wparam, lparam);
-                    let webview = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
-                    SetFocus(Some(*webview)).ok();
+                    // shift focus to glorp.exe (not the webview)
+                    let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                    SetFocus(Some(*glorp)).ok();
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -245,12 +203,13 @@ unsafe extern "system" fn wnd_proc_widget(
             }
             WM_MOUSEWHEEL => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    SCROLL_SENDER.send(()).ok();
+                    let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                    // send the message to the glorp window, from where it gets sent as a js event, best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
+                    PostMessageW(Some(*glorp), message, wparam, lparam).ok();
                     return LRESULT(1);
                 }
                 CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
             }
-
             _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam),
         }
     }

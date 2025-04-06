@@ -15,4 +15,3 @@ windows = { version = "0.59.*", features = [
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_CompositionSwapchain",
 ] }
-once_cell = "1.20.*"
