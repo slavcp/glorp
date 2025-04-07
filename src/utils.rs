@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
-
 use windows::Win32::{
     Foundation::{BOOL, HWND, LPARAM},
+    System::{Diagnostics::ToolHelp::*, Threading::*},
     UI::WindowsAndMessaging::*,
 };
 
@@ -50,5 +50,32 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
         }
 
         data.0
+    }
+}
+
+pub fn kill_glorps() {
+    unsafe {
+        let current_pid = GetCurrentProcessId();
+        let mut entry = PROCESSENTRY32W {
+            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            ..Default::default()
+        };
+
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0).unwrap();
+
+        if Process32FirstW(snapshot, &mut entry).is_ok() {
+            loop {
+                let process_name = String::from_utf16_lossy(&entry.szExeFile);
+                if process_name.contains("glorp") && entry.th32ProcessID != current_pid {
+                    if let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, entry.th32ProcessID)
+                    {
+                        TerminateProcess(process, 0).ok();
+                    }
+                }
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    break;
+                }
+            }
+        }
     }
 }
