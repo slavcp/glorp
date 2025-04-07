@@ -1,10 +1,12 @@
 glorp is a krunker client that uses dll injection in an attempt to fix the issues normal clients face, <br>
-for some it works wonders, for some its unplayable
 
-consider setting an fps cap if:
+glorp is the #1 client by a margin for about 43.14% of the playerbase!!
+the other 56.86% will expect:
 
-- running into network issues
-- running into stuttering
+- network issues
+- stuttering
+- audio glitches
+  and anything inbetween 😀😀
 
 ## Features
 

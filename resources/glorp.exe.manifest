@@ -11,6 +11,7 @@
         <windowsSettings>
             <gdiScaling xmlns="http://schemas.microsoft.com/SMI/2017/WindowsSettings">false</gdiScaling>
             <disableTheming xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</disableTheming>
+            <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
         </windowsSettings>
     </application>
 </assembly>
