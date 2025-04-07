@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "glorp"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "embed-resource",
  "once_cell",

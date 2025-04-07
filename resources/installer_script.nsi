@@ -7,7 +7,6 @@ InstallDir "$LOCALAPPDATA\${Name}"
 
 SetCompressor lzma
 SilentInstall silent
-SilentUnInstall silent
 
     Section "Install"
     nsis_process::KillProcess "${Name}.exe"
