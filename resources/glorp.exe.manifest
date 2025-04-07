@@ -7,6 +7,7 @@
             </requestedPrivileges>
         </security>
     </trustInfo>
+    <application xmlns="urn:schemas-microsoft-com:asm.v3">
         <windowsSettings>
             <gdiScaling xmlns="http://schemas.microsoft.com/SMI/2017/WindowsSettings">false</gdiScaling>
             <disableTheming xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true</disableTheming>
