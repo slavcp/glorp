@@ -26,6 +26,18 @@ mod window;
 use std::sync::{Arc, Mutex};
 
 fn main() {
+    unsafe {
+        windows::Win32::System::Threading::CreateMutexW(None, false, w!("Global\\GlorpMutex"))
+            .unwrap();
+
+        if windows::Win32::Foundation::GetLastError()
+            == windows::Win32::Foundation::ERROR_ALREADY_EXISTS
+        {
+            println!("Another instance is already running");
+            return;
+        }
+    }
+
     let config = Arc::new(Mutex::new(config::Config::load()));
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 

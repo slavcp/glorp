@@ -189,12 +189,6 @@ unsafe extern "system" fn create_swapchain_hk(
 ) -> HRESULT {
     unsafe {
         let mut desc = *pdesc;
-        desc.Stereo = BOOL(0);
-        desc.SampleDesc = DXGI_SAMPLE_DESC {
-            Count: 1,
-            Quality: 0,
-        };
-
         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         // 2 is lowest allowed for DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
         desc.BufferCount = 2;
