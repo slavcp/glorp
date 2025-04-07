@@ -3,8 +3,11 @@ const VER_DIR: &str = "./target";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
-    if let Err(e) =
-        embed_resource::compile("./resources/client.rc", embed_resource::NONE).manifest_optional()
+    embed_resource::compile("./resources/client.rc", embed_resource::NONE)
+        .manifest_optional()
+        .ok();
+    if let Err(e) = embed_resource::compile("./resources/glorp-manifest.rc", embed_resource::NONE)
+        .manifest_required()
     {
         eprintln!("{}", e)
     };
