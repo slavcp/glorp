@@ -35,14 +35,8 @@ impl DllInjector {
                 error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr(),
             ));
         }
-        self.retry_count += 1;
 
-        if self.retry_count >= 2 {
-            std::process::exit(0);
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        self.inject();
+        std::process::exit(0);
     }
 
     pub fn inject(&mut self) {
@@ -188,10 +182,11 @@ impl DllInjector {
             CloseHandle(snapshot).ok();
             MessageBoxW(
                 None,
-                w!("Error"),
                 w!(
-                    "Error injecting dlls. The client will attempt again, if it fails this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
+                    "IF YOU JUST UPDATED IGNORE THE MESSAGE AND LAUNCH THE CLIENT AGAIN\n
+                    Error injecting dlls. this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
                 ),
+                w!("Error"),
                 MB_ICONERROR | MB_YESNO | MB_SYSTEMMODAL,
             );
             Err(windows::core::Error::new::<&str>(

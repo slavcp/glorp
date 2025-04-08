@@ -8,6 +8,7 @@ RequestExecutionLevel user
 
     Section "Install"
     nsis_process::KillProcess "${Name}.exe"
+    Sleep 300
     SetOutPath "$INSTDIR"
     File "..\target\x86_64-pc-windows-msvc\release\render.dll"
     File "..\target\x86_64-pc-windows-msvc\release\webview.dll"
