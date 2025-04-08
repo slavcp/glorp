@@ -6,6 +6,7 @@ use windows::{
             Diagnostics::Debug::*, Diagnostics::ToolHelp::*, LibraryLoader::*, Memory::*,
             Threading::*,
         },
+        UI::WindowsAndMessaging::*,
     },
     core::*,
 };
@@ -13,28 +14,63 @@ pub struct DllInjector {
     process_name: String,
     dll_path: String,
     renderer: bool,
+    retry_count: u32,
 }
 
 impl DllInjector {
     pub fn new(process_name: &str, dll_path: &str, renderer: bool) -> Self {
-        let injector = Self {
+        let mut injector = Self {
             process_name: process_name.to_string(),
             dll_path: dll_path.to_string(),
             renderer,
+            retry_count: 0,
         };
         injector.inject();
         injector
     }
 
-    pub fn inject(&self) {
+    fn handle_error(&mut self, error_msg: &str) {
         unsafe {
-            if let Some(process_id) = self.get_proc_id() {
-                let process_handle = OpenProcess(PROCESS_ALL_ACCESS, false, process_id).unwrap();
-                let load_library = GetProcAddress(
-                    GetModuleHandleW(w!("kernel32.dll")).unwrap(),
-                    s!("LoadLibraryW"),
-                )
-                .unwrap();
+            OutputDebugStringW(PCWSTR(
+                error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr(),
+            ));
+        }
+        self.retry_count += 1;
+
+        if self.retry_count >= 2 {
+            std::process::exit(0);
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        self.inject();
+    }
+
+    pub fn inject(&mut self) {
+        unsafe {
+            if let Ok(process_id) = self.get_proc_id() {
+                let process_handle = match OpenProcess(PROCESS_ALL_ACCESS, false, process_id) {
+                    Ok(handle) => handle,
+                    Err(e) => {
+                        self.handle_error(&format!("Failed to open process: {}", e));
+                        return;
+                    }
+                };
+
+                let kernel32 = match GetModuleHandleW(w!("kernel32.dll")) {
+                    Ok(handle) => handle,
+                    Err(e) => {
+                        self.handle_error(&format!("Failed to get kernel32 handle: {}", e));
+                        return;
+                    }
+                };
+
+                let load_library = match GetProcAddress(kernel32, s!("LoadLibraryW")) {
+                    Some(addr) => addr,
+                    None => {
+                        self.handle_error("Failed to get LoadLibraryW address");
+                        return;
+                    }
+                };
 
                 let dll_path_bytes: Vec<u16> = self
                     .dll_path
@@ -50,16 +86,18 @@ impl DllInjector {
                     PAGE_READWRITE,
                 );
 
-                WriteProcessMemory(
+                if let Err(e) = WriteProcessMemory(
                     process_handle,
                     alloc,
                     dll_path_bytes.as_ptr() as _,
                     dll_path_bytes.len() * 2,
                     None,
-                )
-                .unwrap();
+                ) {
+                    self.handle_error(&format!("Failed to write to process memory: {}", e));
+                    return;
+                }
 
-                CreateRemoteThread(
+                if let Err(e) = CreateRemoteThread(
                     process_handle,
                     None,
                     0,
@@ -70,27 +108,45 @@ impl DllInjector {
                     Some(alloc),
                     0,
                     None,
-                )
-                .unwrap();
+                ) {
+                    self.handle_error(&format!("Failed to create remote thread: {}", e));
+                    return;
+                }
 
                 CloseHandle(process_handle).ok();
+            } else {
+                self.handle_error("Failed to find target process");
             }
         }
     }
 
-    fn get_proc_id(&self) -> Option<u32> {
+    fn get_proc_id(&self) -> Result<u32> {
         unsafe {
             let mut process_entry = PROCESSENTRY32W {
                 dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
-                ..PROCESSENTRY32W::default()
+                ..Default::default()
             };
-            let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).unwrap();
-            // find the target parent process ID
+
+            let snapshot = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+                Ok(handle) => handle,
+                Err(e) => {
+                    let msg = format!("Failed to create snapshot: {}", e);
+                    OutputDebugStringW(PCWSTR(
+                        msg.encode_utf16()
+                            .chain(std::iter::once(0))
+                            .collect::<Vec<u16>>()
+                            .as_ptr(),
+                    ));
+                    return Err(e);
+                }
+            };
+
+            // find parent process (glorp.exe)
             let mut parent_pid = None;
             if Process32FirstW(snapshot, &mut process_entry).is_ok() {
                 loop {
                     let process_name = String::from_utf16_lossy(&process_entry.szExeFile);
-                    if process_name.contains("glorp.exe") {
+                    if process_name.to_lowercase().contains("glorp.exe") {
                         parent_pid = Some(process_entry.th32ProcessID);
                         break;
                     }
@@ -99,19 +155,30 @@ impl DllInjector {
                     }
                 }
             }
-            // restart the snapshot
-            Process32FirstW(snapshot, &mut process_entry).ok();
+
+            if parent_pid.is_none() {
+                let msg = "Parent process (glorp.exe) not found";
+                OutputDebugStringW(PCWSTR(
+                    msg.encode_utf16()
+                        .chain(std::iter::once(0))
+                        .collect::<Vec<u16>>()
+                        .as_ptr(),
+                ));
+            }
 
             if let Some(parent_pid) = parent_pid {
+                Process32FirstW(snapshot, &mut process_entry).ok();
                 loop {
                     let process_name = String::from_utf16_lossy(&process_entry.szExeFile);
-                    if process_name.contains(&self.process_name)
-                        && ((self.renderer && is_renderer(process_entry.th32ProcessID))
-                            || (!self.renderer && process_entry.th32ParentProcessID == parent_pid))
-                    {
+                    let is_target = process_name.to_lowercase().contains(&self.process_name);
+                    let is_child = process_entry.th32ParentProcessID == parent_pid;
+                    let is_renderer = self.renderer && is_renderer(process_entry.th32ProcessID);
+
+                    if is_target && (is_renderer || (!self.renderer && is_child)) {
                         CloseHandle(snapshot).ok();
-                        return Some(process_entry.th32ProcessID);
+                        return Ok(process_entry.th32ProcessID);
                     }
+
                     if Process32NextW(snapshot, &mut process_entry).is_err() {
                         break;
                     }
@@ -119,7 +186,18 @@ impl DllInjector {
             }
 
             CloseHandle(snapshot).ok();
-            None
+            MessageBoxW(
+                None,
+                w!("Error"),
+                w!(
+                    "Error injecting dlls. The client will attempt again, if it fails this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
+                ),
+                MB_ICONERROR | MB_YESNO | MB_SYSTEMMODAL,
+            );
+            Err(windows::core::Error::new::<&str>(
+                windows::core::HRESULT(-1),
+                "Process not found",
+            ))
         }
     }
 }

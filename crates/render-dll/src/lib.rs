@@ -14,17 +14,10 @@ use windows::core::*;
 
 #[unsafe(no_mangle)]
 extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
-    match call_reason {
-        DLL_PROCESS_ATTACH => {
-            std::thread::spawn(|| {
-                attach();
-            });
-        }
-        DLL_PROCESS_DETACH => unsafe {
-            MinHook::disable_all_hooks().ok();
-            MinHook::uninitialize();
-        },
-        _ => (),
+    if call_reason == DLL_PROCESS_ATTACH {
+        std::thread::spawn(|| {
+            attach();
+        });
     }
 }
 

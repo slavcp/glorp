@@ -6,7 +6,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
     Win32::{
         Foundation::*,
-        System::{Com::*, WinRT::*},
+        System::{Com::*, Diagnostics::Debug::*, WinRT::*},
         UI::WindowsAndMessaging::*,
     },
     core::*,
@@ -45,6 +45,12 @@ fn main() {
     unsafe {
         let hwnd: HWND = window::create_window();
         let webview2_components = window::create_webview2(hwnd, args);
+        OutputDebugStringW(PCWSTR(
+            utils::create_utf_string(
+                format!("Webview2 HWND: {:?}", webview2_components.0).as_str(),
+            )
+            .as_ptr(),
+        ));
         inject::hook_webview2(&config);
         let controller = webview2_components.0;
         let env = webview2_components.1;

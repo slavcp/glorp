@@ -2,11 +2,9 @@
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${Name}"
 !addplugindir "./plugins"
 Name "${Name}"
-OutFile "../target/${Name}-silent-setup-x64.exe"
+OutFile "../target/${Name}-setup-x64.exe"
 InstallDir "$LOCALAPPDATA\${Name}"
-
-SetCompressor lzma
-SilentInstall silent
+RequestExecutionLevel user
 
     Section "Install"
     nsis_process::KillProcess "${Name}.exe"
@@ -25,7 +23,8 @@ SilentInstall silent
 
     CreateShortCut "$SMPROGRAMS\${Name}.lnk" "$INSTDIR\${Name}.exe"
     CreateShortCut "$DESKTOP\${Name}.lnk" "$INSTDIR\${Name}.exe"
-    ExecShell "" "$INSTDIR\${Name}.exe" ;
+    ExecWait  '"$INSTDIR\${Name}.exe"'
+
 SectionEnd
 
 Section "Uninstall"

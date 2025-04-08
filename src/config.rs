@@ -80,9 +80,7 @@ impl Config {
         // Check for new entries in cSettings.json and add them with default values
         let defaults = load_defaults();
         for (key, default_value) in defaults {
-            if !data.contains_key(&key) {
-                data.insert(key, default_value);
-            }
+            data.entry(key).or_insert(default_value);
         }
 
         Config { data }
