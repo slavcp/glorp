@@ -14,7 +14,6 @@ pub struct DllInjector {
     process_name: String,
     dll_path: String,
     renderer: bool,
-    retry_count: u32,
 }
 
 impl DllInjector {
@@ -23,7 +22,6 @@ impl DllInjector {
             process_name: process_name.to_string(),
             dll_path: dll_path.to_string(),
             renderer,
-            retry_count: 0,
         };
         injector.inject();
         injector
