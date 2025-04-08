@@ -1,7 +1,6 @@
 #![allow(unused)]
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::Win32::Storage::FileSystem::*;
-use windows::Win32::UI::Shell::IsUserAnAdmin;
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
@@ -128,12 +127,42 @@ pub fn check_update() {
 
         let res = match ureq::get(download_url).call() {
             Ok(res) => res,
-            Err(e) => panic!("Failed to download: {:?}", e),
+            Err(e) => {
+                unsafe {
+                    MessageBoxW(
+                        None,
+                        PCWSTR(
+                            super::utils::create_utf_string(
+                                format!("Failed to download: {:?}", e).as_str(),
+                            )
+                            .as_ptr(),
+                        ),
+                        w!("Download Error"),
+                        MB_ICONERROR | MB_SYSTEMMODAL,
+                    );
+                }
+                return;
+            }
         };
 
         let mut file = match std::fs::File::create(&output_path) {
             Ok(file) => file,
-            Err(e) => panic!("Failed to download: {:?}", e),
+            Err(e) => {
+                unsafe {
+                    MessageBoxW(
+                        None,
+                        PCWSTR(
+                            super::utils::create_utf_string(
+                                format!("Failed to create file: {:?}", e).as_str(),
+                            )
+                            .as_ptr(),
+                        ),
+                        w!("Download Error"),
+                        MB_ICONERROR | MB_SYSTEMMODAL,
+                    );
+                }
+                return;
+            }
         };
 
         if let Err(e) = std::io::copy(&mut res.into_body().as_reader(), &mut file) {
@@ -141,22 +170,16 @@ pub fn check_update() {
         }
         drop(file);
         unsafe {
-            if IsUserAnAdmin().as_bool() {
-                std::process::Command::new(&output_path).spawn();
-                return;
-            }
-
             if let MESSAGEBOX_RESULT(6) = MessageBoxW(
                 None,
-                w!("This update requires administrator privileges. Continue?"),
-                w!("Update Available"),
-                MB_ICONINFORMATION | MB_YESNO | MB_SYSTEMMODAL,
+                w!("A new version is available, update?"),
+                w!("Update available"),
+                MB_ICONQUESTION | MB_YESNO,
             ) {
-                let current_exe = std::env::current_exe().unwrap();
                 ShellExecuteW(
                     None,
                     w!("runas"),
-                    PCWSTR(super::utils::create_utf_string(current_exe.to_str().unwrap()).as_ptr()),
+                    PCWSTR(super::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
                     None,
                     None,
                     SW_NORMAL,

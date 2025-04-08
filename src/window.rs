@@ -247,7 +247,7 @@ unsafe extern "system" fn wnd_proc(
                 let webview_ptr = WEBVIEW.load(Ordering::Relaxed);
                 if !webview_ptr.is_null() {
                     let webview = &*webview_ptr;
-                    let delta = utils::HIWORD(wparam.0 as usize) as i32;
+                    let delta = utils::HIWORD(wparam.0) as i32;
                     let scroll_amount = (delta as f32 / WHEEL_DELTA as f32) * 80.0;
 
                     webview
