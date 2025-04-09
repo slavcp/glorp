@@ -16,6 +16,8 @@ pub struct DllInjector {
     renderer: bool,
 }
 
+static ERROR_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
 impl DllInjector {
     pub fn new(process_name: &str, dll_path: &str, renderer: bool) -> Self {
         let mut injector = Self {
@@ -28,13 +30,29 @@ impl DllInjector {
     }
 
     fn handle_error(&mut self, error_msg: &str) {
+        let error = PCWSTR(error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr());
         unsafe {
-            OutputDebugStringW(PCWSTR(
-                error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr(),
-            ));
+            OutputDebugStringW(error);
         }
 
-        std::process::exit(0);
+        let current = ERROR_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+        if current >= 1 {
+            unsafe {
+                MessageBoxW(
+                    None,
+                    w!(
+                        "Error: Error injecting dlls. this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
+                    ),
+                    error,
+                    MB_ICONERROR | MB_SYSTEMMODAL,
+                );
+                std::process::exit(0);
+            }
+        };
+        // retry
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        self.inject();
     }
 
     pub fn inject(&mut self) {
@@ -178,15 +196,6 @@ impl DllInjector {
             }
 
             CloseHandle(snapshot).ok();
-            MessageBoxW(
-                None,
-                w!(
-                    "IF YOU JUST UPDATED IGNORE THE MESSAGE AND LAUNCH THE CLIENT AGAIN\n
-                    Error injecting dlls. this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
-                ),
-                w!("Error"),
-                MB_ICONERROR | MB_YESNO | MB_SYSTEMMODAL,
-            );
             Err(windows::core::Error::new::<&str>(
                 windows::core::HRESULT(-1),
                 "Process not found",
@@ -235,7 +244,7 @@ pub fn hook_webview2(config: &std::sync::Arc<std::sync::Mutex<Config>>) {
             .unwrap(),
         false,
     );
-    if config.lock().unwrap().get("hardFlip") {
+    if config.lock().unwrap().get("hardFlip").unwrap() {
         DllInjector::new(
             "msedgewebview2.exe",
             current_exe

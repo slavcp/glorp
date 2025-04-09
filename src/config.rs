@@ -1,32 +1,32 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::*;
 use std::io::*;
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::core::*;
-
 #[derive(Deserialize)]
 struct SettingInfo {
     #[serde(default)]
     #[serde(rename = "defaultValue")]
-    default_value: bool,
+    default_value: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    data: HashMap<String, bool>,
+    data: HashMap<String, Value>,
 }
 
 impl Config {
     pub fn load() -> Config {
-        fn load_defaults() -> HashMap<String, bool> {
+        fn load_defaults() -> HashMap<String, Value> {
             let defaults_json = include_str!("./cSettings.json");
             let settings_info: HashMap<String, SettingInfo> =
                 serde_json::from_str(defaults_json).unwrap_or_else(|_| HashMap::new());
 
             settings_info
                 .iter()
-                .map(|(key, info)| (key.clone(), info.default_value))
+                .map(|(key, info)| (key.clone(), info.default_value.clone()))
                 .collect()
         }
 
@@ -77,7 +77,7 @@ impl Config {
             }
         };
 
-        // Check for new entries in cSettings.json and add them with default values
+        // check for new entries
         let defaults = load_defaults();
         for (key, default_value) in defaults {
             data.entry(key).or_insert(default_value);
@@ -86,12 +86,16 @@ impl Config {
         Config { data }
     }
 
-    pub fn get(&self, setting: &str) -> bool {
-        self.data.get(setting).copied().unwrap_or(false)
+    pub fn get<T: serde::de::DeserializeOwned>(&self, setting: &str) -> Option<T> {
+        self.data
+            .get(setting)
+            .and_then(|v| serde_json::from_value(v.clone()).ok())
     }
 
-    pub fn set(&mut self, setting: &str, value: bool) {
-        self.data.insert(setting.to_string(), value);
+    pub fn set<T: serde::Serialize>(&mut self, setting: &str, value: T) {
+        if let Ok(value) = serde_json::to_value(value) {
+            self.data.insert(setting.to_string(), value);
+        }
     }
 
     pub unsafe fn send_config(&self, webview_window: &ICoreWebView2) {
