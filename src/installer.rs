@@ -178,7 +178,7 @@ pub fn check_update() {
             ) {
                 ShellExecuteW(
                     None,
-                    w!("runas"),
+                    w!("open"),
                     PCWSTR(super::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
                     None,
                     None,
