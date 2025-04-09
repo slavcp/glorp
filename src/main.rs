@@ -38,7 +38,7 @@ fn main() {
         args.push(' ');
     }
 
-    if config.lock().unwrap().get("uncapFps") {
+    if config.lock().unwrap().get("uncapFps").unwrap() {
         args.push_str("--disable-frame-rate-limit")
     }
 
@@ -59,7 +59,7 @@ fn main() {
 
         #[cfg(not(debug_assertions))]
         {
-            if config.lock().unwrap().get("checkUpdates") {
+            if config.lock().unwrap().get("checkUpdates").unwrap() {
                 installer::check_update();
             }
         }
@@ -105,7 +105,7 @@ fn main() {
             eprintln!("Failed to set WebView2 settings: {}", e);
         }
 
-        if config.lock().unwrap().get("userscripts") {
+        if config.lock().unwrap().get("userscripts").unwrap() {
             if let Err(e) = userscripts::load(&webview_window) {
                 eprintln!("Failed to load userscripts: {}", e);
             }
@@ -139,10 +139,10 @@ fn main() {
         let mut blocklist: Vec<Regex> = Vec::new();
         let mut swaps: Vec<(Regex, IStream)> = Vec::new();
 
-        if config.lock().unwrap().get("blocklist") {
+        if config.lock().unwrap().get("blocklist").unwrap_or_default() {
             blocklist = blocklist::load(&webview_window)
         };
-        if config.lock().unwrap().get("swapper") {
+        if config.lock().unwrap().get("swapper").unwrap_or_default() {
             swaps = swapper::load(&webview_window)
         };
 
@@ -203,6 +203,25 @@ fn main() {
             "Chrome_RenderWidgetHostHWND",
         ));
         let config_clone = Arc::clone(&config);
+
+        webview_window
+            .CallDevToolsProtocolMethod(
+                w!("Emulation.setCPUThrottlingRate"),
+                PCWSTR(
+                    utils::create_utf_string(&format!(
+                        "{{\"rate\":{}}}",
+                        config_clone
+                            .lock()
+                            .unwrap()
+                            .get::<f32>("inMenuThrottle")
+                            .unwrap()
+                    ))
+                    .as_ptr(),
+                ),
+                None,
+            )
+            .ok();
+
         webview_window.add_WebMessageReceived(
             &WebMessageReceivedEventHandler::create(Box::new(
                 move |webview_window, args: Option<ICoreWebView2WebMessageReceivedEventArgs>| {
@@ -221,7 +240,13 @@ fn main() {
                             Some(&"setConfig") => {
                                 if parts.len() >= 3 {
                                     let setting = parts[1];
-                                    let value = parts[2].parse::<bool>().unwrap_or(false);
+                                    let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
+                                        serde_json::Value::Bool(bool_val)
+                                    } else if let Ok(float_val) = parts[2].parse::<f64>() {
+                                        serde_json::Value::Number(serde_json::Number::from_f64((float_val * 100.0).round() / 100.0).unwrap())
+                                    } else {
+                                        serde_json::Value::Bool(false) // fallback to false if parsing fails
+                                    };
                                     config_clone.lock().unwrap().set(setting, value);
                                 }
                             }
@@ -237,6 +262,22 @@ fn main() {
                                     WPARAM(value as usize),
                                     LPARAM(0),
                                 ).ok();
+
+                                if value {
+                                 webview_window.unwrap().CallDevToolsProtocolMethod(
+                                    w!("Emulation.setCPUThrottlingRate"),
+                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("throttle").unwrap())).as_ptr()),
+                                    None,
+                                ).ok();
+                            } else {
+                                 webview_window.unwrap().CallDevToolsProtocolMethod(
+                                    w!("Emulation.setCPUThrottlingRate"),
+                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap())).as_ptr()),
+
+                                    None,
+                                ).ok();
+                            }
+
                             }
                             Some(&"close") => {
                                 PostQuitMessage(0);

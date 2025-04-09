@@ -1,15 +1,19 @@
 import cSettings from "../cSettings.json";
 
-window.glorpClient.settings.changeSetting = (id, value) => {
+window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 
-switch (id) {
-    case "exitButton":
-        document.querySelector("#clientExit").style.display = `${value? "flex" : "none"}`;
-        break;
-    case "menuFpsCap":
-        window.setSetting("updateRate", value ? 500 : 0);
-        break;
+if (document.querySelector(`#input_${id}`) && fromSlider) {
+    document.querySelector(`#input_${id}`).value = value;   
+} else {
+    document.querySelector(`#${id}`).value = value;   
 }
+
+
+
+if (id == "exitButton") {
+        document.querySelector("#clientExit").style.display = `${value? "flex" : "none"}`;
+}
+
         const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)}`;
         if (typeof window.glorpClient.settings[toggleFunctionName] !== 'function') {
             try {
@@ -55,11 +59,14 @@ class SettingsManager {
             case "checkbox":
                 return `<label class='switch'>
                     <input id="${option.id}" type='checkbox'
-                           onclick='window.glorpClient.settings.changeSetting("${option.id}", this.checked)'
+                           onclick='window.glorpClient.settings.changeSetting("${option.id}", this.checked, false)'
                            ${value ? "checked" : ""}>
                     <span class='slider'></span>
                 </label>
                 ${option.button ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>` : ""}`;
+            case "slider": 
+                return `<input type="number" class="sliderVal" id="input_${option.id}" min="1" max="5" value="${value || 1}"step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)' style="margin-right:0px;border-width:0px">
+                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}" step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
             case "none":
                 return ""
         }
