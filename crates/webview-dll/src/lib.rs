@@ -150,7 +150,7 @@ unsafe extern "system" fn wnd_proc_1(
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_MOUSEMOVE | WM_LBUTTONDOWN => {
+            WM_MOUSEMOVE | WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     return CallWindowProcW(
                         PREV_WNDPROC_1,
@@ -176,10 +176,10 @@ unsafe extern "system" fn wnd_proc_1(
                 );
 
                 let raw_input = buffer.as_mut_ptr() as *mut RAWINPUT;
+
                 if (*raw_input).data.mouse.Anonymous.Anonymous.usButtonFlags != 0 {
                     return LRESULT(1);
                 }
-
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
             _ => CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam),
