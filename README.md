@@ -5,8 +5,10 @@ the other 56.86% will expect:
 
 - network issues
 - stuttering
-- audio glitches
+- crashes
   and anything inbetween 😀😀
+
+Consider trying the new CPU Throttler out in case of instabilities
 
 ## Features
 
@@ -19,6 +21,7 @@ the other 56.86% will expect:
 - [x] Custom script support
 - [x] Account Manager
 - [x] Lightweight autoupdater
+- [x] CPU Throttler
 
 ## Building
 
