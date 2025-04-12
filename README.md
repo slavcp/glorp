@@ -1,3 +1,5 @@
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/slavcp/glorp/total)
+
 glorp is a krunker client that uses dll injection in an attempt to fix the issues normal clients face, <br>
 
 glorp is the #1 client by a margin for about 43.14% of the playerbase!!
