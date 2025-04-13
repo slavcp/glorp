@@ -9,6 +9,8 @@ use windows::{
     core::*,
 };
 
+use crate::utils;
+
 pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
     let swap_dir = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper";
     std::fs::create_dir_all(&swap_dir).unwrap_or_default();
@@ -31,7 +33,7 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
                     format!("*://*.krunker.io/{}*", relative_path)
                 };
                 if let Err(e) = main_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
-                    PCWSTR(super::utils::create_utf_string(&url).as_ptr()),
+                    PCWSTR(utils::create_utf_string(&url).as_ptr()),
                     COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
                     COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
                 ) {

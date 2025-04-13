@@ -8,12 +8,9 @@ if (document.querySelector(`#input_${id}`) && fromSlider) {
     document.querySelector(`#${id}`).value = value;   
 }
 
-
-
 if (id == "exitButton") {
         document.querySelector("#clientExit").style.display = `${value? "flex" : "none"}`;
 }
-
         const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)}`;
         if (typeof window.glorpClient.settings[toggleFunctionName] !== 'function') {
             try {
@@ -24,8 +21,6 @@ if (id == "exitButton") {
         } else {
             window.glorpClient.settings[toggleFunctionName](value);
         }
-
-    
 
     window.glorpClient.settings.config[id] = value;
     window.chrome.webview.postMessage(`setConfig,${id},${value}`);
@@ -67,6 +62,10 @@ class SettingsManager {
             case "slider": 
                 return `<input type="number" class="sliderVal" id="input_${option.id}" min="1" max="5" value="${value || 1}"step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)' style="margin-right:0px;border-width:0px">
                 <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}" step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
+            case "select":
+                return `<select id="${option.id}" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)'>
+                    ${option.options.map((opt) => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`)}
+                    </select>`
             case "none":
                 return ""
         }
