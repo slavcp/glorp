@@ -4,6 +4,8 @@ use std::io::*;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
 
+use crate::constants;
+use crate::utils;
 pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
     let blocklist_path: String =
         std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
@@ -17,7 +19,7 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
 
     if blocklist_file.metadata().unwrap().len() == 0 {
         blocklist_file
-            .write_all(super::constants::DEFAULT_BLOCKLIST.as_bytes())
+            .write_all(constants::DEFAULT_BLOCKLIST.as_bytes())
             .unwrap();
     }
 
@@ -25,7 +27,7 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
 
     let blocklist = match serde_json::from_str::<Vec<String>>(&blocklist_string) {
         Ok(blocklist) => blocklist,
-        Err(_) => serde_json::from_str::<Vec<String>>(super::constants::DEFAULT_BLOCKLIST).unwrap(),
+        Err(_) => serde_json::from_str::<Vec<String>>(constants::DEFAULT_BLOCKLIST).unwrap(),
     };
 
     let mut blocklist_regex: Vec<Regex> = Vec::<Regex>::new();
@@ -33,7 +35,7 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
     for url in &blocklist {
         unsafe {
             if let Err(e) = webview_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
-                PCWSTR(super::utils::create_utf_string(url).as_ptr()),
+                PCWSTR(utils::create_utf_string(url).as_ptr()),
                 COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
                 COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
             ) {

@@ -6,20 +6,25 @@ use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
     Win32::{
         Foundation::*,
-        System::{Com::*, Diagnostics::Debug::*, WinRT::*},
+        System::{Com::*, WinRT::*},
         UI::WindowsAndMessaging::*,
     },
     core::*,
 };
-mod blocklist;
 mod config;
 mod constants;
 mod inject;
 mod installer;
-mod swapper;
-mod userscripts;
 mod utils;
 mod window;
+
+mod modules {
+    pub mod blocklist;
+    pub mod priority;
+    pub mod swapper;
+    pub mod userscripts;
+}
+
 // > memory safe langauge
 // > unsafe
 
@@ -45,12 +50,16 @@ fn main() {
     unsafe {
         let hwnd: HWND = window::create_window();
         let webview2_components = window::create_webview2(hwnd, args);
-        OutputDebugStringW(PCWSTR(
-            utils::create_utf_string(
-                format!("Webview2 HWND: {:?}", webview2_components.0).as_str(),
-            )
-            .as_ptr(),
-        ));
+
+        modules::priority::set(
+            config
+                .lock()
+                .unwrap()
+                .get::<String>("webviewPriority")
+                .unwrap()
+                .as_str(),
+        );
+
         inject::hook_webview2(&config);
         let controller = webview2_components.0;
         let env = webview2_components.1;
@@ -106,7 +115,7 @@ fn main() {
         }
 
         if config.lock().unwrap().get("userscripts").unwrap() {
-            if let Err(e) = userscripts::load(&webview_window) {
+            if let Err(e) = modules::userscripts::load(&webview_window) {
                 eprintln!("Failed to load userscripts: {}", e);
             }
         }
@@ -140,10 +149,10 @@ fn main() {
         let mut swaps: Vec<(Regex, IStream)> = Vec::new();
 
         if config.lock().unwrap().get("blocklist").unwrap_or_default() {
-            blocklist = blocklist::load(&webview_window)
+            blocklist = modules::blocklist::load(&webview_window)
         };
         if config.lock().unwrap().get("swapper").unwrap_or_default() {
-            swaps = swapper::load(&webview_window)
+            swaps = modules::swapper::load(&webview_window)
         };
 
         webview_window
@@ -245,7 +254,7 @@ fn main() {
                                     } else if let Ok(float_val) = parts[2].parse::<f64>() {
                                         serde_json::Value::Number(serde_json::Number::from_f64((float_val * 100.0).round() / 100.0).unwrap())
                                     } else {
-                                        serde_json::Value::Bool(false) // fallback to false if parsing fails
+                                        serde_json::Value::String(parts[2].to_string())
                                     };
                                     config_clone.lock().unwrap().set(setting, value);
                                 }

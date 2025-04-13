@@ -9,6 +9,8 @@ static IIFE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap()
 });
 
+use crate::utils;
+
 // TODO: make proper
 fn parse_metadata(content: &mut String) {
     if let Some(metadata_block) = USERSCRIPT_REGEX.find(content) {
@@ -55,7 +57,7 @@ pub fn load(webview: &ICoreWebView2) -> Result<()> {
 
             unsafe {
                 webview.AddScriptToExecuteOnDocumentCreated(
-                    PCWSTR(super::utils::create_utf_string(&parsed).as_ptr()),
+                    PCWSTR(utils::create_utf_string(&parsed).as_ptr()),
                     None,
                 )?
             }

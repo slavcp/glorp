@@ -127,6 +127,17 @@
     "button": false,
     "needsRestart": false
   },
+  "webviewPriority": {
+    "name": "Webview Priority",
+    "id": "webviewPriority",
+    "description": "Higher priority yields slightly better performance but might cause instabilities",
+    "type": "select",
+    "category": "Tweaks",
+    "defaultValue": "Normal",
+    "button": false,
+    "needsRestart": true,
+    "options": ["!! Realtime !!", "High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+  },
   "hardFlip": {
     "name": "Hook DXGI Swapchain Creation",
     "id": "hardFlip",

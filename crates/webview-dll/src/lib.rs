@@ -150,7 +150,8 @@ unsafe extern "system" fn wnd_proc_1(
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_MOUSEMOVE | WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
+            WM_MOUSEMOVE | WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN
+            | WM_RBUTTONDBLCLK => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     return CallWindowProcW(
                         PREV_WNDPROC_1,
