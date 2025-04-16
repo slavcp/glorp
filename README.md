@@ -42,4 +42,5 @@ Consider trying the new CPU Throttler out in case of instabilities
 ## Credits
 
 - [client-pp](https://github.com/6ct/clientpp)
-- [nsis-tauri-utils](https://github.com/tauri-apps/nsis-tauri-utils)
+- [nsis-tauri-utils](https://github.com/tauri-apps/nsis-tauri-utils) - using for installer
+- [crankshaft](https://github.com/KraXen72/crankshaft) - menu timer css

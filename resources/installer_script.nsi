@@ -24,8 +24,7 @@ RequestExecutionLevel user
 
     CreateShortCut "$SMPROGRAMS\${Name}.lnk" "$INSTDIR\${Name}.exe"
     CreateShortCut "$DESKTOP\${Name}.lnk" "$INSTDIR\${Name}.exe"
-    ExecWait  '"$INSTDIR\${Name}.exe"'
-
+    Exec '"$INSTDIR\${Name}.exe"'
 SectionEnd
 
 Section "Uninstall"
