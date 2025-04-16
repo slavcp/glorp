@@ -8,8 +8,9 @@
     "button": false,
     "needsRestart": true
   },
+
   "swapper": {
-    "name": "Resource swapper",
+    "name": "Resource Swapper",
     "id": "swapper",
     "description": false,
     "type": "checkbox",
@@ -19,8 +20,9 @@
     "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/swapper')",
     "needsRestart": true
   },
+
   "blocklist": {
-    "name": "URL blocklist",
+    "name": "URL Blocklist",
     "id": "blocklist",
     "description": "Blocks connection to the sites listed in the filter list, defaults offer a safe and efficient set.",
     "type": "checkbox",
@@ -30,6 +32,7 @@
     "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/blocklist.json')",
     "needsRestart": true
   },
+
   "userscripts": {
     "name": "Userscripts",
     "id": "userscripts",
@@ -41,8 +44,9 @@
     "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/scripts')",
     "needsRestart": true
   },
+
   "checkUpdates": {
-    "name": "Check for updates on launch",
+    "name": "Check For Updates",
     "id": "checkUpdates",
     "description": false,
     "type": "checkbox",
@@ -51,6 +55,7 @@
     "button": false,
     "needsRestart": false
   },
+
   "accountManager": {
     "name": "Account Manager",
     "id": "accountManager",
@@ -61,26 +66,7 @@
     "button": false,
     "needsRestart": false
   },
-  "hpEnemyCounter": {
-    "name": "Hardpoint Enemy counter",
-    "id": "hpEnemyCounter",
-    "description": "Shows the number of enemies present on the hardpoint during competitive matches",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "button": false,
-    "needsRestart": false
-  },
-  "hideBundles": {
-    "name": "Hide Bundle popups",
-    "id": "hideBundles",
-    "description": false,
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": false,
-    "button": false,
-    "needsRestart": false
-  },
+
   "exitButton": {
     "name": "Exit Button",
     "id": "exitButton",
@@ -91,6 +77,51 @@
     "button": false,
     "needsRestart": false
   },
+
+  "hpEnemyCounter": {
+    "name": "Hardpoint Enemy counter",
+    "id": "hpEnemyCounter",
+    "description": "Shows the number of enemies present on the hardpoint during competitive matches",
+    "type": "checkbox",
+    "category": "Game",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+
+  "hideBundles": {
+    "name": "Hide Bundle Popups",
+    "id": "hideBundles",
+    "description": false,
+    "type": "checkbox",
+    "category": "Game",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+
+  "showPing": {
+    "name": "Ping in Player List",
+    "id": "showPing",
+    "description": false,
+    "type": "checkbox",
+    "category": "Game",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+
+  "menuTimer": {
+    "name": "Timer in Menu",
+    "id": "menuTimer",
+    "description": false,
+    "type": "checkbox",
+    "category": "Game",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+
   "rawInput": {
     "name": "Raw Input (!)",
     "id": "rawInput",
@@ -101,6 +132,7 @@
     "button": false,
     "needsRestart": true
   },
+
   "throttle": {
     "name": "CPU Throttling",
     "id": "throttle",
@@ -114,6 +146,7 @@
     "button": false,
     "needsRestart": false
   },
+
   "inMenuThrottle": {
     "name": "CPU Throttling in Menu",
     "id": "inMenuThrottle",
@@ -127,6 +160,7 @@
     "button": false,
     "needsRestart": false
   },
+
   "webviewPriority": {
     "name": "Webview Priority",
     "id": "webviewPriority",
@@ -136,8 +170,17 @@
     "defaultValue": "Normal",
     "button": false,
     "needsRestart": true,
-    "options": ["!! Realtime !!", "High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+    "options": [
+      "!! Realtime !!",
+      "High",
+      "Above Normal",
+      "Normal",
+      "Low",
+      "Below Normal",
+      "Idle"
+    ]
   },
+
   "hardFlip": {
     "name": "Hook DXGI Swapchain Creation",
     "id": "hardFlip",

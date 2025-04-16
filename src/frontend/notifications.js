@@ -1,22 +1,22 @@
 class Notification {
-    constructor(message, reqUserInput, duration) {
-        this.message = message;
-        this.reqUserInput = reqUserInput;
-        this.duration = duration; // in seconds
-        this.notificationEl = null;
-        if (reqUserInput) {
-            return new Promise((resolve) => {
-                this.resolvePromise = resolve;
-                this.show();
-            });
-        }
+  constructor(message, reqUserInput, duration) {
+    this.message = message;
+    this.reqUserInput = reqUserInput;
+    this.duration = duration; // in seconds
+    this.notificationEl = null;
+    if (reqUserInput) {
+      return new Promise((resolve) => {
+        this.resolvePromise = resolve;
         this.show();
+      });
     }
+    this.show();
+  }
 
-    createNotificationElement() {
-        this.notificationEl = document.createElement('div');
-        this.notificationEl.id = "notification";
-        this.notificationEl.innerHTML = `
+  createNotificationElement() {
+    this.notificationEl = document.createElement("div");
+    this.notificationEl.id = "notification";
+    this.notificationEl.innerHTML = `
             <style>
                 #notification {
                     position: absolute;
@@ -82,76 +82,67 @@ class Notification {
             </style>
             <div id="notification-content">${this.message}</div>
             <div id="notification-timer">${this.duration}</div>
-            <div id="notification-actions" style="${this.type === 1 ? '' : 'display: none;'}">
+            <div id="notification-actions" style="${
+              this.type === 1 ? "" : "display: none;"
+            }">
                 <span id="y" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">Y</span>
                 <span id="n" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">N</span>
             </div>
         `;
-        document.body.appendChild(this.notificationEl);
-    }
+    document.body.appendChild(this.notificationEl);
+  }
 
-    startTimer() {
-        const countdown = setInterval(() => {
-            this.duration--;
-            this.notificationEl.querySelector('#notification-timer').textContent = this.duration;
-            if (this.duration <= 0) {
-                clearInterval(countdown);
-                setTimeout(() => {
-                    this.notificationEl.remove();
-                }, 2000);
-            }
-        }, 1000);
-    }
+  startTimer() {
+    const countdown = setInterval(() => {
+      this.duration--;
+      this.notificationEl.querySelector("#notification-timer").textContent =
+        this.duration;
+      if (this.duration <= 0) {
+        clearInterval(countdown);
+        setTimeout(() => this.notificationEl.remove(), 2000);
+      }
+    }, 1000);
+  }
 
-    show() {
-        this.createNotificationElement();
-        setTimeout(() => {
-            this.notificationEl.classList.add('slide-in');
-        }, 10);
-        this.startTimer();
+  show() {
+    this.createNotificationElement();
+    setTimeout(() => this.notificationEl.classList.add("slide-in"), 10);
+    this.startTimer();
 
-        if (this.reqUserInput) {
-            const handleKeyDown = (event) => {
-                if (event.key === 'y' || event.key === 'n') {
-                    const action = event.key === 'y';
+    if (this.reqUserInput) {
+      const handleKeyDown = (event) => {
+        if (event.key === "y" || event.key === "n") {
+          const action = event.key === "y";
 
-                    this.notificationEl.classList.add('slide-out');
-                    this.notificationEl.querySelector(`#${event.key}`).classList.add('bounce');
-                    document.removeEventListener('keydown', handleKeyDown);
+          this.notificationEl.classList.add("slide-out");
+          this.notificationEl
+            .querySelector(`#${event.key}`)
+            .classList.add("bounce");
+          document.removeEventListener("keydown", handleKeyDown);
 
-                    if (this.resolvePromise) {
-                        this.resolvePromise(action);
-                    }
+          if (this.resolvePromise) this.resolvePromise(action);
 
-                    setTimeout(() => {
-                        this.notificationEl.remove();
-                    }, 2000);
-                }
-            };
-            document.addEventListener('keydown', handleKeyDown);
-
-            // Auto-resolve with false if no response within duration
-            setTimeout(() => {
-                this.notificationEl.classList.add('slide-out');
-                document.removeEventListener('keydown', handleKeyDown);
-                if (this.resolvePromise) {
-                    this.resolvePromise(false);
-                }
-                setTimeout(() => {
-                    this.notificationEl.remove();
-                }, 2000);
-            }, this.duration * 1000);
-        } else {
-            setTimeout(() => {
-                this.notificationEl.classList.add('slide-out');
-                setTimeout(() => {
-                    this.notificationEl.remove();
-                }, 2000);
-            }, this.duration * 1000);
+          setTimeout(() => this.notificationEl.remove(), 2000);
         }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+
+      // auto-resolve with false if no response
+      setTimeout(() => {
+        this.notificationEl.classList.add("slide-out");
+        document.removeEventListener("keydown", handleKeyDown);
+        if (this.resolvePromise) this.resolvePromise(false);
+        setTimeout(() => this.notificationEl.remove(), 2000);
+      }, this.duration * 1000);
+    } else {
+      setTimeout(() => {
+        this.notificationEl.classList.add("slide-out");
+        setTimeout(() => this.notificationEl.remove(), 2000);
+      }, this.duration * 1000);
     }
+  }
 }
 
 window.glorpClient.showNotification = (message, type, seconds) => {
-    return new Notification(message, type, seconds);
-}
+  return new Notification(message, type, seconds);
+};
