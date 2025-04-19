@@ -1,0 +1,100 @@
+body {
+  user-select: none;
+  background: #000;
+  margin: 0;
+  font-family: "Geist", "Geist Mono", Arial, sans-serif;
+}
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+}
+.sniper-img {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 40vw;
+  max-width: 500px;
+  margin: auto;
+  z-index: 1;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+  min-width: 100vw;
+}
+.title {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+@media (min-width: 768px) {
+  .title {
+    font-size: 6rem;
+  }
+}
+.subtitle {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+.typewriter {
+  display: inline-block;
+  font-weight: bold;
+  min-width: 120px;
+}
+.download-btn {
+  border: 1px solid #fff;
+  padding: 1rem 2rem;
+  font-size: 1.5rem;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: background 0.2s, color 0.2s;
+  margin-top: 1rem;
+  text-decoration: none;
+  display: inline-block;
+  text-shadow: #000 0 2px;
+}
+.download-btn:hover:not(.disabled) {
+  background: #4ade80;
+  border-color: #4ade80;
+}
+.download-btn.disabled,
+.download-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.github-link {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid #fff;
+  margin-top: 2rem;
+  transition: background 0.2s, border 0.2s;
+}
+.github-link:hover {
+  background: #4ade80;
+  border-color: #4ade80;
+  text-shadow: #000 0 2px;
+}
+.typewriter-cursor {
+  display: inline-block;
+  transition: opacity 0.5s;
+}
+
+a[title="Loading..."] {
+  opacity: 0.5;
+}
