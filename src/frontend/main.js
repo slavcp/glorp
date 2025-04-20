@@ -90,9 +90,9 @@ document.addEventListener("pointerlockchange", () => {
 Object.defineProperty(window, "gameLoaded", {
   set(value) {
     if (value) {
-      if (localStorage.getItem("firstLaunch") === null) {
-        localStorage.setItem("kro_setngss_mouseAccel", false);
-        localStorage.setItem("kro_setngss_mouseFlick", false);
+      if (window.localStorage.getItem("firstLaunch") === null) {
+        window.localStorage.setItem("kro_setngss_mouseAccel", false);
+        window.localStorage.setItem("kro_setngss_mouseFlick", false);
         window.localStorage.setItem("firstLaunch", false);
         window.expertMode();
         window.windows[0].toggleType({ checked: true });

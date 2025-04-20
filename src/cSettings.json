@@ -53,7 +53,7 @@
     "category": "Main",
     "defaultValue": true,
     "button": false,
-    "needsRestart": false
+    "needsRestart": true
   },
 
   "accountManager": {
