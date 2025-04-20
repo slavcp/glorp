@@ -1,16 +1,13 @@
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/slavcp/glorp/total)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/slavcp/glorp/total)<br>
 
-glorp is a krunker client that uses dll injection in an attempt to fix the issues normal clients face, <br>
+Glorp uses unorthodox methods in attempt of fixing the issues modern chromium poses for a browser game
 
-glorp is the #1 client by a margin for about 43.14% of the playerbase!!
-the other 56.86% will expect:
+# Why is the client getting marked as a trojan?
 
-- network issues
-- stuttering
-- crashes
-  and anything inbetween 😀😀
+- **The installer is not signed:** digital signatures help verify software, but in the case of such a small open source project, paying for a license is not feasible, so antiviruses will mark it as malicious.
+- **DLL Injection:** Glorp utilizes DLL injection, a technique used for running code in the context of another application's space, something that is often used for malicious purposes. I assure you that the client only uses this for the user's convenience.
 
-Consider trying the new CPU Throttler out in case of instabilities
+I strongly urge you to **review the source code** if you have any doubts.
 
 ## Features
 
@@ -24,6 +21,12 @@ Consider trying the new CPU Throttler out in case of instabilities
 - [x] Account Manager
 - [x] Lightweight autoupdater
 - [x] CPU Throttler
+- [x] and more...
+
+## Potential issues
+
+If in a GPU bottleneck, the amount of frames displayed will drop severely, but the game render loop won't slow down this causes the client to be almost unusable. <br>
+consider using the CPU throttler in such scenario
 
 ## Building
 
