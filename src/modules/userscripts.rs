@@ -3,7 +3,7 @@ use regex::Regex;
 use std::io::Read;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
-static USERSCRIPT_REGEX: Lazy<Regex> =
+static METADATA_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
 static IIFE_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap()
@@ -11,9 +11,9 @@ static IIFE_REGEX: Lazy<Regex> = Lazy::new(|| {
 
 use crate::utils;
 
-// TODO: make proper
+// TODO: everything
 fn parse_metadata(content: &mut String) {
-    if let Some(metadata_block) = USERSCRIPT_REGEX.find(content) {
+    if let Some(metadata_block) = METADATA_REGEX.find(content) {
         let metadata = metadata_block.as_str();
 
         if metadata.contains("// @run-at document-end") {
@@ -26,12 +26,14 @@ fn parse_metadata(content: &mut String) {
 }
 
 fn parse(mut content: String) -> String {
-    if USERSCRIPT_REGEX.is_match(&content) {
+    if METADATA_REGEX.is_match(&content) {
         parse_metadata(&mut content);
     }
 
+
+    // wrap it in an IIFE if it's not already
     if IIFE_REGEX.is_match(content.as_str()) {
-        return content.clone();
+        return content;
     }
 
     format!("(function() {{\n{}\n}})();", content)
@@ -54,7 +56,7 @@ pub fn load(webview: &ICoreWebView2) -> Result<()> {
             file.read_to_string(&mut content)?;
 
             let parsed = parse(content);
-
+            
             unsafe {
                 webview.AddScriptToExecuteOnDocumentCreated(
                     PCWSTR(utils::create_utf_string(&parsed).as_ptr()),
