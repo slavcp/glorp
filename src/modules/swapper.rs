@@ -27,25 +27,23 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
                 .unwrap()
                 .replace("\\", "/");
             unsafe {
-                let url = if relative_path.contains("css/") {
-                    format!("*://krunker.io/{}*", relative_path)
-                } else {
+                let url = (
+                    format!("*://krunker.io/{}*", relative_path),
                     format!("*://*.krunker.io/{}*", relative_path)
-                };
-                if let Err(e) = main_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
-                    PCWSTR(utils::create_utf_string(&url).as_ptr()),
-                    COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-                    COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
-                ) {
-                    eprintln!("Failed to add web resource requested filter: {}", e);
+                );
+
+                for url_part in [&url.0, &url.1] {
+                    if let Err(e) = main_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
+                        PCWSTR(utils::create_utf_string(url_part).as_ptr()),
+                        COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+                        COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
+                    ) {
+                        eprintln!("Failed to add web resource requested filter: {}", e);
+                    }
                 }
             }
             unsafe {
-                let regex = if relative_path.contains("css/") {
-                    format!("^.*://krunker.io/{}.*$", relative_path)
-                } else {
-                    format!("^.*://.*.krunker.io/{}.*$", relative_path)
-                };
+                let regex = format!(r#"^.*://(?:[^/]+\.)*krunker.io/{}.*$"#, relative_path);
                 let regex = Regex::new(&regex).unwrap();
                 let file_content =
                     std::fs::read(entry.path().display().to_string().replace("\\", "/")).unwrap();
