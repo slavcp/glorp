@@ -23,7 +23,15 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
         document.querySelector("#menuTimerCSS")?.remove();
       }
       break;
+      case "Glorp_Watermark": {
+        const versionElement = document.querySelectorAll("#Glorp_Watermark");
+        versionElement.forEach(div => {
+          div.style.display = value ? "block" : "none";
+        });
+        break;
+      }                    
   }
+  
 
   const toggleFunctionName = `toggle${
     id.charAt(0).toUpperCase() + id.slice(1)

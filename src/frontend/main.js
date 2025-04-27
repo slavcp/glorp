@@ -116,6 +116,46 @@ Object.defineProperty(window, "gameLoaded", {
       });
 
       import("./settings.js").then(() => {
+        let inserted = {
+          map: false,
+          match: false
+        };
+      
+        const observer = new MutationObserver(() => {
+          const mapInfoHld = document.getElementById("mapInfoHld");
+          const matchInfo = document.getElementById("matchInfo");
+      
+          if (mapInfoHld && !document.querySelector("#Glorp_Watermark[data-where='map']") && !inserted.map) {
+            const versionElement = document.createElement("div");
+            versionElement.id = "Glorp_Watermark";
+            versionElement.dataset.where = "map";
+            versionElement.style.color = "#ffffff";
+            versionElement.style.marginTop = "5px";
+            versionElement.textContent = `Glorp: ${window.glorpClient?.version || "Unknown"}`;
+            versionElement.style.display = window.glorpClient.settings.config.Glorp_Watermark ? "block" : "none";
+            mapInfoHld.appendChild(versionElement);
+            inserted.map = true;
+          }
+      
+          if (matchInfo && matchInfo.offsetParent !== null && !document.querySelector("#Glorp_Watermark[data-where='match']") && !inserted.match) {
+            const versionElement = document.createElement("div");
+            versionElement.id = "Glorp_Watermark";
+            versionElement.dataset.where = "match";
+            versionElement.style.marginTop = "5px";
+            versionElement.style.color = "#ffffff";
+            versionElement.textContent = `Glorp: ${window.glorpClient?.version || "Unknown"}`;
+            versionElement.style.display = window.glorpClient.settings.config.Glorp_Watermark ? "block" : "none";
+            matchInfo.appendChild(versionElement);
+            inserted.match = true;
+          }
+      
+          if (inserted.map && inserted.match) {
+            observer.disconnect();
+          }
+        });
+      
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+
         if (window.glorpClient.settings.config.hpEnemyCounter)
           import("./modules/hpEnemyCounter.js");
         if (window.glorpClient.settings.config.accountManager)

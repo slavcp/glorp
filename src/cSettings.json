@@ -78,6 +78,17 @@
     "needsRestart": false
   },
 
+  "Glorp_Watermark": {
+    "name": "Client Watermark",
+    "id": "Glorp_Watermark",
+    "description": "Show the client watermark",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+
   "hpEnemyCounter": {
     "name": "Hardpoint Enemy counter",
     "id": "hpEnemyCounter",
