@@ -17,6 +17,7 @@ mod inject;
 mod installer;
 mod utils;
 mod window;
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/version.rs"));
 
 mod modules {
     pub mod blocklist;
@@ -129,6 +130,23 @@ fn main() {
             .ok();
 
         webview_window.Navigate(w!("https://krunker.io")).ok();
+
+        // set the version in the webview
+        webview_window.add_NavigationCompleted(
+            &NavigationCompletedEventHandler::create(Box::new(
+                move |webview: Option<ICoreWebView2>, _args| {
+                    webview.unwrap().ExecuteScript(
+                        &HSTRING::from(format!(
+                            "window.glorpClient = window.glorpClient || {{}}; window.glorpClient.version = '{}';",
+                            VERSION
+                        )),
+                        None,
+                    ).ok();
+                    Ok(())
+                },
+            )),
+            token,
+        ).unwrap();
 
         // auto accept permission requests
         webview_window
