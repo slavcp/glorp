@@ -42,7 +42,7 @@ fn main() {
     utils::kill_glorps(); //NOOOOO
 
     
-    let mut client = DiscordIpcClient::new("1366444226501673061").unwrap();
+    let mut client = DiscordIpcClient::new("ApplicationID").unwrap();
     if client.connect().is_ok() {
         *DISCORD_CLIENT.lock().unwrap() = Some(client);
         println!("rpc connected");
