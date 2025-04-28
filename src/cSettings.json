@@ -78,6 +78,17 @@
     "needsRestart": false
   },
 
+  "rich_presence": {
+    "name": "Discord Rich Presence",
+    "id": "rich_presence",
+    "description": "Manage Discord Rich Presence",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": false
+  },
+
   "hpEnemyCounter": {
     "name": "Hardpoint Enemy counter",
     "id": "hpEnemyCounter",

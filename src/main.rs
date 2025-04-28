@@ -17,12 +17,20 @@ mod inject;
 mod installer;
 mod utils;
 mod window;
+use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
+use lazy_static::lazy_static;
+use serde_json;
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/version.rs"));
 
 mod modules {
     pub mod blocklist;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
+}
+
+lazy_static! {
+    static ref DISCORD_CLIENT: Arc<Mutex<Option<DiscordIpcClient>>> = Arc::new(Mutex::new(None));
 }
 
 // > memory safe langauge
@@ -33,6 +41,15 @@ use std::sync::{Arc, Mutex};
 fn main() {
     utils::kill_glorps(); //NOOOOO
 
+    
+    let mut client = DiscordIpcClient::new("1366444226501673061").unwrap();
+    if client.connect().is_ok() {
+        *DISCORD_CLIENT.lock().unwrap() = Some(client);
+        println!("rpc connected");
+    } else {
+        eprintln!("rpc not connected");
+    }
+        
     let config = Arc::new(Mutex::new(config::Config::load()));
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
@@ -296,6 +313,75 @@ fn main() {
                                     .args(["/C", "start", "", parts[1]])
                                     .spawn()
                                     .ok();
+                            }
+                            Some(&"rpc-update") => {
+                                if let Some(arg) = parts.get(1..) {
+                                    let arg_combined = arg.join(","); // O-O
+                            
+                                    if arg_combined == "true" || arg_combined == "false" {
+                                        let enable = arg_combined.parse::<bool>().unwrap_or(true);
+                            
+                                        if enable {
+                                            if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
+                                                let activity = activity::Activity::new()
+                                                    .state("Playing Krunker")
+                                                    .assets(activity::Assets::new()
+                                                        .large_image("glorp")
+                                                        .large_text("O-O"))
+                                                    .buttons(vec![
+                                                        activity::Button::new("GitHub", "https://github.com/slavcp/glorp"),
+                                                    ]);
+
+                                                if let Err(e) = client.set_activity(activity) {
+                                                    eprintln!("Failed to set rpc activity: {}", e);
+                                                }
+                                            }
+                                        } else {
+                                            if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
+                                                if let Err(e) = client.clear_activity() {
+                                                    eprintln!("Failed to clear rpc activity: {}", e);
+                                                } else {
+                                                    println!("RPC deactivated");
+                                                }
+                                            }
+                                        }
+                                    } /*else {
+                                        
+                                        // advanced rpc update logic for more rpc settings
+                                        
+                                        match serde_json::from_str::<serde_json::Value>(&arg_combined) {
+                                            Ok(payload) => {
+                                                if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
+                                                    let mut act = activity::Activity::new();
+                            
+                                                    if let Some(state) = payload.get("state").and_then(|v| v.as_str()) {
+                                                        act = act.state(state);
+                                                    }
+                                                    if let Some(details) = payload.get("details").and_then(|v| v.as_str()) {
+                                                        act = act.details(details);
+                                                    }
+                                                    if let Some(large_image) = payload.get("largeImage").and_then(|v| v.as_str()) {
+                                                        let mut assets = activity::Assets::new().large_image(large_image);
+                                                        if let Some(large_text) = payload.get("largeText").and_then(|v| v.as_str()) {
+                                                            assets = assets.large_text(large_text);
+                                                        }
+                                                        act = act.assets(assets);
+                                                    }
+
+                                                    // more fields can be added here
+                                                    // such as small_image, small_text, etc.
+                            
+                                                    if let Err(e) = client.set_activity(act) {
+                                                        eprintln!("Failed to update rpc: {}", e);
+                                                    }
+                                                }
+                                            }
+                                            Err(e) => {
+                                                eprintln!("Invalid rpc update payload: {}", e);
+                                            }
+                                        }
+                                    }*/
+                                }
                             }
                             _ => {}
                         }
