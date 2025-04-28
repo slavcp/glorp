@@ -19,6 +19,10 @@ window.glorpClient = {
       );
       window.chrome.webview.postMessage("getConfig");
     });
+
+    // check (start) if rpc is enabled
+    const richPresenceEnabled = window.glorpClient.settings.config.rich_presence;
+    window.chrome.webview.postMessage(`rpc-update,${richPresenceEnabled}`);
   } catch (e) {
     console.error("Failed to get config:", e);
   }
