@@ -1,6 +1,4 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-use regex::Regex;
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
@@ -11,16 +9,17 @@ use windows::{
     },
     core::*,
 };
+use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
+use regex::Regex;
+use serde_json;
+use std::sync::{Arc, Mutex};
+
 mod config;
 mod constants;
 mod inject;
 mod installer;
 mod utils;
 mod window;
-use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use lazy_static::lazy_static;
-use serde_json;
-include!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/version.rs"));
 
 mod modules {
     pub mod blocklist;
@@ -28,28 +27,15 @@ mod modules {
     pub mod swapper;
     pub mod userscripts;
 }
+use once_cell::sync::Lazy;
 
-lazy_static! {
-    static ref DISCORD_CLIENT: Arc<Mutex<Option<DiscordIpcClient>>> = Arc::new(Mutex::new(None));
-}
-
+static DISCORD_CLIENT: Lazy<Mutex<Option<DiscordIpcClient>>> = Lazy::new(|| Mutex::new(None));
 // > memory safe langauge
 // > unsafe
-
-use std::sync::{Arc, Mutex};
 
 fn main() {
     utils::kill_glorps(); //NOOOOO
 
-    
-    let mut client = DiscordIpcClient::new("ApplicationID").unwrap();
-    if client.connect().is_ok() {
-        *DISCORD_CLIENT.lock().unwrap() = Some(client);
-        println!("rpc connected");
-    } else {
-        eprintln!("rpc not connected");
-    }
-        
     let config = Arc::new(Mutex::new(config::Config::load()));
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
@@ -62,6 +48,23 @@ fn main() {
 
     if config.lock().unwrap().get("uncapFps").unwrap() {
         args.push_str("--disable-frame-rate-limit")
+    }
+
+    if config.lock().unwrap().get("discordRPC").unwrap() {
+        let mut client_opt = DISCORD_CLIENT.lock().unwrap();
+            match DiscordIpcClient::new(constants::DISCORD_CLIENT_ID) {
+                Ok(mut client) => {
+                    if client.connect().is_ok() {
+                        *client_opt = Some(client);
+                    } else {
+                        eprintln!("Failed to connect Discord IPC");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to create Discord IPC client: {}", e);
+                }
+            }
+        
     }
 
     unsafe {
@@ -314,73 +317,22 @@ fn main() {
                                     .spawn()
                                     .ok();
                             }
-                            Some(&"rpc-update") => {
-                                if let Some(arg) = parts.get(1..) {
-                                    let arg_combined = arg.join(","); // O-O
-                            
-                                    if arg_combined == "true" || arg_combined == "false" {
-                                        let enable = arg_combined.parse::<bool>().unwrap_or(true);
-                            
-                                        if enable {
-                                            if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
-                                                let activity = activity::Activity::new()
-                                                    .state("Playing Krunker")
-                                                    .assets(activity::Assets::new()
-                                                        .large_image("glorp")
-                                                        .large_text("O-O"))
-                                                    .buttons(vec![
-                                                        activity::Button::new("GitHub", "https://github.com/slavcp/glorp"),
-                                                    ]);
+                            Some(&"rpcUpdate") => {
+                                if parts.len() >= 3 {
+                                    let details = "Krunker";
+                                    let state = format!("{} on {}", parts[1], parts[2]);
+                                    if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
+                                        let activity = activity::Activity::new()
+                                            .details(details)
+                                            .state(&state)
+                                            .assets(activity::Assets::new());
 
-                                                if let Err(e) = client.set_activity(activity) {
-                                                    eprintln!("Failed to set rpc activity: {}", e);
-                                                }
-                                            }
-                                        } else {
-                                            if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
-                                                if let Err(e) = client.clear_activity() {
-                                                    eprintln!("Failed to clear rpc activity: {}", e);
-                                                } else {
-                                                    println!("RPC deactivated");
-                                                }
-                                            }
+                                        if let Err(e) = client.set_activity(activity) {
+                                            eprintln!("Failed to set rpc activity: {}", e);
                                         }
-                                    } /*else {
-                                        
-                                        // advanced rpc update logic for more rpc settings
-                                        
-                                        match serde_json::from_str::<serde_json::Value>(&arg_combined) {
-                                            Ok(payload) => {
-                                                if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
-                                                    let mut act = activity::Activity::new();
-                            
-                                                    if let Some(state) = payload.get("state").and_then(|v| v.as_str()) {
-                                                        act = act.state(state);
-                                                    }
-                                                    if let Some(details) = payload.get("details").and_then(|v| v.as_str()) {
-                                                        act = act.details(details);
-                                                    }
-                                                    if let Some(large_image) = payload.get("largeImage").and_then(|v| v.as_str()) {
-                                                        let mut assets = activity::Assets::new().large_image(large_image);
-                                                        if let Some(large_text) = payload.get("largeText").and_then(|v| v.as_str()) {
-                                                            assets = assets.large_text(large_text);
-                                                        }
-                                                        act = act.assets(assets);
-                                                    }
-
-                                                    // more fields can be added here
-                                                    // such as small_image, small_text, etc.
-                            
-                                                    if let Err(e) = client.set_activity(act) {
-                                                        eprintln!("Failed to update rpc: {}", e);
-                                                    }
-                                                }
-                                            }
-                                            Err(e) => {
-                                                eprintln!("Invalid rpc update payload: {}", e);
-                                            }
-                                        }
-                                    }*/
+                                    }
+                                } else {
+                                    eprintln!("Invalid rpcUpdate message format: {}", message_string);
                                 }
                             }
                             _ => {}

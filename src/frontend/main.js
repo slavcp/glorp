@@ -19,10 +19,6 @@ window.glorpClient = {
       );
       window.chrome.webview.postMessage("getConfig");
     });
-
-    // check (start) if rpc is enabled
-    const richPresenceEnabled = window.glorpClient.settings.config.rich_presence;
-    window.chrome.webview.postMessage(`rpc-update,${richPresenceEnabled}`);
   } catch (e) {
     console.error("Failed to get config:", e);
   }
@@ -126,6 +122,19 @@ Object.defineProperty(window, "gameLoaded", {
           import("./modules/accountManager.js");
         if (window.glorpClient.settings.config.showPing)
           import("./modules/showPing.js");
+
+        if (window.glorpClient.settings.config.discordRPC) {
+          window.chrome.webview.addEventListener("message", (event) => {
+            if (event.data != "game-updated") return;
+            setTimeout(() => {
+              const gameStatus = window.getGameActivity();
+              window.window.chrome.webview.postMessage(
+                `rpcUpdate,${gameStatus.mode},${gameStatus.map}`
+              );
+            }, 2000);
+          });
+        }
+
         if (window.glorpClient.settings.config.menuTimer)
           import("./components/menuTimer.css").then((css) => {
             let menuTimerCSS = document.createElement("style");
