@@ -23,10 +23,6 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
         document.querySelector("#menuTimerCSS")?.remove();
       }
       break;
-    case "rpcUpdate": {
-      window.chrome.webview.postMessage("rpcUpdate");
-      break;
-    }
   }
 
   const toggleFunctionName = `toggle${
