@@ -56,6 +56,17 @@
     "needsRestart": true
   },
 
+  "discordRPC": {
+    "name": "Discord Rich Presence",
+    "id": "discordRPC",
+    "description": false,
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": true,
+    "button": false,
+    "needsRestart": true
+  },
+
   "accountManager": {
     "name": "Account Manager",
     "id": "accountManager",
@@ -74,17 +85,6 @@
     "type": "checkbox",
     "category": "Main",
     "defaultValue": false,
-    "button": false,
-    "needsRestart": false
-  },
-
-  "rich_presence": {
-    "name": "Discord Rich Presence",
-    "id": "rich_presence",
-    "description": "Manage Discord Rich Presence",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
     "button": false,
     "needsRestart": false
   },
