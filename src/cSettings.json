@@ -133,6 +133,17 @@
     "needsRestart": false
   },
 
+  "autoSpec": {
+    "name": "Auto Spectate",
+    "id": "autoSpec",
+    "description": false,
+    "type": "checkbox",
+    "category": "Game",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+
   "rawInput": {
     "name": "Raw Input (!)",
     "id": "rawInput",

@@ -123,6 +123,17 @@ Object.defineProperty(window, "gameLoaded", {
         if (window.glorpClient.settings.config.showPing)
           import("./modules/showPing.js");
 
+        if (window.glorpClient.settings.config.autoSpec) {
+          const trySetSpect = () => {
+            const activity = window.getGameActivity();
+            if (activity.map === null) {
+              setTimeout(trySetSpect, 100);
+              return;
+            }
+            if (!activity.custom) window.setSpect(true);
+          };
+          trySetSpect();
+        }
         if (window.glorpClient.settings.config.discordRPC) {
           window.chrome.webview.addEventListener("message", (event) => {
             if (event.data != "game-updated") return;
@@ -136,14 +147,12 @@ Object.defineProperty(window, "gameLoaded", {
         }
 
         if (window.glorpClient.settings.config.menuTimer)
-          import("./components/menuTimer.css").then((css) => {
+          ~import("./components/menuTimer.css").then((css) => {
             let menuTimerCSS = document.createElement("style");
             menuTimerCSS.id = "menuTimerCSS";
             menuTimerCSS.innerHTML = css.default;
             document.body.appendChild(menuTimerCSS);
           });
-        // if (window.glorpClient.settings.config.autoSpectate)
-        //   import("./modules/autoSpectate.js");
       });
     }
   },
