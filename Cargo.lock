@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "glorp"
-version = "0.3.2"
+version = "0.3.5"
 dependencies = [
  "discord-rich-presence",
  "embed-resource",
