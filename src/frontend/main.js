@@ -147,7 +147,7 @@ Object.defineProperty(window, "gameLoaded", {
         }
 
         if (window.glorpClient.settings.config.menuTimer)
-          ~import("./components/menuTimer.css").then((css) => {
+          import("./components/menuTimer.css").then((css) => {
             let menuTimerCSS = document.createElement("style");
             menuTimerCSS.id = "menuTimerCSS";
             menuTimerCSS.innerHTML = css.default;
