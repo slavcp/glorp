@@ -64,50 +64,51 @@ pub fn create_window(start_mode: &str) -> HWND {
         let screen_width = GetSystemMetrics(SM_CXSCREEN);
         let screen_height = GetSystemMetrics(SM_CYSCREEN);
 
+        let normal_width = (screen_width as f32 * 0.85) as i32;
+        let normal_height = (screen_height as f32 * 0.85) as i32;
+        let normal_x = (screen_width - normal_width) / 2;
+        let normal_y = (screen_height - normal_height) / 2;
+
+        let default_last_position = RECT {
+            left: normal_x,
+            top: normal_y,
+            right: normal_x + normal_width,
+            bottom: normal_y + normal_height,
+        };
+
         let window_style;
         let window_ex_style = WINDOW_EX_STYLE::default();
-        let mut x = CW_USEDEFAULT;
-        let mut y = CW_USEDEFAULT;
-        let mut width = (screen_width as f32 * 0.85) as i32;
-        let mut height = (screen_height as f32 * 0.85) as i32;
-        let mut initial_fullscreen_state = false;
+        let mut x = normal_x;
+        let mut y = normal_y;
+        let mut width = normal_width;
+        let mut height = normal_height;
+        let mut fullscreen_state = false;
 
         match start_mode {
             "Borderless Fullscreen" => {
-                window_style = WS_POPUP | WS_VISIBLE;
+                window_style = WS_VISIBLE;
                 x = 0;
                 y = 0;
                 width = screen_width;
                 height = screen_height;
-                initial_fullscreen_state = true;
+                fullscreen_state = true;
             }
             "Maximized" => {
                 window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MAXIMIZE;
-            }
-            "Normal" => {
-                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-                x = (screen_width - width) / 2;
-                y = (screen_height - height) / 2;
-            }
-            _ => { 
-                window_style = WS_POPUP | WS_VISIBLE;
                 x = 0;
                 y = 0;
                 width = screen_width;
                 height = screen_height;
-                initial_fullscreen_state = true;
+            }
+            "Normal" | _ => {
+                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
             }
         }
 
         if let Ok(mut window_props) = WINDOW_STATE.lock() {
             *window_props = WindowState {
-                fullscreen: initial_fullscreen_state,
-                last_position: RECT {
-                    left: x,
-                    top: y,
-                    right: x + width,
-                    bottom: y + height,
-                },
+                fullscreen: fullscreen_state,
+                last_position: default_last_position,
             };
         }
 
@@ -126,8 +127,9 @@ pub fn create_window(start_mode: &str) -> HWND {
             None,
         )
         .unwrap();
-        // SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _); // This line is likely redundant or incorrect now
-
+    if start_mode == "Borderless Fullscreen" {
+    SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
+    }
         hwnd
     }
 }
@@ -180,12 +182,11 @@ pub fn create_webview2(
                             .ok_or_else(|| windows::core::Error::from(E_POINTER))
                             .unwrap();
 
-                        // Set initial bounds
+                        // initial bounds
                         let mut rect = RECT::default();
                         GetClientRect(hwnd, &mut rect).ok();
                         controller.SetBounds(rect).ok();
 
-                        // Store controller for later use (e.g., resizing)
                         CONTROLLER.store(controller.clone().into_raw() as *mut _, Ordering::Relaxed);
                         WEBVIEW.store(controller.CoreWebView2().unwrap().into_raw() as *mut _, Ordering::Relaxed);
 
