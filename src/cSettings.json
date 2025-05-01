@@ -1,18 +1,26 @@
 {
+  "startMode": {
+    "name": "Start Mode",
+    "id": "startMode",
+    "type": "select",
+    "category": "Main",
+    "defaultValue": "Borderless Fullscreen",
+    "needsRestart": true,
+    "options": ["Borderless Fullscreen", "Normal", "Maximized"]
+  },
+
   "uncapFps": {
     "name": "Uncap FPS",
     "id": "uncapFps",
     "type": "checkbox",
     "category": "Main",
     "defaultValue": true,
-    "button": false,
     "needsRestart": true
   },
 
   "swapper": {
     "name": "Resource Swapper",
     "id": "swapper",
-    "description": false,
     "type": "checkbox",
     "category": "Main",
     "defaultValue": true,
@@ -48,44 +56,36 @@
   "checkUpdates": {
     "name": "Check For Updates",
     "id": "checkUpdates",
-    "description": false,
     "type": "checkbox",
     "category": "Main",
     "defaultValue": true,
-    "button": false,
     "needsRestart": true
   },
 
   "discordRPC": {
     "name": "Discord Rich Presence",
     "id": "discordRPC",
-    "description": false,
     "type": "checkbox",
     "category": "Main",
     "defaultValue": true,
-    "button": false,
     "needsRestart": true
   },
 
   "accountManager": {
     "name": "Account Manager",
     "id": "accountManager",
-    "description": false,
     "type": "checkbox",
     "category": "Main",
     "defaultValue": true,
-    "button": false,
     "needsRestart": false
   },
 
   "exitButton": {
     "name": "Exit Button",
     "id": "exitButton",
-    "description": false,
     "type": "checkbox",
     "category": "Main",
     "defaultValue": false,
-    "button": false,
     "needsRestart": false
   },
 
@@ -96,51 +96,42 @@
     "type": "checkbox",
     "category": "Game",
     "defaultValue": true,
-    "button": false,
     "needsRestart": false
   },
 
   "hideBundles": {
     "name": "Hide Bundle Popups",
     "id": "hideBundles",
-    "description": false,
     "type": "checkbox",
     "category": "Game",
     "defaultValue": false,
-    "button": false,
     "needsRestart": false
   },
 
   "showPing": {
-    "name": "Ping in Player List",
+    "name": "Player List Ping",
     "id": "showPing",
-    "description": false,
     "type": "checkbox",
     "category": "Game",
     "defaultValue": true,
-    "button": false,
     "needsRestart": false
   },
 
   "menuTimer": {
-    "name": "Timer in Menu",
+    "name": "Menu Timer",
     "id": "menuTimer",
-    "description": false,
     "type": "checkbox",
     "category": "Game",
     "defaultValue": false,
-    "button": false,
     "needsRestart": false
   },
 
   "autoSpec": {
     "name": "Auto Spectate",
     "id": "autoSpec",
-    "description": false,
     "type": "checkbox",
     "category": "Game",
     "defaultValue": false,
-    "button": false,
     "needsRestart": false
   },
 
@@ -151,7 +142,6 @@
     "type": "checkbox",
     "category": "Tweaks",
     "defaultValue": true,
-    "button": false,
     "needsRestart": true
   },
 
@@ -165,7 +155,6 @@
     "step": 0.01,
     "category": "Tweaks",
     "defaultValue": 1,
-    "button": false,
     "needsRestart": false
   },
 
@@ -179,7 +168,6 @@
     "step": 0.01,
     "category": "Tweaks",
     "defaultValue": 1.5,
-    "button": false,
     "needsRestart": false
   },
 
@@ -190,7 +178,6 @@
     "type": "select",
     "category": "Tweaks",
     "defaultValue": "Normal",
-    "button": false,
     "needsRestart": true,
     "options": [
       "!! Realtime !!",
@@ -210,7 +197,6 @@
     "type": "checkbox",
     "category": "Tweaks",
     "defaultValue": true,
-    "button": false,
     "needsRestart": true
   }
 }

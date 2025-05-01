@@ -27,15 +27,14 @@ mod modules {
     pub mod swapper;
     pub mod userscripts;
 }
-use once_cell::sync::Lazy;
 
-static DISCORD_CLIENT: Lazy<Mutex<Option<DiscordIpcClient>>> = Lazy::new(|| Mutex::new(None));
 // > memory safe langauge
 // > unsafe
 
 fn main() {
     utils::kill_glorps(); //NOOOOO
 
+    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     let config = Arc::new(Mutex::new(config::Config::load()));
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
@@ -46,16 +45,15 @@ fn main() {
         args.push(' ');
     }
 
-    if config.lock().unwrap().get("uncapFps").unwrap() {
+    if config.lock().unwrap().get("uncapFps").unwrap_or(true) {
         args.push_str("--disable-frame-rate-limit")
     }
 
-    if config.lock().unwrap().get("discordRPC").unwrap() {
-        let mut client_opt = DISCORD_CLIENT.lock().unwrap();
+    if config.lock().unwrap().get("discordRPC").unwrap_or(false) {
             match DiscordIpcClient::new(constants::DISCORD_CLIENT_ID) {
                 Ok(mut client) => {
                     if client.connect().is_ok() {
-                        *client_opt = Some(client);
+                        *discord_client.lock().unwrap() = Some(client);
                     } else {
                         eprintln!("Failed to connect Discord IPC");
                     }
@@ -68,7 +66,7 @@ fn main() {
     }
 
     unsafe {
-        let hwnd: HWND = window::create_window();
+        let hwnd: HWND = window::create_window(config.lock().unwrap().get::<String>("startMode").unwrap_or_else(|| String::from("Borderless Fullscreen")).as_str());
         let webview2_components = window::create_webview2(hwnd, args);
 
         modules::priority::set(
@@ -76,11 +74,11 @@ fn main() {
                 .lock()
                 .unwrap()
                 .get::<String>("webviewPriority")
-                .unwrap()
+                .unwrap_or(String::from("Normal"))
                 .as_str(),
         );
 
-        inject::hook_webview2(&config);
+        inject::hook_webview2(config.lock().unwrap().get("hardFlip").unwrap_or(false));
         let controller = webview2_components.0;
         let env = webview2_components.1;
 
@@ -88,17 +86,13 @@ fn main() {
 
         #[cfg(not(debug_assertions))]
         {
-            if config.lock().unwrap().get("checkUpdates").unwrap() {
+            if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
                 installer::check_update();
             }
         }
 
-        let mut rect: RECT = RECT::default();
         let controller = controller.cast::<ICoreWebView2Controller4>().unwrap();
         let webview_window = webview_window.cast::<ICoreWebView2_22>().unwrap();
-
-        GetWindowRect(hwnd, &mut rect).ok();
-        controller.SetBounds(rect).ok();
 
         controller.SetAllowExternalDrop(false).unwrap();
         controller
@@ -125,7 +119,6 @@ fn main() {
             webview2_settings.SetAreBrowserAcceleratorKeysEnabled(false)?;
             webview2_settings.SetAreDefaultContextMenusEnabled(false)?;
             webview2_settings.SetIsZoomControlEnabled(false)?;
-            webview2_settings.SetIsBuiltInErrorPageEnabled(false)?;
             webview2_settings.SetUserAgent(w!("Electron"))?;
             Ok(())
         })();
@@ -134,7 +127,7 @@ fn main() {
             eprintln!("Failed to set WebView2 settings: {}", e);
         }
 
-        if config.lock().unwrap().get("userscripts").unwrap() {
+        if config.lock().unwrap().get("userscripts").unwrap_or(false) {
             if let Err(e) = modules::userscripts::load(&webview_window) {
                 eprintln!("Failed to load userscripts: {}", e);
             }
@@ -168,10 +161,10 @@ fn main() {
         let mut blocklist: Vec<Regex> = Vec::new();
         let mut swaps: Vec<(Regex, IStream)> = Vec::new();
 
-        if config.lock().unwrap().get("blocklist").unwrap_or_default() {
+        if config.lock().unwrap().get("blocklist").unwrap_or(true) {
             blocklist = modules::blocklist::load(&webview_window)
         };
-        if config.lock().unwrap().get("swapper").unwrap_or_default() {
+        if config.lock().unwrap().get("swapper").unwrap_or(true) {
             swaps = modules::swapper::load(&webview_window)
         };
 
@@ -243,7 +236,7 @@ fn main() {
                             .lock()
                             .unwrap()
                             .get::<f32>("inMenuThrottle")
-                            .unwrap()
+                            .unwrap_or(2.0)
                     ))
                     .as_ptr(),
                 ),
@@ -295,13 +288,13 @@ fn main() {
                                 if value {
                                  webview_window.unwrap().CallDevToolsProtocolMethod(
                                     w!("Emulation.setCPUThrottlingRate"),
-                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("throttle").unwrap())).as_ptr()),
+                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0))).as_ptr()),
                                     None,
                                 ).ok();
                             } else {
                                  webview_window.unwrap().CallDevToolsProtocolMethod(
                                     w!("Emulation.setCPUThrottlingRate"),
-                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap())).as_ptr()),
+                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0))).as_ptr()),
 
                                     None,
                                 ).ok();
@@ -321,7 +314,7 @@ fn main() {
                                 if parts.len() >= 3 {
                                     let details = "Krunker";
                                     let state = format!("{} on {}", parts[1], parts[2]);
-                                    if let Some(client) = &mut *DISCORD_CLIENT.lock().unwrap() {
+                                    if let Some(client) = &mut *discord_client.lock().unwrap() {
                                         let activity = activity::Activity::new()
                                             .details(details)
                                             .state(&state)

@@ -37,7 +37,7 @@ static WINDOW_STATE: Lazy<Mutex<WindowState>> = Lazy::new(|| Mutex::new(WindowSt
 static CONTROLLER: AtomicPtr<ICoreWebView2Controller> = AtomicPtr::new(std::ptr::null_mut());
 static WEBVIEW: AtomicPtr<ICoreWebView2> = AtomicPtr::new(std::ptr::null_mut());
 
-pub fn create_window() -> HWND {
+pub fn create_window(start_mode: &str) -> HWND {
     unsafe {
         let hinstance: HINSTANCE = GetModuleHandleW(None).unwrap().into();
         let icon = match LoadIconW(Some(hinstance), w!("icon")) {
@@ -61,38 +61,72 @@ pub fn create_window() -> HWND {
 
         RegisterClassW(&wc);
 
-        let screen_width = GetSystemMetrics(SYSTEM_METRICS_INDEX(0));
-        let screen_height = GetSystemMetrics(SYSTEM_METRICS_INDEX(1));
-        let window_width = (screen_width as f32 * 0.85) as _;
-        let window_height = (screen_height as f32 * 0.85) as _;
+        let screen_width = GetSystemMetrics(SM_CXSCREEN);
+        let screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+        let window_style;
+        let window_ex_style = WINDOW_EX_STYLE::default();
+        let mut x = CW_USEDEFAULT;
+        let mut y = CW_USEDEFAULT;
+        let mut width = (screen_width as f32 * 0.85) as i32;
+        let mut height = (screen_height as f32 * 0.85) as i32;
+        let mut initial_fullscreen_state = false;
+
+        match start_mode {
+            "Borderless Fullscreen" => {
+                window_style = WS_POPUP | WS_VISIBLE;
+                x = 0;
+                y = 0;
+                width = screen_width;
+                height = screen_height;
+                initial_fullscreen_state = true;
+            }
+            "Maximized" => {
+                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MAXIMIZE;
+            }
+            "Normal" => {
+                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+                x = (screen_width - width) / 2;
+                y = (screen_height - height) / 2;
+            }
+            _ => { 
+                window_style = WS_POPUP | WS_VISIBLE;
+                x = 0;
+                y = 0;
+                width = screen_width;
+                height = screen_height;
+                initial_fullscreen_state = true;
+            }
+        }
+
         if let Ok(mut window_props) = WINDOW_STATE.lock() {
             *window_props = WindowState {
-                fullscreen: true,
+                fullscreen: initial_fullscreen_state,
                 last_position: RECT {
-                    left: screen_width - window_width,
-                    top: screen_height - window_height,
-                    right: window_width,
-                    bottom: window_height,
+                    left: x,
+                    top: y,
+                    right: x + width,
+                    bottom: y + height,
                 },
             };
         }
 
         let hwnd: HWND = CreateWindowExW(
-            WINDOW_EX_STYLE::default(),
+            window_ex_style,
             class_name,
             w!("glorp"),
-            WS_VISIBLE,
-            0,
-            0,
-            screen_width,
-            screen_height,
+            window_style,
+            x,
+            y,
+            width,
+            height,
             None,
             None,
             Some(hinstance),
             None,
         )
         .unwrap();
-        SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
+        // SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _); // This line is likely redundant or incorrect now
 
         hwnd
     }
@@ -146,6 +180,15 @@ pub fn create_webview2(
                             .ok_or_else(|| windows::core::Error::from(E_POINTER))
                             .unwrap();
 
+                        // Set initial bounds
+                        let mut rect = RECT::default();
+                        GetClientRect(hwnd, &mut rect).ok();
+                        controller.SetBounds(rect).ok();
+
+                        // Store controller for later use (e.g., resizing)
+                        CONTROLLER.store(controller.clone().into_raw() as *mut _, Ordering::Relaxed);
+                        WEBVIEW.store(controller.CoreWebView2().unwrap().into_raw() as *mut _, Ordering::Relaxed);
+
                         tx.send(controller).expect("error sending controller");
                         etx.send(env).expect("error sending env");
 
@@ -180,7 +223,7 @@ pub fn create_webview2(
         );
 
         let webview = controller.CoreWebView2().unwrap();
-        WEBVIEW.store(Box::into_raw(Box::new(webview.clone())), Ordering::Relaxed);
+        WEBVIEW.store(Box::into_raw(Box::new(webview)), Ordering::Relaxed);
 
         // subclass_widgetwin(hwnd);
         (controller, env)
