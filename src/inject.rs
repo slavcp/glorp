@@ -1,4 +1,3 @@
-use crate::config::Config;
 use windows::{
     Win32::{
         Foundation::*,
@@ -232,7 +231,7 @@ fn is_renderer(pid: u32) -> bool {
         false
     }
 }
-pub fn hook_webview2(config: &std::sync::Arc<std::sync::Mutex<Config>>) {
+pub fn hook_webview2(hard_flip: bool) {
     let current_exe = std::env::current_exe().unwrap();
     DllInjector::new(
         "msedgewebview2.exe",
@@ -244,7 +243,7 @@ pub fn hook_webview2(config: &std::sync::Arc<std::sync::Mutex<Config>>) {
             .unwrap(),
         false,
     );
-    if config.lock().unwrap().get("hardFlip").unwrap() {
+    if hard_flip {
         DllInjector::new(
             "msedgewebview2.exe",
             current_exe
