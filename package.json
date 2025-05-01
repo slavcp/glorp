@@ -8,10 +8,10 @@
     "deploy": "pnpm run ship && git push origin main --follow-tags"
   },
   "devDependencies": {
-    "@eslint/js": "^9.25.0",
-    "esbuild": "^0.25.2",
-    "eslint": "^9.25.0",
+    "@eslint/js": "^9.25.1",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
     "globals": "^16.0.0"
   },
-  "packageManager": "pnpm@10.8.1"
+  "packageManager": "pnpm@10.10.0"
 }
