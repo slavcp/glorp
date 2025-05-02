@@ -11,7 +11,6 @@ use windows::{
 };
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use regex::Regex;
-use serde_json;
 use std::sync::{Arc, Mutex};
 
 mod config;
