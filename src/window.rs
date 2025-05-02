@@ -100,7 +100,7 @@ pub fn create_window(start_mode: &str) -> HWND {
                 width = screen_width;
                 height = screen_height;
             }
-            "Normal" | _ => {
+            _ => {
                 window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
             }
         }
