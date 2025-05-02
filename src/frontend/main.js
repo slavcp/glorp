@@ -57,17 +57,6 @@ document.addEventListener(
 
     if (window.glorpClient?.settings.config?.exitButton)
       document.querySelector("#clientExit").style.display = "flex";
-
-    if (window.glorpClient?.settings.config?.hideBundles) {
-      const bundlePopupObserver = new MutationObserver(() =>
-        window.clearPops()
-      );
-
-      bundlePopupObserver.observe(document.querySelector("#bundlePop"), {
-        childList: true,
-      });
-      setTimeout(() => bundlePopupObserver.disconnect(), 20000);
-    }
   },
   { once: true }
 );
@@ -116,14 +105,16 @@ Object.defineProperty(window, "gameLoaded", {
       });
 
       import("./settings.js").then(() => {
-        if (window.glorpClient.settings.config.hpEnemyCounter)
+        if (window.glorpClient?.settings.config?.hideBundles)
+          window.bundlePopup = () => null;
+        if (window.glorpClient?.settings.config?.hpEnemyCounter)
           import("./modules/hpEnemyCounter.js");
-        if (window.glorpClient.settings.config.accountManager)
+        if (window.glorpClient?.settings.config?.accountManager)
           import("./modules/accountManager.js");
-        if (window.glorpClient.settings.config.showPing)
+        if (window.glorpClient?.settings.config?.showPing)
           import("./modules/showPing.js");
 
-        if (window.glorpClient.settings.config.autoSpec) {
+        if (window.glorpClient?.settings.config?.autoSpec) {
           const trySetSpect = () => {
             const activity = window.getGameActivity();
             if (activity.map === null) {
@@ -134,7 +125,7 @@ Object.defineProperty(window, "gameLoaded", {
           };
           trySetSpect();
         }
-        if (window.glorpClient.settings.config.discordRPC) {
+        if (window.glorpClient?.settings.config?.discordRPC) {
           window.chrome.webview.addEventListener("message", (event) => {
             if (event.data != "game-updated") return;
             setTimeout(() => {
@@ -146,7 +137,7 @@ Object.defineProperty(window, "gameLoaded", {
           });
         }
 
-        if (window.glorpClient.settings.config.menuTimer)
+        if (window.glorpClient?.settings.config?.menuTimer)
           import("./components/menuTimer.css").then((css) => {
             let menuTimerCSS = document.createElement("style");
             menuTimerCSS.id = "menuTimerCSS";
