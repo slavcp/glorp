@@ -1,4 +1,5 @@
 import cSettings from "../cSettings.json";
+import cleanStyles from "./components/clean.css";
 
 window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
   if (document.querySelector(`#input_${id}`) && fromSlider) {
@@ -23,6 +24,35 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
         document.querySelector("#menuTimerCSS")?.remove();
       }
       break;
+    case "cleanUI": {
+      const existing = document.getElementById("Glorp_CleanUI");
+      if (value && !existing) {
+        const style = document.createElement("style");
+        style.id = "Glorp_CleanUI";
+        style.textContent = cleanStyles;
+        document.head.appendChild(style);
+      } else if (!value && existing) {
+        existing.remove();
+      }
+      break;
+    }
+    case "textSelect": {
+      const existing = document.getElementById("Glorp_TextSelect");
+      if (value && !existing) {
+        const style = document.createElement("style");
+        style.id = "Glorp_TextSelect";
+        style.textContent = `
+      #chatHolder, #chatHolder * {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+      }
+    `;
+        document.head.appendChild(style);
+      } else if (!value && existing) {
+        existing.remove();
+      }
+      break;
+    }
   }
 
   const toggleFunctionName = `toggle${

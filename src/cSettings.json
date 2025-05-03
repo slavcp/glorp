@@ -89,6 +89,28 @@
     "needsRestart": false
   },
 
+  "cleanUI": {
+    "name": "Clean UI",
+    "id": "cleanUI",
+    "description": "Have a clean UI by removing some of the unnecessary DOM elements",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+
+  "textSelect": {
+    "name": "Selectable Chat",
+    "id": "textSelect",
+    "description": "Make the Menu and Game chat selectable",
+    "type": "checkbox",
+    "category": "Main",
+    "defaultValue": false,
+    "button": false,
+    "needsRestart": false
+  },
+
   "hpEnemyCounter": {
     "name": "Hardpoint Enemy counter",
     "id": "hpEnemyCounter",
