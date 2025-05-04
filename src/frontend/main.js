@@ -1,4 +1,5 @@
 import styles from "./components/base.css";
+import cleanStyles from "./components/clean.css";
 
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
@@ -30,6 +31,13 @@ document.addEventListener(
     let baseCSS = document.createElement("style");
     baseCSS.innerHTML = styles;
     document.body.appendChild(baseCSS);
+
+      if (window.glorpClient?.settings.config?.cleanUI) {
+        let cleanCSS = document.createElement("style");
+        cleanCSS.id = "Glorp_CleanUI";
+        cleanCSS.innerHTML = cleanStyles;
+        document.body.appendChild(cleanCSS);
+      }
 
     const originalAddEventListener =
       HTMLCanvasElement.prototype.addEventListener;
@@ -135,6 +143,18 @@ Object.defineProperty(window, "gameLoaded", {
               );
             }, 2000);
           });
+        }
+
+        if (window.glorpClient?.settings.config?.textSelect) {
+          const style = document.createElement("style");
+          style.id = "Glorp_TextSelect";
+          style.textContent = `
+            #chatHolder, #chatHolder * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+          }
+          `;
+          document.head.appendChild(style);
         }
 
         if (window.glorpClient?.settings.config?.menuTimer)
