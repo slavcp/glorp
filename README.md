@@ -35,7 +35,7 @@ consider using the CPU throttler in such scenario
   - [Microsoft Visual C++](https://visualstudio.microsoft.com/downloads/)
   - [Node](https://nodejs.org/)
   - [pnpm](https://pnpm.io/installation)
-  - [NSIS **(if packaging)**](https://nsis.sourceforge.io/)
+  - [Inno **(if packaging)**](https://jrsoftware.org/isinfo.php)
 
 1. `git clone https://github.com/slavcp/glorp.git`
 2. `cd glorp`
@@ -45,5 +45,4 @@ consider using the CPU throttler in such scenario
 ## Credits
 
 - [client-pp](https://github.com/6ct/clientpp)
-- [nsis-tauri-utils](https://github.com/tauri-apps/nsis-tauri-utils) - using for installer
 - [crankshaft](https://github.com/KraXen72/crankshaft) - menu timer css
