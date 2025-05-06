@@ -180,10 +180,10 @@ pub fn check_update() {
                     None,
                     w!("open"),
                     PCWSTR(super::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
-                    None,
+                    w!("/VERYSILENT"),
                     None,
                     SW_NORMAL,
-                );
+                );  
                 std::process::exit(0);
             }
         }
