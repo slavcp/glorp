@@ -89,28 +89,6 @@
     "needsRestart": false
   },
 
-  "cleanUI": {
-    "name": "Clean UI",
-    "id": "cleanUI",
-    "description": "Have a clean UI by removing some of the unnecessary DOM elements",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": false,
-    "button": false,
-    "needsRestart": false
-  },
-
-  "textSelect": {
-    "name": "Selectable Chat",
-    "id": "textSelect",
-    "description": "Make the Menu and Game chat selectable",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": false,
-    "button": false,
-    "needsRestart": false
-  },
-
   "hpEnemyCounter": {
     "name": "Hardpoint Enemy counter",
     "id": "hpEnemyCounter",
@@ -121,9 +99,9 @@
     "needsRestart": false
   },
 
-  "hideBundles": {
-    "name": "Hide Bundle Popups",
-    "id": "hideBundles",
+  "autoSpec": {
+    "name": "Auto Spectate",
+    "id": "autoSpec",
     "type": "checkbox",
     "category": "Game",
     "defaultValue": false,
@@ -139,21 +117,41 @@
     "needsRestart": false
   },
 
-  "menuTimer": {
-    "name": "Menu Timer",
-    "id": "menuTimer",
+  "cleanUI": {
+    "name": "Cleaner Menu",
+    "id": "cleanUI",
+    "description": "Remove some of the unnecessary DOM elements",
     "type": "checkbox",
-    "category": "Game",
+    "category": "UI",
     "defaultValue": false,
     "needsRestart": false
   },
 
-  "autoSpec": {
-    "name": "Auto Spectate",
-    "id": "autoSpec",
+  "menuTimer": {
+    "name": "Menu Timer",
+    "id": "menuTimer",
     "type": "checkbox",
-    "category": "Game",
+    "category": "UI",
     "defaultValue": false,
+    "needsRestart": false
+  },
+
+  "hideBundles": {
+    "name": "Hide Bundle Popups",
+    "id": "hideBundles",
+    "type": "checkbox",
+    "category": "UI",
+    "defaultValue": false,
+    "needsRestart": false
+  },
+
+  "textSelect": {
+    "name": "Selectable Chat",
+    "id": "textSelect",
+    "description": "Make game chat selectable",
+    "type": "checkbox",
+    "category": "UI",
+    "defaultValue": true,
     "needsRestart": false
   },
 
