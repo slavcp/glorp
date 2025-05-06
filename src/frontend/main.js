@@ -32,12 +32,12 @@ document.addEventListener(
     baseCSS.innerHTML = styles;
     document.body.appendChild(baseCSS);
 
-      if (window.glorpClient?.settings.config?.cleanUI) {
-        let cleanCSS = document.createElement("style");
-        cleanCSS.id = "Glorp_CleanUI";
-        cleanCSS.innerHTML = cleanStyles;
-        document.body.appendChild(cleanCSS);
-      }
+    if (window.glorpClient?.settings.config?.cleanUI) {
+      let cleanCSS = document.createElement("style");
+      cleanCSS.id = "Glorp_CleanUI";
+      cleanCSS.innerHTML = cleanStyles;
+      document.body.appendChild(cleanCSS);
+    }
 
     const originalAddEventListener =
       HTMLCanvasElement.prototype.addEventListener;
@@ -148,12 +148,7 @@ Object.defineProperty(window, "gameLoaded", {
         if (window.glorpClient?.settings.config?.textSelect) {
           const style = document.createElement("style");
           style.id = "Glorp_TextSelect";
-          style.textContent = `
-            #chatHolder, #chatHolder * {
-            user-select: text !important;
-            -webkit-user-select: text !important;
-          }
-          `;
+          style.textContent = "#chatHolder * { user-select: text }";
           document.head.appendChild(style);
         }
 
