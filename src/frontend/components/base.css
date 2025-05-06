@@ -1,66 +1,35 @@
-*::-webkit-scrollbar,
- .carousel,
- .setSugBox2,
- .advancedSwitch,
- .clientPop,
- .menuSocialB,
- .serverHostOpH,
- .settingsBtn[style*='width:auto;background-color:#994cd1'],
- #settHolder div.setHed:not([id]),
- #homeStoreAd,
- #krDiscountAd,
- #newUserGuide,
- #instructions:only-child,
- #bubbleContainer,
- #editorBtnM,
- #phonePop,
- #aHider,
- #endAContainer,
- #endAHolder,
- #streamContainer,
- #settingsPreset,
- #topRightAdHolder {
-     display: none !important;
- }
+.carousel,
+#settHolder div.setHed:not([id]),
+#homeStoreAd,
+#newUserGuide,
+#phonePop,
+#streamContainer,
+#editorBtnM[src$="client.png"],
+#aHider,
+#endAContainer,
+#endAHolder,
+#topRightAdHolder {
+  display: none !important;
+}
 
- .statIcon {
-    margin-bottom: 0px;
+.statIcon {
+  margin-bottom: 0px;
 }
 
 #phonePop {
-   top: 0!important;
-   bottom: 0!important;
- }
+  top: 0 !important;
+  bottom: 0 !important;
+}
 
- .death-ui-bottom,
- #uiBase.onDeathScrn #chatHolder {
-     backdrop-filter: none;
-     animation: none;
- }
- 
- #pointNumber {
-     color: white;
- }
+#pointNumber {
+  color: white;
+}
 
-div #setHed_local, #setHed_glorpClient {
-     margin-top: 10px;
- }
- 
- .setBodH {
-    margin-top: 5px;
- }
+div #setHed_local,
+#setHed_glorpClient {
+  margin-top: 10px;
+}
 
- #uiBase.onMenu #spectButton {
-     top: 94%;
- }
- 
- .headerBarRight {
-     right: -23px;
- }
- .verticalSeparator, .verticalSeparatorInline {
-    visibility: hidden;
- }
- 
- #mLevelCont {
-    background-color: transparent;
- } 
+.setBodH {
+  margin-top: 5px;
+}

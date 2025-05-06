@@ -1,3 +1,43 @@
-#tlInfHold, #gameNameHolder, #termsInfo, #mapInfoHld, #classPreviewCanvas, #menuClassSubtext, #menuClassName, #menuClassIcn {
-    display: none !important;
+*::-webkit-scrollbar,
+.settingsBtn[style*="width:auto;background-color:#994cd1"],
+.setSugBox2,
+.advancedSwitch,
+.menuSocialB,
+.serverHostOpH,
+#tlInfHold,
+#gameNameHolder,
+#termsInfo,
+#bubbleContainer,
+#instructions:only-child,
+#mapInfoHld,
+#krDiscountAd,
+#classPreviewCanvas,
+#menuClassSubtext,
+#settingsPreset,
+#menuClassName,
+#menuClassIcn {
+  display: none !important;
+}
+
+.death-ui-bottom,
+#uiBase.onDeathScrn #chatHolder {
+  backdrop-filter: none;
+  animation: none;
+}
+
+.verticalSeparator,
+.verticalSeparatorInline {
+  visibility: hidden;
+}
+
+#mLevelCont {
+  background-color: transparent;
+}
+
+#uiBase.onMenu #spectButton {
+  top: 94%;
+}
+
+.headerBarRight {
+  right: -23px;
 }
