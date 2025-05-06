@@ -8,9 +8,8 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 
   switch (id) {
     case "exitButton":
-      document.querySelector("#clientExit").style.display = `${
-        value ? "flex" : "none"
-      }`;
+      document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"
+        }`;
       break;
     case "menuTimer":
       if (value) {
@@ -55,9 +54,8 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
     }
   }
 
-  const toggleFunctionName = `toggle${
-    id.charAt(0).toUpperCase() + id.slice(1)
-  }`;
+  const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)
+    }`;
   if (typeof window.glorpClient.settings[toggleFunctionName] !== "function") {
     try {
       import(`./modules/${id}.js`);
@@ -101,44 +99,35 @@ class SettingsManager {
       case "checkbox":
         return `<label class='switch'>
                     <input id="${option.id}" type='checkbox'
-                           onclick='window.glorpClient.settings.changeSetting("${
-                             option.id
-                           }", this.checked, false)'
+                           onclick='window.glorpClient.settings.changeSetting("${option.id
+          }", this.checked, false)'
                            ${value ? "checked" : ""}>
                     <span class='slider'></span>
                 </label>
-                ${
-                  option.button
-                    ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
-                    : ""
-                }`;
+                ${option.button
+            ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
+            : ""
+          }`;
       case "slider":
-        return `<input type="number" class="sliderVal" id="input_${
-          option.id
-        }" min="1" max="5" value="${value || 1}"step="${
-          option.step
-        }" oninput='window.glorpClient.settings.changeSetting("${
-          option.id
-        }", this.value, false)' style="margin-right:0px;border-width:0px">
-                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${
-                  option.id
-                }" min="${option.min}" max="${option.max}" step="${
-          option.step
-        }" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${
-          option.id
-        }", this.value, true)'></div>`;
+        return `<input type="number" class="sliderVal" id="input_${option.id
+          }" min="1" max="5" value="${value || 1}" 
+                step="${option.step
+          }" oninput='window.glorpClient.settings.changeSetting("${option.id
+          }", this.value, false)' style="margin-right:0px;border-width:0px">
+                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id
+          }" min="${option.min}" max="${option.max}" 
+          step="${option.step
+          }" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id
+          }", this.value, true)'></div>`;
       case "select":
-        return `<select id="${
-          option.id
-        }" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${
-          option.id
-        }", this.value, false)'>
+        return `<select id="${option.id
+          }" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${option.id
+          }", this.value, false)'>
                     ${option.options.map(
-                      (opt) =>
-                        `<option value="${opt}" ${
-                          opt === value ? "selected" : ""
-                        }>${opt}</option>`
-                    )}
+            (opt) =>
+              `<option value="${opt}" ${opt === value ? "selected" : ""
+              }>${opt}</option>`
+          )}
                     </select>`;
       case "none":
         return "";
@@ -148,12 +137,12 @@ class SettingsManager {
   getCSettings() {
     if (
       this.settingsWindow.tabs.advanced.length !==
-        this.settingsWindow.tabIndex + 1 &&
+      this.settingsWindow.tabIndex + 1 &&
       !this.settingsWindow.settingSearch
     )
       return "";
 
-    let tempHTML = "";
+    let tempHTML = "<div class='glorpSettings'>";
     let previousCategory = null;
 
     Object.keys(cSettings).forEach((entry) => {
@@ -167,24 +156,22 @@ class SettingsManager {
         if (previousCategory) tempHTML += "</div>";
 
         previousCategory = setting.category;
-        tempHTML += `<div class='setHed' id='setHed_glorpClient' onclick='window.windows[0].collapseFolder(this)'>
+        tempHTML += `<div class='setHed' id="setHed_glorpClient_${setting.category}" onclick='window.windows[0].collapseFolder(this)'>
                     <span class='material-icons plusOrMinus'>keyboard_arrow_down</span>${setting.category}</div>
-                    <div class='setBodH' id='setBod_glorpClient'>`;
+                    <div class='setBodH' id="setBod_glorpClient_${setting.category}">`;
       }
 
-      tempHTML += `<div class='settName' ${
-        setting.description ? `title="${setting.description}"` : ""
-      }>
+      tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""
+        }>
                 ${setting.name}
-                ${
-                  setting.needsRestart
-                    ? ' <span style="color: #eb5656" title="Requires Restart">*</span>'
-                    : ""
-                } 
+                ${setting.needsRestart
+          ? ' <span style="color: #eb5656" title="Requires Restart">*</span>'
+          : ""
+        } 
                 ${setting.html}</div>`;
     });
 
-    return tempHTML ? tempHTML + "</div></div>" : "";
+    return tempHTML ? tempHTML + "</div></div></div>" : "";
   }
 }
 
