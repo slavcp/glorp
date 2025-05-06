@@ -15,7 +15,8 @@
 #menuClassSubtext,
 #settingsPreset,
 #menuClassName,
-#menuClassIcn {
+#menuClassIcn,
+#editorBtnM {
   display: none !important;
 }
 
@@ -36,8 +37,4 @@
 
 #uiBase.onMenu #spectButton {
   top: 94%;
-}
-
-.headerBarRight {
-  right: -23px;
 }
