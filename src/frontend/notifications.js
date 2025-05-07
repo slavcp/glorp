@@ -5,7 +5,7 @@ class Notification {
     this.duration = duration; // in seconds
     this.notificationEl = null;
     if (reqUserInput) {
-      return new Promise((resolve) => {
+      this.promise = new Promise((resolve) => {
         this.resolvePromise = resolve;
         this.show();
       });

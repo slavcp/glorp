@@ -14,7 +14,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
     case "menuTimer":
       if (value) {
         import("./components/menuTimer.css").then((css) => {
-          let menuTimerCSS = document.createElement("style");
+          const menuTimerCSS = document.createElement("style");
           menuTimerCSS.id = "menuTimerCSS";
           menuTimerCSS.innerHTML = css.default;
           document.head.appendChild(menuTimerCSS);
@@ -26,7 +26,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
     case "cleanUI": {
       if (value) {
         import("./components/clean.css").then((css) => {
-          let cleanCSS = document.createElement("style");
+          const cleanCSS = document.createElement("style");
           cleanCSS.id = "cleanCSS";
           cleanCSS.innerHTML = css.default;
           document.head.appendChild(cleanCSS);
@@ -38,10 +38,10 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
     }
     case "textSelect": {
       if (value) {
-        const style = document.createElement("style");
-        style.id = "textSelect";
-        style.innerHTML = "#chatHolder * { user-select: text }";
-        document.head.appendChild(style);
+        const textSelectCSS = document.createElement("style");
+        textSelectCSS.id = "textSelect";
+        textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+        document.head.appendChild(textSelectCSS);
       } else {
         document.querySelector("#textSelect")?.remove();
       }
@@ -152,7 +152,7 @@ class SettingsManager {
     let tempHTML = "<div class='glorpSettings'>";
     let previousCategory = null;
 
-    Object.keys(cSettings).forEach((entry) => {
+    for (const entry of Object.keys(cSettings)) {
       const setting = cSettings[entry];
       setting.html = this.generateHtml(setting);
 
@@ -178,9 +178,9 @@ class SettingsManager {
                     : ""
                 } 
                 ${setting.html}</div>`;
-    });
+    }
 
-    return tempHTML ? tempHTML + "</div></div></div>" : "";
+    return tempHTML ? `${tempHTML}</div></div></div>` : "";
   }
 }
 

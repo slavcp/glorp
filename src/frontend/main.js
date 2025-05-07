@@ -27,13 +27,13 @@ window.glorpClient = {
 document.addEventListener(
   "DOMContentLoaded",
   () => {
-    let baseCSS = document.createElement("style");
+    const baseCSS = document.createElement("style");
     baseCSS.innerHTML = styles;
     document.head.appendChild(baseCSS);
 
     if (window.glorpClient?.settings.config?.cleanUI) {
       import("./components/clean.css").then((css) => {
-        let cleanCSS = document.createElement("style");
+        const cleanCSS = document.createElement("style");
         cleanCSS.id = "cleanCSS";
         cleanCSS.innerHTML = css.default;
         document.head.appendChild(cleanCSS);
@@ -149,7 +149,7 @@ Object.defineProperty(window, "gameLoaded", {
         }
         if (window.glorpClient?.settings.config?.discordRPC) {
           window.chrome.webview.addEventListener("message", (event) => {
-            if (event.data != "game-updated") return;
+            if (event.data !== "game-updated") return;
             setTimeout(() => {
               const gameStatus = window.getGameActivity();
               window.window.chrome.webview.postMessage(
@@ -160,15 +160,15 @@ Object.defineProperty(window, "gameLoaded", {
         }
 
         if (window.glorpClient?.settings.config?.textSelect) {
-          const style = document.createElement("style");
-          style.id = "textSelect";
-          style.innerHTML = "#chatHolder * { user-select: text }";
-          document.head.appendChild(style);
+          const textSelectCSS = document.createElement("style");
+          textSelectCSS.id = "textSelect";
+          textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+          document.head.appendChild(textSelectCSS);
         }
 
         if (window.glorpClient?.settings.config?.menuTimer)
           import("./components/menuTimer.css").then((css) => {
-            let menuTimerCSS = document.createElement("style");
+            const menuTimerCSS = document.createElement("style");
             menuTimerCSS.id = "menuTimerCSS";
             menuTimerCSS.innerHTML = css.default;
             document.head.appendChild(menuTimerCSS);

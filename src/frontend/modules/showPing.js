@@ -15,20 +15,20 @@ class ShowPing {
   }
 
   modifiedGenList() {
-    let htmlString = this.originalGenList.call(this);
+    const htmlString = this.originalGenList.call(this);
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     const pingIcons = doc.querySelectorAll(".pListPing.material-icons");
 
-    pingIcons.forEach((icon) => {
+    for (const icon of pingIcons) {
       const pingValue = icon.getAttribute("title");
 
       icon.classList.remove("pListPing", "material-icons");
       icon.removeAttribute("title");
 
-      icon.textContent = pingValue ? pingValue + " " : "N/A "; // Add space for separation, handle null ping
-    });
+      icon.textContent = `${pingValue ? pingValue : "N/A"} `;
+    }
     return doc.body.innerHTML;
   }
 }
