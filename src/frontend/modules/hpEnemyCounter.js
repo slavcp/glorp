@@ -39,9 +39,11 @@ class HpEnemyCounter {
   }
 
   processTeamScores = () => {
-    document.querySelectorAll("#tScoreC1, #tScoreC2").forEach((team) => {
+    for (const team of document.querySelectorAll("#tScoreC1, #tScoreC2")) {
       if (team && !team.className.includes("you")) {
-        const currentEnemyOBJ = parseInt(team.nextElementSibling.innerText);
+        const currentEnemyOBJ = Number.parseInt(
+          team.nextElementSibling.innerText
+        );
         if (currentEnemyOBJ > this.enemyOBJ) {
           this.pointCounter.innerText = (currentEnemyOBJ - this.enemyOBJ) / 10;
           if (this.enemyTimeout) {
@@ -54,13 +56,13 @@ class HpEnemyCounter {
         }
         this.enemyOBJ = currentEnemyOBJ;
       }
-    });
+    }
   };
 
   checkComp = () => {
     const gameStatus = window.getGameActivity();
 
-    if (gameStatus.custom && gameStatus.mode == "Hardpoint") {
+    if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
       if (this.gameUpdateListener)
         window.chrome.webview.removeEventListener(
           "message",

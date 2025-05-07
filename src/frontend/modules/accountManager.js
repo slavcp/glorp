@@ -70,7 +70,7 @@ class AccountManager {
 
   encode(decoded) {
     const key = decoded.length;
-    let encoded = decoded
+    const encoded = decoded
       .split("")
       .map((char) => String.fromCharCode(char.charCodeAt(0) + key))
       .join("");
@@ -107,7 +107,7 @@ class AccountManager {
   }
 
   decode(encoded) {
-    let username = decodeURIComponent(encoded);
+    const username = decodeURIComponent(encoded);
     const key = username.length;
     return username
       .split("")
@@ -168,13 +168,13 @@ class AccountManager {
       accountContainer.removeChild(accountContainer.children[0]);
     }
 
-    this.accounts.forEach((account) => {
+    for (const account of this.accounts) {
       const accountHolder = document.createElement("div");
       accountHolder.classList.add("accountHolder");
       accountHolder.style.color = account.color;
       accountHolder.textContent = this.decode(account.username);
       accountContainer.appendChild(accountHolder);
-    });
+    }
   }
 
   removeWindow() {
@@ -216,7 +216,7 @@ class AccountManager {
 
   checkComp() {
     const gameStatus = window.getGameActivity();
-    if (gameStatus.custom && gameStatus.mode == "Hardpoint") {
+    if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
       if (this.gameUpdateListener)
         window.chrome.webview.removeEventListener(
           "message",
