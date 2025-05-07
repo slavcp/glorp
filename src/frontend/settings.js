@@ -1,5 +1,4 @@
 import cSettings from "../cSettings.json";
-import cleanStyles from "./components/clean.css";
 
 window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
   if (document.querySelector(`#input_${id}`) && fromSlider) {
@@ -8,8 +7,9 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 
   switch (id) {
     case "exitButton":
-      document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"
-        }`;
+      document.querySelector("#clientExit").style.display = `${
+        value ? "flex" : "none"
+      }`;
       break;
     case "menuTimer":
       if (value) {
@@ -17,45 +17,41 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
           let menuTimerCSS = document.createElement("style");
           menuTimerCSS.id = "menuTimerCSS";
           menuTimerCSS.innerHTML = css.default;
-          document.body.appendChild(menuTimerCSS);
+          document.head.appendChild(menuTimerCSS);
         });
       } else {
         document.querySelector("#menuTimerCSS")?.remove();
       }
       break;
     case "cleanUI": {
-      const existing = document.getElementById("Glorp_CleanUI");
-      if (value && !existing) {
-        const style = document.createElement("style");
-        style.id = "Glorp_CleanUI";
-        style.textContent = cleanStyles;
-        document.head.appendChild(style);
-      } else if (!value && existing) {
-        existing.remove();
+      if (value) {
+        import("./components/clean.css").then((css) => {
+          let cleanCSS = document.createElement("style");
+          cleanCSS.id = "cleanCSS";
+          cleanCSS.innerHTML = css.default;
+          document.head.appendChild(cleanCSS);
+        });
+      } else {
+        document.querySelector("#cleanCSS")?.remove();
       }
       break;
     }
     case "textSelect": {
-      const existing = document.getElementById("Glorp_TextSelect");
-      if (value && !existing) {
+      if (value) {
         const style = document.createElement("style");
-        style.id = "Glorp_TextSelect";
-        style.textContent = `
-      #chatHolder, #chatHolder * {
-        user-select: text !important;
-        -webkit-user-select: text !important;
-      }
-    `;
+        style.id = "textSelect";
+        style.innerHTML = "#chatHolder * { user-select: text }";
         document.head.appendChild(style);
-      } else if (!value && existing) {
-        existing.remove();
+      } else {
+        document.querySelector("#textSelect")?.remove();
       }
       break;
     }
   }
 
-  const toggleFunctionName = `toggle${id.charAt(0).toUpperCase() + id.slice(1)
-    }`;
+  const toggleFunctionName = `toggle${
+    id.charAt(0).toUpperCase() + id.slice(1)
+  }`;
   if (typeof window.glorpClient.settings[toggleFunctionName] !== "function") {
     try {
       import(`./modules/${id}.js`);
@@ -99,35 +95,46 @@ class SettingsManager {
       case "checkbox":
         return `<label class='switch'>
                     <input id="${option.id}" type='checkbox'
-                           onclick='window.glorpClient.settings.changeSetting("${option.id
-          }", this.checked, false)'
+                           onclick='window.glorpClient.settings.changeSetting("${
+                             option.id
+                           }", this.checked, false)'
                            ${value ? "checked" : ""}>
                     <span class='slider'></span>
                 </label>
-                ${option.button
-            ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
-            : ""
-          }`;
+                ${
+                  option.button
+                    ? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
+                    : ""
+                }`;
       case "slider":
-        return `<input type="number" class="sliderVal" id="input_${option.id
-          }" min="1" max="5" value="${value || 1}" 
-                step="${option.step
-          }" oninput='window.glorpClient.settings.changeSetting("${option.id
-          }", this.value, false)' style="margin-right:0px;border-width:0px">
-                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id
-          }" min="${option.min}" max="${option.max}" 
-          step="${option.step
-          }" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id
-          }", this.value, true)'></div>`;
+        return `<input type="number" class="sliderVal" id="input_${
+          option.id
+        }" min="1" max="5" value="${value || 1}" 
+                step="${
+                  option.step
+                }" oninput='window.glorpClient.settings.changeSetting("${
+          option.id
+        }", this.value, false)' style="margin-right:0px;border-width:0px">
+                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${
+                  option.id
+                }" min="${option.min}" max="${option.max}" 
+          step="${
+            option.step
+          }" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${
+          option.id
+        }", this.value, true)'></div>`;
       case "select":
-        return `<select id="${option.id
-          }" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${option.id
-          }", this.value, false)'>
+        return `<select id="${
+          option.id
+        }" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${
+          option.id
+        }", this.value, false)'>
                     ${option.options.map(
-            (opt) =>
-              `<option value="${opt}" ${opt === value ? "selected" : ""
-              }>${opt}</option>`
-          )}
+                      (opt) =>
+                        `<option value="${opt}" ${
+                          opt === value ? "selected" : ""
+                        }>${opt}</option>`
+                    )}
                     </select>`;
       case "none":
         return "";
@@ -137,7 +144,7 @@ class SettingsManager {
   getCSettings() {
     if (
       this.settingsWindow.tabs.advanced.length !==
-      this.settingsWindow.tabIndex + 1 &&
+        this.settingsWindow.tabIndex + 1 &&
       !this.settingsWindow.settingSearch
     )
       return "";
@@ -161,13 +168,15 @@ class SettingsManager {
                     <div class='setBodH' id="setBod_glorpClient_${setting.category}">`;
       }
 
-      tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""
-        }>
+      tempHTML += `<div class='settName' ${
+        setting.description ? `title="${setting.description}"` : ""
+      }>
                 ${setting.name}
-                ${setting.needsRestart
-          ? ' <span style="color: #eb5656" title="Requires Restart">*</span>'
-          : ""
-        } 
+                ${
+                  setting.needsRestart
+                    ? ' <span style="color: #eb5656" title="Requires Restart">*</span>'
+                    : ""
+                } 
                 ${setting.html}</div>`;
     });
 
