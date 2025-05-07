@@ -12,6 +12,12 @@
   display: none !important;
 }
 
+.death-ui-bottom,
+#uiBase.onDeathScrn #chatHolder {
+  backdrop-filter: none;
+  animation: none;
+}
+
 .statIcon {
   margin-bottom: 0px;
 }
