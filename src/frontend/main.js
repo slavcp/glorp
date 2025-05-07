@@ -99,6 +99,19 @@ Object.defineProperty(window, "gameLoaded", {
         window.closWind();
       }
 
+      // binds shoot to f20
+      setTimeout(() => {
+        window.changeContSet();
+        window.changeCont("shoot", 1, undefined);
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", { keyCode: 131, bubbles: true })
+        );
+        document.dispatchEvent(
+          new KeyboardEvent("keyup", { keyCode: 131, bubbles: true })
+        );
+        window.closWind();
+      }, 1400);
+
       import("./notifications.js").then(() => {
         // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
         const originalExportSettings = window.exportSettings;

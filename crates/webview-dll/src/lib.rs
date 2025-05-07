@@ -138,7 +138,7 @@ unsafe extern "system" fn wnd_proc_1(
 ) -> LRESULT {
     unsafe {
         match message {
-            WM_CHAR => LRESULT(1),
+            WM_CHAR | WM_LBUTTONDBLCLK | WM_RBUTTONDBLCLK => LRESULT(1),
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_KEYDOWN | WM_KEYUP => {
                 if wparam.0 == VK_ESCAPE.0 as usize
@@ -150,16 +150,44 @@ unsafe extern "system" fn wnd_proc_1(
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_MOUSEMOVE | WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN
-            | WM_RBUTTONDBLCLK => {
+            WM_LBUTTONDOWN => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     return CallWindowProcW(
                         PREV_WNDPROC_1,
                         window,
-                        message,
-                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
+                        WM_KEYDOWN,
+                        WPARAM(VK_F20.0 as usize),
                         lparam,
                     );
+            }
+            CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+
+        }
+            WM_LBUTTONUP => {
+                    CallWindowProcW(
+                        PREV_WNDPROC_1,
+                        window,
+                        WM_KEYUP,
+                        WPARAM(VK_F20.0 as usize),
+                        lparam,
+                    );
+                     CallWindowProcW(
+                        PREV_WNDPROC_1,
+                        window,
+                        message,
+                        wparam,
+                        lparam,
+                    )
+        }
+            WM_MOUSEMOVE  | WM_RBUTTONDOWN => {
+                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                        return CallWindowProcW(
+                            PREV_WNDPROC_1,
+                            window,
+                            message,
+                            WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
+                            lparam,
+                        );
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
