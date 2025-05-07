@@ -1,5 +1,4 @@
 import styles from "./components/base.css";
-import cleanStyles from "./components/clean.css";
 
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
@@ -30,13 +29,15 @@ document.addEventListener(
   () => {
     let baseCSS = document.createElement("style");
     baseCSS.innerHTML = styles;
-    document.body.appendChild(baseCSS);
+    document.head.appendChild(baseCSS);
 
     if (window.glorpClient?.settings.config?.cleanUI) {
-      let cleanCSS = document.createElement("style");
-      cleanCSS.id = "Glorp_CleanUI";
-      cleanCSS.innerHTML = cleanStyles;
-      document.body.appendChild(cleanCSS);
+      import("./components/clean.css").then((css) => {
+        let cleanCSS = document.createElement("style");
+        cleanCSS.id = "cleanCSS";
+        cleanCSS.innerHTML = css.default;
+        document.head.appendChild(cleanCSS);
+      });
     }
 
     const originalAddEventListener =
@@ -160,8 +161,8 @@ Object.defineProperty(window, "gameLoaded", {
 
         if (window.glorpClient?.settings.config?.textSelect) {
           const style = document.createElement("style");
-          style.id = "Glorp_TextSelect";
-          style.textContent = "#chatHolder * { user-select: text }";
+          style.id = "textSelect";
+          style.innerHTML = "#chatHolder * { user-select: text }";
           document.head.appendChild(style);
         }
 
@@ -170,7 +171,7 @@ Object.defineProperty(window, "gameLoaded", {
             let menuTimerCSS = document.createElement("style");
             menuTimerCSS.id = "menuTimerCSS";
             menuTimerCSS.innerHTML = css.default;
-            document.body.appendChild(menuTimerCSS);
+            document.head.appendChild(menuTimerCSS);
           });
       });
     }
