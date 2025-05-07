@@ -20,12 +20,6 @@
   display: none !important;
 }
 
-.death-ui-bottom,
-#uiBase.onDeathScrn #chatHolder {
-  backdrop-filter: none;
-  animation: none;
-}
-
 .verticalSeparator,
 .verticalSeparatorInline {
   visibility: hidden;
