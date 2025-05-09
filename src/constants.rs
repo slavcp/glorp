@@ -40,7 +40,9 @@ pub const DEFAULT_BLOCKLIST: &str = r#"[
         "*://assets.krunker.io/models/clouds_0.obj*",
         "*://www.google-analytics.com/*",
         "*://krunker.io/img/client.png*",
-        "*://krunker.io/libs/nipplejs.min.js*"
+        "*://krunker.io/libs/nipplejs.min.js*",
+        "*://user-assets.krunker.io/60585/*",
+        "*://user-assets.krunker.io/60585/model.glb*"
     ]"#;
 
 // most are expired, but theyre all in here to cover multiple versions
