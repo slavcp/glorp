@@ -1,222 +1,204 @@
 {
-  "startMode": {
-    "name": "Start Mode",
-    "id": "startMode",
-    "type": "select",
-    "category": "Main",
-    "defaultValue": "Borderless Fullscreen",
-    "needsRestart": true,
-    "options": ["Borderless Fullscreen", "Normal", "Maximized"]
-  },
-
-  "uncapFps": {
-    "name": "Uncap FPS",
-    "id": "uncapFps",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "needsRestart": true
-  },
-
-  "swapper": {
-    "name": "Resource Swapper",
-    "id": "swapper",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "button": "Open folder",
-    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/swapper')",
-    "needsRestart": true
-  },
-
-  "blocklist": {
-    "name": "URL Blocklist",
-    "id": "blocklist",
-    "description": "Blocks connection to the sites listed in the filter list, defaults offer a safe and efficient set.",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "button": "Open file",
-    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/blocklist.json')",
-    "needsRestart": true
-  },
-
-  "userscripts": {
-    "name": "Userscripts",
-    "id": "userscripts",
-    "description": "it really just loads files from a folder, userscripts is an overstatement",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": false,
-    "button": "Open folder",
-    "buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/scripts')",
-    "needsRestart": true
-  },
-
-  "checkUpdates": {
-    "name": "Check For Updates",
-    "id": "checkUpdates",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "needsRestart": true
-  },
-
-  "discordRPC": {
-    "name": "Discord Rich Presence",
-    "id": "discordRPC",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "needsRestart": true
-  },
-
-  "accountManager": {
-    "name": "Account Manager",
-    "id": "accountManager",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": true,
-    "needsRestart": false
-  },
-
-  "exitButton": {
-    "name": "Exit Button",
-    "id": "exitButton",
-    "type": "checkbox",
-    "category": "Main",
-    "defaultValue": false,
-    "needsRestart": false
-  },
-
-  "hpEnemyCounter": {
-    "name": "Hardpoint Enemy counter",
-    "id": "hpEnemyCounter",
-    "description": "Shows the number of enemies present on the hardpoint during competitive matches",
-    "type": "checkbox",
-    "category": "Game",
-    "defaultValue": true,
-    "needsRestart": false
-  },
-
-  "autoSpec": {
-    "name": "Auto Spectate",
-    "id": "autoSpec",
-    "type": "checkbox",
-    "category": "Game",
-    "defaultValue": false,
-    "needsRestart": false
-  },
-
-  "showPing": {
-    "name": "Player List Ping",
-    "id": "showPing",
-    "type": "checkbox",
-    "category": "Game",
-    "defaultValue": true,
-    "needsRestart": false
-  },
-
-  "cleanUI": {
-    "name": "Cleaner Menu",
-    "id": "cleanUI",
-    "description": "Remove some of the unnecessary DOM elements",
-    "type": "checkbox",
-    "category": "UI",
-    "defaultValue": false,
-    "needsRestart": false
-  },
-
-  "menuTimer": {
-    "name": "Menu Timer",
-    "id": "menuTimer",
-    "type": "checkbox",
-    "category": "UI",
-    "defaultValue": false,
-    "needsRestart": false
-  },
-
-  "hideBundles": {
-    "name": "Hide Bundle Popups",
-    "id": "hideBundles",
-    "type": "checkbox",
-    "category": "UI",
-    "defaultValue": false,
-    "needsRestart": false
-  },
-
-  "textSelect": {
-    "name": "Selectable Chat",
-    "id": "textSelect",
-    "description": "Make game chat selectable",
-    "type": "checkbox",
-    "category": "UI",
-    "defaultValue": true,
-    "needsRestart": false
-  },
-
-  "rawInput": {
-    "name": "Raw Input (!)",
-    "id": "rawInput",
-    "description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk. Should be safe",
-    "type": "checkbox",
-    "category": "Tweaks",
-    "defaultValue": true,
-    "needsRestart": true
-  },
-
-  "throttle": {
-    "name": "CPU Throttling",
-    "id": "throttle",
-    "description": "Throttle CPU, value is the multiplier (2 should be 50%), ONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
-    "type": "slider",
-    "min": 1,
-    "max": 3,
-    "step": 0.01,
-    "category": "Tweaks",
-    "defaultValue": 1,
-    "needsRestart": false
-  },
-
-  "inMenuThrottle": {
-    "name": "CPU Throttling in Menu",
-    "id": "inMenuThrottle",
-    "description": "Throttle CPU in menus, fixes an issue related to render FPS in menus",
-    "type": "slider",
-    "min": 1,
-    "max": 3,
-    "step": 0.01,
-    "category": "Tweaks",
-    "defaultValue": 1.5,
-    "needsRestart": false
-  },
-
-  "webviewPriority": {
-    "name": "Webview Priority",
-    "id": "webviewPriority",
-    "description": "Higher priority yields slightly better performance but might cause instabilities",
-    "type": "select",
-    "category": "Tweaks",
-    "defaultValue": "Normal",
-    "needsRestart": true,
-    "options": [
-      "!! Realtime !!",
-      "High",
-      "Above Normal",
-      "Normal",
-      "Low",
-      "Below Normal",
-      "Idle"
-    ]
-  },
-
-  "hardFlip": {
-    "name": "Hook DXGI Swapchain Creation",
-    "id": "hardFlip",
-    "description": "Reduce latency by tweaking swapchain settings; keep on unless experiencing crashes",
-    "type": "checkbox",
-    "category": "Tweaks",
-    "defaultValue": true,
-    "needsRestart": true
-  }
+	"startMode": {
+		"name": "Start Mode",
+		"id": "startMode",
+		"type": "select",
+		"category": "Main",
+		"defaultValue": "Borderless Fullscreen",
+		"needsRestart": true,
+		"options": ["Borderless Fullscreen", "Normal", "Maximized"]
+	},
+	"uncapFps": {
+		"name": "Uncap FPS",
+		"id": "uncapFps",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"needsRestart": true
+	},
+	"swapper": {
+		"name": "Resource Swapper",
+		"id": "swapper",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"button": "Open folder",
+		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/swapper')",
+		"needsRestart": true
+	},
+	"blocklist": {
+		"name": "URL Blocklist",
+		"id": "blocklist",
+		"description": "Blocks connection to the sites listed in the filter list, defaults offer a safe and efficient set.",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"button": "Open file",
+		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/blocklist.json')",
+		"needsRestart": true
+	},
+	"userscripts": {
+		"name": "Userscripts",
+		"id": "userscripts",
+		"description": "it really just loads files from a folder, userscripts is an overstatement",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": false,
+		"button": "Open folder",
+		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/scripts')",
+		"needsRestart": true
+	},
+	"checkUpdates": {
+		"name": "Check For Updates",
+		"id": "checkUpdates",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"needsRestart": true
+	},
+	"discordRPC": {
+		"name": "Discord Rich Presence",
+		"id": "discordRPC",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"needsRestart": true
+	},
+	"accountManager": {
+		"name": "Account Manager",
+		"id": "accountManager",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": true,
+		"needsRestart": false
+	},
+	"exitButton": {
+		"name": "Exit Button",
+		"id": "exitButton",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": false,
+		"needsRestart": false
+	},
+	"hpEnemyCounter": {
+		"name": "Hardpoint Enemy counter",
+		"id": "hpEnemyCounter",
+		"description": "Shows the number of enemies present on the hardpoint during competitive matches",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": true,
+		"needsRestart": false
+	},
+	"autoSpec": {
+		"name": "Auto Spectate",
+		"id": "autoSpec",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": false,
+		"needsRestart": false
+	},
+	"showPing": {
+		"name": "Player List Ping",
+		"id": "showPing",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": true,
+		"needsRestart": false
+	},
+	"cleanUI": {
+		"name": "Cleaner Menu",
+		"id": "cleanUI",
+		"description": "Remove some of the unnecessary DOM elements",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false,
+		"needsRestart": false
+	},
+	"menuTimer": {
+		"name": "Menu Timer",
+		"id": "menuTimer",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false,
+		"needsRestart": false
+	},
+	"hideBundles": {
+		"name": "Hide Bundle Popups",
+		"id": "hideBundles",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false,
+		"needsRestart": false
+	},
+	"showChangelog": {
+		"name": "Show Changelogs",
+		"id": "showChangelog",
+		"type": "checkbox",
+		"button": "Show Now",
+		"buttonAction": "window.glorpClient.showChangelogPopup && window.glorpClient.showChangelogPopup(window.glorpClient.version)",
+		"category": "UI",
+		"defaultValue": true,
+		"needsRestart": false
+	},
+	"textSelect": {
+		"name": "Selectable Chat",
+		"id": "textSelect",
+		"description": "Make game chat selectable",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": true,
+		"needsRestart": false
+	},
+	"rawInput": {
+		"name": "Raw Input (!)",
+		"id": "rawInput",
+		"description": "Achieve lower latency and greater precision with raw input, hooks requestPointerLock so use at your own risk. Should be safe",
+		"type": "checkbox",
+		"category": "Tweaks",
+		"defaultValue": true,
+		"needsRestart": true
+	},
+	"throttle": {
+		"name": "CPU Throttling",
+		"id": "throttle",
+		"description": "Throttle CPU, value is the multiplier (2 should be 50%), ONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
+		"type": "slider",
+		"min": 1,
+		"max": 3,
+		"step": 0.01,
+		"category": "Tweaks",
+		"defaultValue": 1,
+		"needsRestart": false
+	},
+	"inMenuThrottle": {
+		"name": "CPU Throttling in Menu",
+		"id": "inMenuThrottle",
+		"description": "Throttle CPU in menus, fixes an issue related to render FPS in menus",
+		"type": "slider",
+		"min": 1,
+		"max": 3,
+		"step": 0.01,
+		"category": "Tweaks",
+		"defaultValue": 1.5,
+		"needsRestart": false
+	},
+	"webviewPriority": {
+		"name": "Webview Priority",
+		"id": "webviewPriority",
+		"description": "Higher priority yields slightly better performance but might cause instabilities",
+		"type": "select",
+		"category": "Tweaks",
+		"defaultValue": "Normal",
+		"needsRestart": true,
+		"options": ["!! Realtime !!", "High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+	},
+	"hardFlip": {
+		"name": "Hook DXGI Swapchain Creation",
+		"id": "hardFlip",
+		"description": "Reduce latency by tweaking swapchain settings; keep on unless experiencing crashes",
+		"type": "checkbox",
+		"category": "Tweaks",
+		"defaultValue": true,
+		"needsRestart": true
+	}
 }
