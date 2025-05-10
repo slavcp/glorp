@@ -159,35 +159,28 @@ unsafe extern "system" fn wnd_proc_1(
                         WPARAM(VK_F20.0 as usize),
                         lparam,
                     );
+                }
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
-
-        }
             WM_LBUTTONUP => {
-                    CallWindowProcW(
-                        PREV_WNDPROC_1,
-                        window,
-                        WM_KEYUP,
-                        WPARAM(VK_F20.0 as usize),
-                        lparam,
-                    );
-                     CallWindowProcW(
+                CallWindowProcW(
+                    PREV_WNDPROC_1,
+                    window,
+                    WM_KEYUP,
+                    WPARAM(VK_F20.0 as usize),
+                    lparam,
+                );
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+            }
+            WM_MOUSEMOVE | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
+                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                    return CallWindowProcW(
                         PREV_WNDPROC_1,
                         window,
                         message,
-                        wparam,
+                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
                         lparam,
-                    )
-        }
-            WM_MOUSEMOVE  | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
-                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                        return CallWindowProcW(
-                            PREV_WNDPROC_1,
-                            window,
-                            message,
-                            WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                            lparam,
-                        );
+                    );
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
