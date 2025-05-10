@@ -183,7 +183,7 @@ pub fn check_update() {
                     w!("/VERYSILENT"),
                     None,
                     SW_NORMAL,
-                );  
+                );
                 std::process::exit(0);
             }
         }

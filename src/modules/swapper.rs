@@ -29,7 +29,7 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
             unsafe {
                 let url = (
                     format!("*://krunker.io/{}*", relative_path),
-                    format!("*://*.krunker.io/{}*", relative_path)
+                    format!("*://*.krunker.io/{}*", relative_path),
                 );
 
                 for url_part in [&url.0, &url.1] {

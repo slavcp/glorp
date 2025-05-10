@@ -1,4 +1,4 @@
-pub const DISCORD_CLIENT_ID: &str= "1366441319890948136";
+pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
 
 pub const DEFAULT_BLOCKLIST: &str = r#"[
         "*://*.pollfish.com/*",

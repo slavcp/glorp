@@ -30,7 +30,6 @@ fn parse(mut content: String) -> String {
         parse_metadata(&mut content);
     }
 
-
     // wrap it in an IIFE if it's not already
     if IIFE_REGEX.is_match(content.as_str()) {
         return content;
@@ -56,7 +55,7 @@ pub fn load(webview: &ICoreWebView2) -> Result<()> {
             file.read_to_string(&mut content)?;
 
             let parsed = parse(content);
-            
+
             unsafe {
                 webview.AddScriptToExecuteOnDocumentCreated(
                     PCWSTR(utils::create_utf_string(&parsed).as_ptr()),

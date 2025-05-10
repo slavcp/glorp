@@ -127,9 +127,9 @@ pub fn create_window(start_mode: &str) -> HWND {
             None,
         )
         .unwrap();
-    if start_mode == "Borderless Fullscreen" {
-    SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
-    }
+        if start_mode == "Borderless Fullscreen" {
+            SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
+        }
         hwnd
     }
 }
@@ -187,8 +187,12 @@ pub fn create_webview2(
                         GetClientRect(hwnd, &mut rect).ok();
                         controller.SetBounds(rect).ok();
 
-                        CONTROLLER.store(controller.clone().into_raw() as *mut _, Ordering::Relaxed);
-                        WEBVIEW.store(controller.CoreWebView2().unwrap().into_raw() as *mut _, Ordering::Relaxed);
+                        CONTROLLER
+                            .store(controller.clone().into_raw() as *mut _, Ordering::Relaxed);
+                        WEBVIEW.store(
+                            controller.CoreWebView2().unwrap().into_raw() as *mut _,
+                            Ordering::Relaxed,
+                        );
 
                         tx.send(controller).expect("error sending controller");
                         etx.send(env).expect("error sending env");
