@@ -39,9 +39,7 @@ class HpEnemyCounter {
 				const currentEnemyOBJ = Number.parseInt(team.nextElementSibling.innerText);
 				if (currentEnemyOBJ > this.enemyOBJ) {
 					this.pointCounter.innerText = (currentEnemyOBJ - this.enemyOBJ) / 10;
-					if (this.enemyTimeout) {
-						clearTimeout(this.enemyTimeout);
-					}
+					if (this.enemyTimeout) clearTimeout(this.enemyTimeout);
 					this.enemyTimeout = setTimeout(() => {
 						this.pointCounter.innerText = "0";
 						this.enemyTimeout = null;

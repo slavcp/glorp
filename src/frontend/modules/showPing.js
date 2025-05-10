@@ -8,9 +8,8 @@ class ShowPing {
 	}
 
 	toggle(enabled) {
-		if (enabled) {
-			window.windows[22].genList = this.modifiedGenList.bind(this);
-		} else window.windows[22].genList = this.originalGenList;
+		if (enabled) window.windows[22].genList = this.modifiedGenList.bind(this);
+		else window.windows[22].genList = this.originalGenList;
 	}
 
 	modifiedGenList() {

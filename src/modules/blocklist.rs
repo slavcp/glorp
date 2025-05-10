@@ -6,6 +6,13 @@ use windows::core::*;
 
 use crate::constants;
 use crate::utils;
+
+#[derive(serde::Deserialize, serde::Serialize)]
+struct BlocklistConfig {
+    enabled: Vec<String>,
+    disabled: Vec<String>,
+}
+
 pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
     let blocklist_path: String =
         std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
@@ -25,14 +32,32 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
 
     let blocklist_string = std::fs::read_to_string(&blocklist_path).unwrap();
 
-    let blocklist = match serde_json::from_str::<Vec<String>>(&blocklist_string) {
-        Ok(blocklist) => blocklist,
-        Err(_) => serde_json::from_str::<Vec<String>>(constants::DEFAULT_BLOCKLIST).unwrap(),
+    let mut blocklist = match serde_json::from_str::<BlocklistConfig>(&blocklist_string) {
+        Ok(config) => config,
+        Err(_) => {
+            blocklist_file
+            .write_all(constants::DEFAULT_BLOCKLIST.as_bytes())
+            .unwrap();
+            serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap()
+        },
     };
+    
+    let default_urls = serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap();
+    
+    for url in default_urls.enabled {
+        if !blocklist.enabled.contains(&url) && !blocklist.disabled.contains(&url) {
+            blocklist.enabled.push(url);
+        }
+    }
 
+    let updated_blocklist_string = serde_json::to_string_pretty(&blocklist).unwrap();
+    blocklist_file.set_len(0).unwrap();
+    blocklist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
+    blocklist_file.write_all(updated_blocklist_string.as_bytes()).unwrap();
+    
     let mut blocklist_regex: Vec<Regex> = Vec::<Regex>::new();
-
-    for url in &blocklist {
+    
+    for url in &blocklist.enabled {
         unsafe {
             if let Err(e) = webview_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
                 PCWSTR(utils::create_utf_string(url).as_ptr()),
@@ -42,7 +67,6 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
                 eprintln!("Failed to add web resource requested filter: {}", e);
             }
         }
-        // donald trump please save me
         let pattern = url.replace("*", ".*");
         let pattern = format!("^{}$", pattern);
         let regex = Regex::new(&pattern).unwrap();

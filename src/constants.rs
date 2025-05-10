@@ -1,8 +1,9 @@
 pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
 
-pub const DEFAULT_BLOCKLIST: &str = r#"[
+pub const DEFAULT_BLOCKLIST: &str = r#"{
+    "enabled": [
         "*://*.pollfish.com/*",
-        "*://*.paypalobjects.com/*",
+        "*://*.paypalobjects.com/*", 
         "*://c.amazon-adsystem.com/*",
         "*://config.aps.amazon-adsystem.com/*",
         "*://securepubads.g.doubleclick.net/*",
@@ -43,7 +44,9 @@ pub const DEFAULT_BLOCKLIST: &str = r#"[
         "*://krunker.io/libs/nipplejs.min.js*",
         "*://user-assets.krunker.io/60585/*",
         "*://user-assets.krunker.io/60585/model.glb*"
-    ]"#;
+    ],
+    "disabled": []
+}"#;
 
 // most are expired, but theyre all in here to cover multiple versions
 pub const DEFAULT_FLAGS: [&str; 71] = [
@@ -133,7 +136,7 @@ pub const DEFAULT_FLAGS: [&str; 71] = [
     "--in-process-gpu", worse than disable-gpu-sandbox
     "--enable-javascript-harmony", krunker doesnt use experimental features
     "--webrtc-max-cpu-consumption-percentage=100",
-    "--max-gum-fps=9999", related to gameusermedia, some guy deadass saw fps in the name and everyone went with it
+    "--max-gum-fps=9999", related to getusermedia, some guy deadass saw fps in the name and everyone went with it
     "--disable-features=reduced-referrer-granularity", counter productive
     */
 ];
