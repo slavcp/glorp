@@ -119,7 +119,7 @@
 		"id": "menuTimer",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": false,
+		"defaultValue": true,
 		"needsRestart": false
 	},
 	"hideBundles": {

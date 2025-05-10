@@ -3,7 +3,11 @@ import { marked } from "marked";
 function semverCompare(a, b) {
 	if (a.startsWith(`${b}-`)) return -1;
 	if (b.startsWith(`${a}-`)) return 1;
-	return a.localeCompare(b, undefined, { numeric: true, sensitivity: "case", caseFirst: "upper" });
+	return a.localeCompare(b, undefined, {
+		numeric: true,
+		sensitivity: "case",
+		caseFirst: "upper",
+	});
 }
 
 (async () => {
@@ -22,16 +26,18 @@ function semverCompare(a, b) {
 		const html = await import("../components/changelog.html");
 
 		const overlay = document.createElement("div");
-		overlay.style.position = "fixed";
-		overlay.style.top = 0;
-		overlay.style.left = 0;
-		overlay.style.width = "100vw";
-		overlay.style.height = "100vh";
-		overlay.style.background = "rgba(0,0,0,0.75)";
-		overlay.style.zIndex = 9998;
-		overlay.style.display = "flex";
-		overlay.style.justifyContent = "center";
-		overlay.style.alignItems = "center";
+		overlay.style = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100vw;
+			height: 100vh;
+			background: rgba(0,0,0,0.75);
+			z-index: 9998;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		`;
 		document.body.appendChild(overlay);
 
 		const host = document.createElement("div");
@@ -62,15 +68,16 @@ function semverCompare(a, b) {
 			return;
 		}
 
-		const htmlContent = await marked.parse(markdown, { breaks: true, async: true });
+		const htmlContent = await marked.parse(markdown, {
+			breaks: true,
+			async: true,
+		});
 		if (content) content.innerHTML = htmlContent;
 
 		// make anchor links point to the release page instead of attempting to scroll to the anchor in the current page (which won't work)
 		const releaseUrl = `https://github.com/slavcp/glorp/releases/tag/${version}`;
 		for (const a of shadow.querySelectorAll("a")) {
-			if (a.getAttribute("href")?.startsWith("#")) {
-				a.setAttribute("href", releaseUrl + a.getAttribute("href"));
-			}
+			if (a.getAttribute("href")?.startsWith("#")) a.setAttribute("href", releaseUrl + a.getAttribute("href"));
 			a.setAttribute("target", "_blank");
 			a.setAttribute("rel", "noopener");
 		}
@@ -84,9 +91,7 @@ function semverCompare(a, b) {
 		});
 
 		overlay.addEventListener("mousedown", (e) => {
-			if (e.target === overlay) {
-				overlay.remove();
-			}
+			if (e.target === overlay) overlay.remove();
 		});
 	}
 
