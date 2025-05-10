@@ -1,4 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
+use regex::Regex;
+use std::sync::{Arc, Mutex};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
@@ -9,9 +12,6 @@ use windows::{
     },
     core::*,
 };
-use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
-use regex::Regex;
-use std::sync::{Arc, Mutex};
 
 mod config;
 mod constants;
@@ -49,23 +49,29 @@ fn main() {
     }
 
     if config.lock().unwrap().get("discordRPC").unwrap_or(false) {
-            match DiscordIpcClient::new(constants::DISCORD_CLIENT_ID) {
-                Ok(mut client) => {
-                    if client.connect().is_ok() {
-                        *discord_client.lock().unwrap() = Some(client);
-                    } else {
-                        eprintln!("Failed to connect Discord IPC");
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to create Discord IPC client: {}", e);
+        match DiscordIpcClient::new(constants::DISCORD_CLIENT_ID) {
+            Ok(mut client) => {
+                if client.connect().is_ok() {
+                    *discord_client.lock().unwrap() = Some(client);
+                } else {
+                    eprintln!("Failed to connect Discord IPC");
                 }
             }
-        
+            Err(e) => {
+                eprintln!("Failed to create Discord IPC client: {}", e);
+            }
+        }
     }
 
     unsafe {
-        let hwnd: HWND = window::create_window(config.lock().unwrap().get::<String>("startMode").unwrap_or_else(|| String::from("Borderless Fullscreen")).as_str());
+        let hwnd: HWND = window::create_window(
+            config
+                .lock()
+                .unwrap()
+                .get::<String>("startMode")
+                .unwrap_or_else(|| String::from("Borderless Fullscreen"))
+                .as_str(),
+        );
         let webview2_components = window::create_webview2(hwnd, args);
 
         modules::priority::set(
@@ -132,7 +138,7 @@ fn main() {
             }
         }
 
-        #[rustfmt::skip] 
+        #[rustfmt::skip]
         webview_window
             .AddScriptToExecuteOnDocumentCreated(
                 PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
@@ -242,6 +248,18 @@ fn main() {
                 None,
             )
             .ok();
+
+        webview_window.add_NavigationCompleted(
+            &NavigationCompletedEventHandler::create(Box::new(
+                move |webview, _args| {
+                    let version = env!("CARGO_PKG_VERSION");
+                    let script = format!("window.glorpClient = window.glorpClient || {{}}; window.glorpClient.version = '{}';", version);
+                    webview.unwrap().ExecuteScript(PCWSTR(utils::create_utf_string(&script).as_ptr()), None).unwrap();
+                    Ok(())
+                }
+            )),
+            token,
+        ).unwrap();
 
         webview_window.add_WebMessageReceived(
             &WebMessageReceivedEventHandler::create(Box::new(
