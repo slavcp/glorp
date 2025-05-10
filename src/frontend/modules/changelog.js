@@ -1,14 +1,21 @@
 import { marked } from "marked";
 
+function semverCompare(a, b) {
+	if (a.startsWith(`${b}-`)) return -1;
+	if (b.startsWith(`${a}-`)) return 1;
+	return a.localeCompare(b, undefined, { numeric: true, sensitivity: "case", caseFirst: "upper" });
+}
+
 (async () => {
 	const currentVersion = window.glorpClient?.version;
-	const lastSeenVersion = localStorage.getItem("lastSeenVersion");
-	const hasSeenChangelog = sessionStorage.getItem("hasSeenChangelog");
+	const lastSeenVersion = localStorage.getItem("glorp_lastSeenVersion");
+	const hasSeenChangelog = sessionStorage.getItem("glorp_hasSeenChangelog");
+	const isNewVersion = !lastSeenVersion || semverCompare(currentVersion, lastSeenVersion) > 0;
 
-	if (currentVersion && currentVersion !== lastSeenVersion && !hasSeenChangelog) {
+	if (currentVersion && isNewVersion && !hasSeenChangelog) {
 		await showChangelogPopup(currentVersion);
-		localStorage.setItem("lastSeenVersion", currentVersion);
-		sessionStorage.setItem("hasSeenChangelog", "true");
+		localStorage.setItem("glorp_lastSeenVersion", currentVersion);
+		sessionStorage.setItem("glorp_hasSeenChangelog", "true");
 	}
 
 	async function showChangelogPopup(version) {
@@ -45,7 +52,7 @@ import { marked } from "marked";
 
 		let markdown = "no release notes found";
 		try {
-			const res = await fetch("https://api.github.com/repos/slavcp/glorp/releases/latest");
+			const res = await fetch(`https://api.github.com/repos/slavcp/glorp/releases/tags/${version}`);
 			const data = await res.json();
 			markdown = data.body || markdown;
 		} catch {
