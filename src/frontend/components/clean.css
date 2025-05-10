@@ -17,28 +17,28 @@
 #menuClassName,
 #menuClassIcn,
 #editorBtnM {
-  display: none !important;
+	display: none !important;
 }
 
 .verticalSeparator,
 .verticalSeparatorInline {
-  visibility: hidden;
+	visibility: hidden;
 }
 
 #mLevelCont {
-  background-color: transparent;
+	background-color: transparent;
 }
 
 #uiBase.onMenu #spectButton {
-  top: 94%;
+	top: 94%;
 }
 
 .headerBarRight {
-  right: -23px;
+	right: -23px;
 }
 
 .headerBarLeft,
 .headerBarRight,
 #menuItemContainer {
-  background-color: transparent !important;
+	background-color: transparent !important;
 }

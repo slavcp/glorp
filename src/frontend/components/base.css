@@ -9,33 +9,33 @@
 #endAContainer,
 #endAHolder,
 #topRightAdHolder {
-  display: none !important;
+	display: none !important;
 }
 
 .death-ui-bottom,
 #uiBase.onDeathScrn #chatHolder {
-  backdrop-filter: none;
-  animation: none;
+	backdrop-filter: none;
+	animation: none;
 }
 
 .statIcon {
-  margin-bottom: 0px;
+	margin-bottom: 0px;
 }
 
 #phonePop {
-  top: 0 !important;
-  bottom: 0 !important;
+	top: 0 !important;
+	bottom: 0 !important;
 }
 
 #pointNumber {
-  color: white;
+	color: white;
 }
 
 div #setHed_local,
 .glorpSettings .setHed:first-of-type {
-  margin-top: 10px;
+	margin-top: 10px;
 }
 
 .setBodH {
-  margin-top: 5px;
+	margin-top: 5px;
 }
