@@ -1,4 +1,5 @@
-onlyBuiltDependencies:
-  - esbuild
 packages:
-  - "src"
+  - src
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - esbuild
