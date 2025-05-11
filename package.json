@@ -1,17 +1,21 @@
 {
 	"scripts": {
-		"esbuild": "esbuild ./src/frontend/main.js --bundle --minify --format=esm --tree-shaking=true --minify-whitespace --minify-syntax --ignore-annotations --loader:.json=json --loader:.css=text --loader:.html=text --outfile=./target/bundle.js",
-		"esbuild:prod": "pnpm run esbuild --drop:console --drop:debugger",
+		"esbuild": "node esbuild.config.mjs",
+		"esbuild:prod": "node esbuild.config.mjs --drop:console --drop:debugger",
 		"dev": "pnpm run esbuild && cargo build --workspace && cargo run",
 		"build": "pnpm run esbuild:prod && cargo build --workspace --release --target x86_64-pc-windows-msvc",
 		"package": "pnpm run build && iscc ./resources/installer_script.iss"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"esbuild": "^0.25.4"
+		"@biomejs/biome": "^1.9.4",
+		"esbuild": "^0.25.4",
+		"@chialab/esbuild-plugin-html": "^0.18.2"
 	},
 	"dependencies": {
 		"marked": "^15.0.11"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
 	},
 	"packageManager": "pnpm@10.10.0"
 }

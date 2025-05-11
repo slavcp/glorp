@@ -5,7 +5,6 @@
 		"type": "select",
 		"category": "Main",
 		"defaultValue": "Borderless Fullscreen",
-		"needsRestart": true,
 		"options": ["Borderless Fullscreen", "Normal", "Maximized"]
 	},
 	"uncapFps": {
@@ -69,8 +68,7 @@
 		"id": "accountManager",
 		"type": "checkbox",
 		"category": "Main",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"hpEnemyCounter": {
 		"name": "Hardpoint Enemy counter",
@@ -78,32 +76,28 @@
 		"description": "Shows the number of enemies present on the hardpoint during competitive matches",
 		"type": "checkbox",
 		"category": "Game",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"autoSpec": {
 		"name": "Auto Spectate",
 		"id": "autoSpec",
 		"type": "checkbox",
 		"category": "Game",
-		"defaultValue": false,
-		"needsRestart": false
+		"defaultValue": false
 	},
 	"showPing": {
 		"name": "Player List Ping",
 		"id": "showPing",
 		"type": "checkbox",
 		"category": "Game",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"exitButton": {
 		"name": "Exit Button",
 		"id": "exitButton",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"cleanUI": {
 		"name": "Cleaner Menu",
@@ -111,24 +105,21 @@
 		"description": "Remove some of the unnecessary DOM elements",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": false,
-		"needsRestart": false
+		"defaultValue": false
 	},
 	"menuTimer": {
 		"name": "Menu Timer",
 		"id": "menuTimer",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"hideBundles": {
 		"name": "Hide Bundle Popups",
 		"id": "hideBundles",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": false,
-		"needsRestart": false
+		"defaultValue": false
 	},
 	"showChangelog": {
 		"name": "Show Changelogs",
@@ -137,8 +128,7 @@
 		"button": "Show Now",
 		"buttonAction": "window.glorpClient.showChangelogPopup(window.glorpClient.version)",
 		"category": "UI",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"textSelect": {
 		"name": "Selectable Chat",
@@ -146,8 +136,7 @@
 		"description": "Make game chat selectable",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": true,
-		"needsRestart": false
+		"defaultValue": true
 	},
 	"rawInput": {
 		"name": "Raw Input (!)",
@@ -167,8 +156,7 @@
 		"max": 3,
 		"step": 0.01,
 		"category": "Tweaks",
-		"defaultValue": 1,
-		"needsRestart": false
+		"defaultValue": 1
 	},
 	"inMenuThrottle": {
 		"name": "CPU Throttling in Menu",
@@ -179,8 +167,7 @@
 		"max": 3,
 		"step": 0.01,
 		"category": "Tweaks",
-		"defaultValue": 1.5,
-		"needsRestart": false
+		"defaultValue": 1.5
 	},
 	"webviewPriority": {
 		"name": "Webview Priority",

@@ -35,17 +35,9 @@
   animation: none;
 }
 
-.statIcon {
-  margin-bottom: 0px;
-}
-
 #phonePop {
   top: 0 !important;
   bottom: 0 !important;
-}
-
-#pointNumber {
-  color: white;
 }
 
 div #setHed_local,
