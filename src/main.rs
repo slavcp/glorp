@@ -241,7 +241,7 @@ fn main() {
                             .lock()
                             .unwrap()
                             .get::<f32>("inMenuThrottle")
-                            .unwrap_or(2.0)
+                            .unwrap_or(1.5)
                     ))
                     .as_ptr(),
                 ),
