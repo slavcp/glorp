@@ -103,11 +103,11 @@ Object.defineProperty(window, "gameLoaded", {
 			};
 
 			await import("./settings.js");
+			await import("./modules/changelog.js");
 			if (window.glorpClient?.settings.config?.hideBundles) window.bundlePopup = () => null;
 			if (window.glorpClient?.settings.config?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
 			if (window.glorpClient?.settings.config?.accountManager) await import("./modules/accountManager.js");
 			if (window.glorpClient?.settings.config?.showPing) await import("./modules/showPing.js");
-			if (window.glorpClient?.settings.config?.showChangelog) await import("./modules/changelog.js");
 
 			if (window.glorpClient?.settings.config?.autoSpec) {
 				const trySetSpect = async () => {

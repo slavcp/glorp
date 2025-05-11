@@ -180,7 +180,7 @@ fn main() {
                 COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
             )
             .unwrap();
-
+        
         webview_window.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(
                 move |webview: Option<ICoreWebView2>,
