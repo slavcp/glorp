@@ -13,16 +13,13 @@ function semverCompare(a, b) {
 (async () => {
 	const currentVersion = window.glorpClient?.version;
 	const lastSeenVersion = localStorage.getItem("glorp_lastSeenVersion");
-	const hasSeenChangelog = sessionStorage.getItem("glorp_hasSeenChangelog");
 	const isNewVersion = !lastSeenVersion || semverCompare(currentVersion, lastSeenVersion) > 0;
-
-	if (currentVersion && isNewVersion && !hasSeenChangelog) {
+	if (currentVersion && isNewVersion && window.glorpClient?.settings.config?.showChangelog) {
 		await showChangelogPopup(currentVersion);
-		localStorage.setItem("glorp_lastSeenVersion", currentVersion);
-		sessionStorage.setItem("glorp_hasSeenChangelog", "true");
 	}
 
 	async function showChangelogPopup(version) {
+		localStorage.setItem("glorp_lastSeenVersion", currentVersion);
 		const html = await import("../components/changelog.html");
 
 		const overlay = document.createElement("div");
