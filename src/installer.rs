@@ -9,13 +9,10 @@ const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
 use std::io::Read;
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
-#[cfg(not(debug_assertions))]
-include!("../target/version.rs");
-
 pub fn check_webview2() {
     unsafe {
         let mut version_string: Vec<u16> = super::utils::create_utf_string("");
-        let version_info: *mut PWSTR = version_string.as_mut_ptr() as *mut PWSTR;
+        let version_info = version_string.as_mut_ptr() as *mut PWSTR;
         match GetAvailableCoreWebView2BrowserVersionString(None, version_info) {
             Ok(_) => {}
             Err(e) => {
@@ -111,7 +108,7 @@ pub fn check_update() {
             None => return,
         };
         if semver::Version::parse(newest_version).unwrap()
-            <= semver::Version::parse(VERSION).unwrap()
+            <= semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap()
         {
             return;
         };
