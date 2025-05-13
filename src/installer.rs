@@ -177,7 +177,7 @@ pub fn check_update() {
                     None,
                     w!("open"),
                     PCWSTR(super::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
-                    w!("/VERYSILENT"),
+                    w!(""),
                     None,
                     SW_NORMAL,
                 );
