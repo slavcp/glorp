@@ -4,7 +4,7 @@
 		"esbuild:prod": "node esbuild.config.mjs --drop:console --drop:debugger",
 		"dev": "pnpm run esbuild && cargo build --workspace && cargo run",
 		"build": "pnpm run esbuild:prod && cargo build --workspace --release --target x86_64-pc-windows-msvc",
-		"package": "pnpm run build && iscc ./resources/installer_script.iss"
+		"package": "pnpm run build && wix build ./resources/glorp-setup-x86_64.wxs -ext WixToolset.Util.wixext"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
