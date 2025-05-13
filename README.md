@@ -35,7 +35,7 @@ consider using the CPU throttler in such scenario
   - [Microsoft Visual C++](https://visualstudio.microsoft.com/downloads/)
   - [Node](https://nodejs.org/)
   - [pnpm](https://pnpm.io/installation)
-  - [Inno **(if packaging)**](https://jrsoftware.org/isinfo.php)
+  - [WiX **(if packaging)**](https://github.com/wixtoolset/wix/releases)
 
 1. `git clone https://github.com/slavcp/glorp.git`
 2. `cd glorp`
