@@ -120,7 +120,7 @@ pub fn check_update() {
 
         let mut output_path = std::env::current_exe().unwrap();
         output_path.pop();
-        output_path.push(format!("version.{}.exe", newest_version));
+        output_path.push(format!("version.{}.msi", newest_version));
 
         let res = match ureq::get(download_url).call() {
             Ok(res) => res,
