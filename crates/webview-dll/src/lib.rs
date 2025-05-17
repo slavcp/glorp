@@ -2,13 +2,55 @@ use std::mem::transmute;
 use std::sync::atomic::{AtomicBool, AtomicPtr};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
+use once_cell::sync::Lazy;
+use std::sync::mpsc::{Sender, channel};
 use windows::Win32::{
     Foundation::BOOL,
     Foundation::*,
     System::{Diagnostics::Debug::*, SystemServices::*, Threading::*},
-    UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
+    UI::{Input::{KeyboardAndMouse::*}, WindowsAndMessaging::*},
 };
 use windows::core::*;
+
+static SPACE_DOWN: INPUT = INPUT {
+    r#type: INPUT_KEYBOARD,
+    Anonymous: INPUT_0 {
+        ki: KEYBDINPUT {
+            wVk: VK_SPACE,
+            wScan: 0,
+            dwFlags: KEYBD_EVENT_FLAGS(0),
+            time: 0,
+            dwExtraInfo: 0,
+        },
+    },
+};
+
+static SPACE_UP: INPUT = INPUT {
+    r#type: INPUT_KEYBOARD,
+    Anonymous: INPUT_0 {
+        ki: KEYBDINPUT {
+            wVk: VK_SPACE,
+            wScan: 0,
+            dwFlags: KEYEVENTF_KEYUP,
+            time: 0,
+            dwExtraInfo: 0,
+        },
+    },
+};
+
+static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
+    let (tx, rx) = channel();
+    std::thread::spawn(move || {
+        while let Ok(_) = rx.recv() {
+            unsafe {
+                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
+                Sleep(5);
+                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
+            }
+        }
+    });
+    tx
+});
 
 static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
@@ -218,11 +260,17 @@ unsafe extern "system" fn wnd_proc_widget(
 ) -> LRESULT {
     unsafe {
         match message {
+            WM_APP => {
+                OutputDebugStringW(w!("HHH GOIGN TO RAMPBOOST\0"));
+                SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
+                LRESULT(1)
+            }
             WM_USER => {
                 LOCK_STATUS.store(wparam.0 != 0, std::sync::atomic::Ordering::Relaxed);
                 LRESULT(1)
             }
             WM_MOUSEWHEEL => {
+                OutputDebugStringW(w!("START NORMAL \0"));
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
                     // send the message to the glorp window, from where it gets sent as a js event, best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
@@ -235,6 +283,33 @@ unsafe extern "system" fn wnd_proc_widget(
         }
     }
 }
+
+#[unsafe(no_mangle)]
+unsafe extern "system" fn wnd_proc_widget_rampboost(
+    window: HWND,
+    message: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,    
+) -> LRESULT {
+    unsafe {
+        match message {
+            WM_MOUSEWHEEL => {
+                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                    OutputDebugStringW(w!("START BOOSTING\0"));
+                    SCROLL_SENDER.send(()).ok();
+                    return LRESULT(1);
+                }
+                CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
+            }
+            WM_USER => {
+                LOCK_STATUS.store(wparam.0 != 0, std::sync::atomic::Ordering::Relaxed);
+                LRESULT(1)
+            }
+            _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
+        }
+    }
+}
+
 
 unsafe extern "system" fn window_event_proc(
     _hook: HWINEVENTHOOK,

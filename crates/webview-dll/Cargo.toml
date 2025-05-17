@@ -9,3 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 windows = { version = "0.59.*", features = ["Win32_UI_Accessibility"] }
+once_cell = "1.20.*"

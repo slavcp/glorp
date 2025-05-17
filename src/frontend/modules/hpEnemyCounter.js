@@ -51,7 +51,7 @@ class HpEnemyCounter {
 	};
 
 	checkComp = () => {
-		if (document.querySelector("#compClassPHolder")) {
+		if (document.querySelector(".cmpTmHed")) {
 			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 
 			this.setupDisplay();
