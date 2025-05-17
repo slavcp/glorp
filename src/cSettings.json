@@ -78,6 +78,15 @@
 		"category": "Game",
 		"defaultValue": true
 	},
+	"rampBoost": {
+		"name": "Allow Ramp Boosting",
+		"id": "rampBoost",
+		"description": "forces scroll to send spacebar",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": false,
+		"needsRestart": true
+	},
 	"autoSpec": {
 		"name": "Auto Spectate",
 		"id": "autoSpec",

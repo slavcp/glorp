@@ -63,6 +63,7 @@ fn main() {
         }
     }
 
+
     unsafe {
         let hwnd: HWND = window::create_window(
             config
@@ -172,7 +173,6 @@ fn main() {
         if config.lock().unwrap().get("swapper").unwrap_or(true) {
             swaps = modules::swapper::load(&webview_window)
         };
-
         
         for url in ["*://matchmaker.krunker.io/*", "wss://lobby-ranked*"] {
             webview_window
@@ -232,6 +232,18 @@ fn main() {
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
             "Chrome_RenderWidgetHostHWND",
         ));
+
+
+        if config.lock().unwrap().get("rampBoost").unwrap_or(false)  {
+            PostMessageW(
+                widget_wnd,
+                WM_APP,
+                WPARAM(1),
+                LPARAM(0),
+            ).ok();
+        }
+
+
         let config_clone = Arc::clone(&config);
 
         webview_window
