@@ -261,7 +261,6 @@ unsafe extern "system" fn wnd_proc_widget(
     unsafe {
         match message {
             WM_APP => {
-                OutputDebugStringW(w!("HHH GOIGN TO RAMPBOOST\0"));
                 SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
                 LRESULT(1)
             }
@@ -270,7 +269,6 @@ unsafe extern "system" fn wnd_proc_widget(
                 LRESULT(1)
             }
             WM_MOUSEWHEEL => {
-                OutputDebugStringW(w!("START NORMAL \0"));
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
                     // send the message to the glorp window, from where it gets sent as a js event, best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
@@ -295,7 +293,6 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
         match message {
             WM_MOUSEWHEEL => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    OutputDebugStringW(w!("START BOOSTING\0"));
                     SCROLL_SENDER.send(()).ok();
                     return LRESULT(1);
                 }
