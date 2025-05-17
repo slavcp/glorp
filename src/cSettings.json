@@ -70,14 +70,6 @@
 		"category": "Main",
 		"defaultValue": true
 	},
-	"hpEnemyCounter": {
-		"name": "Hardpoint Enemy counter",
-		"id": "hpEnemyCounter",
-		"description": "Shows the number of enemies present on the hardpoint during competitive matches",
-		"type": "checkbox",
-		"category": "Game",
-		"defaultValue": true
-	},
 	"rampBoost": {
 		"name": "Allow Ramp Boosting",
 		"id": "rampBoost",
@@ -86,6 +78,14 @@
 		"category": "Game",
 		"defaultValue": false,
 		"needsRestart": true
+	},
+	"hpEnemyCounter": {
+		"name": "Hardpoint Enemy counter",
+		"id": "hpEnemyCounter",
+		"description": "Shows the number of enemies present on the hardpoint during competitive matches",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": true
 	},
 	"autoSpec": {
 		"name": "Auto Spectate",
