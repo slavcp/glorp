@@ -173,13 +173,16 @@ fn main() {
             swaps = modules::swapper::load(&webview_window)
         };
 
-        webview_window
-            .AddWebResourceRequestedFilterWithRequestSourceKinds(
-                w!("*://matchmaker.krunker.io/*"),
-                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-                COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
-            )
-            .unwrap();
+        
+        for url in ["*://matchmaker.krunker.io/*", "wss://lobby-ranked*"] {
+            webview_window
+                .AddWebResourceRequestedFilterWithRequestSourceKinds(
+                    PCWSTR(utils::create_utf_string(url).as_ptr()),
+                    COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+                    COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
+                )
+                .unwrap();
+        }
         
         webview_window.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(
@@ -211,7 +214,7 @@ fn main() {
                                 return Ok(());
                             }
                         }
-                        if uri.contains("matchmaker.krunker.io/game-info?game") {
+                        if uri.contains("matchmaker.krunker.io/game-info?game") || uri.contains("lobby-ranked") {
                             webview
                                 .unwrap()
                                 .PostWebMessageAsJson(w!("\"game-updated\""))

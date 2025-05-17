@@ -51,9 +51,7 @@ class HpEnemyCounter {
 	};
 
 	checkComp = () => {
-		const gameStatus = window.getGameActivity();
-
-		if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
+		if (document.querySelector("#compClassPHolder")) {
 			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 
 			this.setupDisplay();
