@@ -34,8 +34,8 @@ impl Default for WindowState {
     }
 }
 static WINDOW_STATE: Lazy<Mutex<WindowState>> = Lazy::new(|| Mutex::new(WindowState::default()));
-static CONTROLLER: AtomicPtr<ICoreWebView2Controller> = AtomicPtr::new(std::ptr::null_mut());
-static WEBVIEW: AtomicPtr<ICoreWebView2> = AtomicPtr::new(std::ptr::null_mut());
+static CONTROLLER: AtomicPtr<ICoreWebView2Controller4> = AtomicPtr::new(std::ptr::null_mut());
+static WEBVIEW: AtomicPtr<ICoreWebView2_22> = AtomicPtr::new(std::ptr::null_mut());
 
 pub fn create_window(start_mode: &str) -> HWND {
     unsafe {
@@ -137,7 +137,7 @@ pub fn create_window(start_mode: &str) -> HWND {
 pub fn create_webview2(
     hwnd: HWND,
     args: String,
-) -> (ICoreWebView2Controller, ICoreWebView2Environment) {
+) -> (ICoreWebView2Controller4, ICoreWebView2Environment) {
     unsafe {
         let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
         options.set_are_browser_extensions_enabled(false);
@@ -219,16 +219,56 @@ pub fn create_webview2(
             return create_webview2(hwnd, args);
         };
 
-        let controller = rx.recv().unwrap();
+        let controller = rx
+            .recv()
+            .unwrap()
+            .cast::<ICoreWebView2Controller4>()
+            .unwrap();
         let env = erx.recv().unwrap();
+        let webview2 = controller
+            .CoreWebView2()
+            .unwrap()
+            .cast::<ICoreWebView2_22>()
+            .unwrap();
 
+        controller.SetAllowExternalDrop(false).unwrap();
+        controller
+            .SetDefaultBackgroundColor(COREWEBVIEW2_COLOR {
+                A: 255,
+                R: 0,
+                G: 0,
+                B: 0,
+            })
+            .ok();
+
+        let webview2_settings = webview2
+            .clone()
+            .Settings()
+            .unwrap()
+            .cast::<ICoreWebView2Settings9>()
+            .unwrap();
+
+        webview2_settings
+            .SetIsReputationCheckingRequired(false)
+            .ok();
+        webview2_settings.SetIsSwipeNavigationEnabled(false).ok();
+        webview2_settings.SetIsPinchZoomEnabled(false).ok();
+        webview2_settings.SetIsPasswordAutosaveEnabled(false).ok();
+        webview2_settings.SetIsGeneralAutofillEnabled(false).ok();
+        webview2_settings
+            .SetAreBrowserAcceleratorKeysEnabled(false)
+            .ok();
+        webview2_settings
+            .SetAreDefaultContextMenusEnabled(false)
+            .ok();
+        webview2_settings.SetIsZoomControlEnabled(false).ok();
+        webview2_settings.SetUserAgent(w!("Electron")).ok();
+
+        WEBVIEW.store(Box::into_raw(Box::new(webview2)), Ordering::Relaxed);
         CONTROLLER.store(
             Box::into_raw(Box::new(controller.clone())),
             Ordering::Relaxed,
         );
-
-        let webview = controller.CoreWebView2().unwrap();
-        WEBVIEW.store(Box::into_raw(Box::new(webview)), Ordering::Relaxed);
 
         // subclass_widgetwin(hwnd);
         (controller, env)

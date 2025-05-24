@@ -73,7 +73,7 @@
 	"rampBoost": {
 		"name": "Allow Ramp Boosting",
 		"id": "rampBoost",
-		"description": "forces scroll to send spacebar",
+		"description": "scroll on ramp go fast",
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": false,

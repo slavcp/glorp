@@ -63,7 +63,6 @@ fn main() {
         }
     }
 
-
     unsafe {
         let hwnd: HWND = window::create_window(
             config
@@ -88,49 +87,17 @@ fn main() {
         let controller = webview2_components.0;
         let env = webview2_components.1;
 
-        let webview_window: ICoreWebView2 = controller.CoreWebView2().unwrap();
+        let webview_window: ICoreWebView2_22 = controller
+            .CoreWebView2()
+            .unwrap()
+            .cast::<ICoreWebView2_22>()
+            .unwrap();
 
         #[cfg(not(debug_assertions))]
         {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
                 installer::check_update();
             }
-        }
-
-        let controller = controller.cast::<ICoreWebView2Controller4>().unwrap();
-        let webview_window = webview_window.cast::<ICoreWebView2_22>().unwrap();
-
-        controller.SetAllowExternalDrop(false).unwrap();
-        controller
-            .SetDefaultBackgroundColor(COREWEBVIEW2_COLOR {
-                A: 255,
-                R: 0,
-                G: 0,
-                B: 0,
-            })
-            .ok();
-
-        let result = (|| -> std::result::Result<(), windows::core::Error> {
-            let webview2_settings = webview_window
-                .Settings()
-                .unwrap()
-                .cast::<ICoreWebView2Settings9>()
-                .unwrap();
-
-            webview2_settings.SetIsReputationCheckingRequired(false)?;
-            webview2_settings.SetIsSwipeNavigationEnabled(false)?;
-            webview2_settings.SetIsPinchZoomEnabled(false)?;
-            webview2_settings.SetIsPasswordAutosaveEnabled(false)?;
-            webview2_settings.SetIsGeneralAutofillEnabled(false)?;
-            webview2_settings.SetAreBrowserAcceleratorKeysEnabled(false)?;
-            webview2_settings.SetAreDefaultContextMenusEnabled(false)?;
-            webview2_settings.SetIsZoomControlEnabled(false)?;
-            webview2_settings.SetUserAgent(w!("Electron"))?;
-            Ok(())
-        })();
-
-        if let Err(e) = result {
-            eprintln!("Failed to set WebView2 settings: {}", e);
         }
 
         if config.lock().unwrap().get("userscripts").unwrap_or(false) {
@@ -173,7 +140,7 @@ fn main() {
         if config.lock().unwrap().get("swapper").unwrap_or(true) {
             swaps = modules::swapper::load(&webview_window)
         };
-        
+
         for url in ["*://matchmaker.krunker.io/*", "wss://lobby-ranked*"] {
             webview_window
                 .AddWebResourceRequestedFilterWithRequestSourceKinds(
@@ -183,7 +150,7 @@ fn main() {
                 )
                 .unwrap();
         }
-        
+
         webview_window.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(
                 move |webview: Option<ICoreWebView2>,
@@ -233,36 +200,55 @@ fn main() {
             "Chrome_RenderWidgetHostHWND",
         ));
 
-
-        if config.lock().unwrap().get("rampBoost").unwrap_or(false)  {
-            PostMessageW(
-                widget_wnd,
-                WM_APP,
-                WPARAM(1),
-                LPARAM(0),
-            ).ok();
+        if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
+            PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
         }
-
 
         let config_clone = Arc::clone(&config);
 
-        webview_window
-            .CallDevToolsProtocolMethod(
-                w!("Emulation.setCPUThrottlingRate"),
-                PCWSTR(
-                    utils::create_utf_string(&format!(
-                        "{{\"rate\":{}}}",
-                        config_clone
-                            .lock()
-                            .unwrap()
-                            .get::<f32>("inMenuThrottle")
-                            .unwrap_or(1.5)
-                    ))
-                    .as_ptr(),
-                ),
-                None,
-            )
-            .ok();
+        fn set_cpu_throttling_inmenu(wv_window: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
+            unsafe {
+                wv_window
+                    .CallDevToolsProtocolMethod(
+                        w!("Emulation.setCPUThrottlingRate"),
+                        PCWSTR(
+                            utils::create_utf_string(&format!(
+                                "{{\"rate\":{}}}",
+                                cfg.lock()
+                                    .unwrap()
+                                    .get::<f32>("inMenuThrottle")
+                                    .unwrap_or(2.0)
+                            ))
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
+            }
+        }
+
+        unsafe fn set_cpu_throttling_ingame(
+            wv_window: &ICoreWebView2,
+            cfg: &Arc<Mutex<config::Config>>,
+        ) {
+            unsafe {
+                wv_window
+                    .CallDevToolsProtocolMethod(
+                        w!("Emulation.setCPUThrottlingRate"),
+                        PCWSTR(
+                            utils::create_utf_string(&format!(
+                                "{{\"rate\":{}}}",
+                                cfg.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
+                            ))
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
+            }
+        }
+
+        set_cpu_throttling_inmenu(&webview_window, &config_clone);
 
         webview_window.add_NavigationCompleted(
             &NavigationCompletedEventHandler::create(Box::new(
@@ -292,7 +278,6 @@ fn main() {
                         let parts: Vec<&str> = message.split(',').map(|s| s.trim()).collect();
                         match parts.first() {
                             Some(&"setConfig") => {
-                                if parts.len() >= 3 {
                                     let setting = parts[1];
                                     let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
                                         serde_json::Value::Bool(bool_val)
@@ -302,14 +287,12 @@ fn main() {
                                         serde_json::Value::String(parts[2].to_string())
                                     };
                                     config_clone.lock().unwrap().set(setting, value);
-                                }
-                            }
+                            },
                             Some(&"getConfig") => {
                                 config_clone.lock().unwrap().send_config(&webview_window.unwrap());
                             }
-                            Some(&"pointerLockChange") => {
+                            Some(&"pointerLock") => { 
                                 let value = parts[1].parse::<bool>().unwrap_or(false);
-
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -318,20 +301,10 @@ fn main() {
                                 ).ok();
 
                                 if value {
-                                 webview_window.unwrap().CallDevToolsProtocolMethod(
-                                    w!("Emulation.setCPUThrottlingRate"),
-                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0))).as_ptr()),
-                                    None,
-                                ).ok();
-                            } else {
-                                 webview_window.unwrap().CallDevToolsProtocolMethod(
-                                    w!("Emulation.setCPUThrottlingRate"),
-                                    PCWSTR(utils::create_utf_string(&format!("{{\"rate\":{}}}", config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0))).as_ptr()),
-
-                                    None,
-                                ).ok();
-                            }
-
+                                    set_cpu_throttling_ingame(&webview_window.unwrap(), &config_clone);
+                                } else {
+                                    set_cpu_throttling_inmenu(&webview_window.unwrap(), &config_clone);
+                                }
                             }
                             Some(&"close") => {
                                 PostQuitMessage(0);
@@ -343,7 +316,6 @@ fn main() {
                                     .ok();
                             }
                             Some(&"rpcUpdate") => {
-                                if parts.len() >= 3 {
                                     let details = "Krunker";
                                     let state = format!("{} on {}", parts[1], parts[2]);
                                     if let Some(client) = &mut *discord_client.lock().unwrap() {
@@ -356,9 +328,7 @@ fn main() {
                                             eprintln!("Failed to set rpc activity: {}", e);
                                         }
                                     }
-                                } else {
-                                    eprintln!("Invalid rpcUpdate message format: {}", message_string);
-                                }
+
                             }
                             _ => {}
                         }
@@ -410,7 +380,6 @@ fn main() {
                             VK_F12 => {
                                 webview_window.OpenDevToolsWindow().ok();
                             }
-
                             _ => {}
                         }
                         Ok(())
