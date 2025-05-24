@@ -60,13 +60,10 @@ document.addEventListener(
 );
 
 document.addEventListener("pointerlockchange", () => {
-	window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`);
+	window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`);
 
 	// safeguard
-	setTimeout(
-		() => window.chrome.webview.postMessage(`pointerLockChange,${document.pointerLockElement !== null}`),
-		1000,
-	);
+	setTimeout(() => window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`), 1000);
 });
 
 Object.defineProperty(window, "gameLoaded", {
