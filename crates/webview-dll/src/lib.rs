@@ -1,14 +1,14 @@
+use once_cell::sync::Lazy;
 use std::mem::transmute;
 use std::sync::atomic::{AtomicBool, AtomicPtr};
+use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
-use once_cell::sync::Lazy;
-use std::sync::mpsc::{Sender, channel};
 use windows::Win32::{
     Foundation::BOOL,
     Foundation::*,
     System::{Diagnostics::Debug::*, SystemServices::*, Threading::*},
-    UI::{Input::{KeyboardAndMouse::*}, WindowsAndMessaging::*},
+    UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
 };
 use windows::core::*;
 
@@ -44,7 +44,7 @@ static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
         while let Ok(_) = rx.recv() {
             unsafe {
                 SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
-                Sleep(5);
+                Sleep(1);
                 SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
             }
         }
@@ -180,7 +180,6 @@ unsafe extern "system" fn wnd_proc_1(
 ) -> LRESULT {
     unsafe {
         match message {
-            WM_CHAR => LRESULT(1),
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_KEYDOWN | WM_KEYUP => {
                 if wparam.0 == VK_ESCAPE.0 as usize
@@ -287,7 +286,7 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
     window: HWND,
     message: u32,
     wparam: WPARAM,
-    lparam: LPARAM,    
+    lparam: LPARAM,
 ) -> LRESULT {
     unsafe {
         match message {
@@ -302,11 +301,10 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
                 LOCK_STATUS.store(wparam.0 != 0, std::sync::atomic::Ordering::Relaxed);
                 LRESULT(1)
             }
-            _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
+            _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam),
         }
     }
 }
-
 
 unsafe extern "system" fn window_event_proc(
     _hook: HWINEVENTHOOK,
