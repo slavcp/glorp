@@ -1,8 +1,6 @@
 import { marked } from "marked";
 
 function semverCompare(a, b) {
-	if (a.startsWith(`${b}-`)) return -1;
-	if (b.startsWith(`${a}-`)) return 1;
 	return a.localeCompare(b, undefined, {
 		numeric: true,
 		sensitivity: "case",
@@ -12,16 +10,14 @@ function semverCompare(a, b) {
 
 (async () => {
 	const currentVersion = window.glorpClient?.version;
-	const lastSeenVersion = localStorage.getItem("glorp_lastSeenVersion");
-	const isNewVersion = !lastSeenVersion || semverCompare(currentVersion, lastSeenVersion) > 0;
-	if (currentVersion && isNewVersion && window.glorpClient?.settings.config?.showChangelog) {
+	const lastSeenVersion = window.localStorage.getItem("glorp_lastSeenVersion");
+	const isNewVersion = semverCompare(currentVersion, lastSeenVersion) > 0;
+	window.localStorage.setItem("glorp_lastSeenVersion", currentVersion);
+	if (window.glorpClient?.settings.config?.showChangelog && lastSeenVersion && currentVersion && isNewVersion)
 		await showChangelogPopup(currentVersion);
-	}
 
 	async function showChangelogPopup(version) {
-		localStorage.setItem("glorp_lastSeenVersion", currentVersion);
 		const html = await import("../components/changelog.html");
-
 		const overlay = document.createElement("div");
 		overlay.style = `
 			position: fixed;
