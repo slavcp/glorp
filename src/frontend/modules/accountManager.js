@@ -121,7 +121,7 @@ class AccountManager {
 			document.querySelector("#accPass").value = this.decode(account.password);
 			nameInput.dispatchEvent(new Event("input", { bubbles: true }));
 			passInput.dispatchEvent(new Event("input", { bubbles: true }));
-			document.querySelector(".io-button.io-button--accept.svelte-13ld0w6").click();
+			document.querySelector(".io-button").click();
 			this.checkCaptcha();
 		}, 1);
 	}
