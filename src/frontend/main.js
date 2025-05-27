@@ -90,6 +90,28 @@ Object.defineProperty(window, "gameLoaded", {
 			window.closWind();
 		}, 1400);
 
+		// append ranked and mod button to comp host ui
+		document.querySelector("#compBtnLst").innerHTML += `
+    <div class="compMenBtnS" 
+        onmouseenter='SOUND.play("tick_0",.1)' 
+        onclick="playSelect(),showWindow(4)" 
+        style="background-color: #f5479b">
+        <span class="material-icons" 
+            style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">
+            color_lens
+        </span>
+    </div>
+    <div class="compMenBtnS"
+        onmouseenter='SOUND.play("tick_0",.1)'
+        onclick="playSelect(),window.openRankedMenu()"
+        style="background-color: #5ce05a">
+        <span class="material-icons"
+            style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">
+            star
+        </span>
+    </div>
+`;
+
 		(async () => {
 			await import("./notifications.js");
 			// trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
