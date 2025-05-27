@@ -317,7 +317,7 @@ pub fn toggle_fullscreen(hwnd: HWND) {
                 GetSystemMetrics(SYSTEM_METRICS_INDEX(1)),
                 SWP_NOZORDER | SWP_FRAMECHANGED,
             )
-            .unwrap();
+            .ok();
         }
         window_state.fullscreen = !window_state.fullscreen;
     }
@@ -352,7 +352,7 @@ unsafe extern "system" fn wnd_proc(
                             ),
                             None,
                         )
-                        .unwrap();
+                        .ok();
                 }
             }
             WM_DESTROY => {
@@ -364,16 +364,16 @@ unsafe extern "system" fn wnd_proc(
                     let webview = &*webview_ptr;
                     match VIRTUAL_KEY(wparam.0 as u16) {
                         VK_F4 | VK_F6 => {
-                            webview.Navigate(w!("https://krunker.io")).unwrap();
+                            webview.Navigate(w!("https://krunker.io")).ok();
                         }
                         VK_F5 => {
-                            webview.Reload().unwrap();
+                            webview.Reload().ok();
                         }
                         VK_F11 => {
                             toggle_fullscreen(hwnd);
                         }
                         VK_F12 => {
-                            webview.OpenDevToolsWindow().unwrap();
+                            webview.OpenDevToolsWindow().ok();
                         }
                         _ => (),
                     };
@@ -389,7 +389,7 @@ unsafe extern "system" fn wnd_proc(
                 let controller_ptr = CONTROLLER.load(Ordering::Relaxed);
                 if !controller_ptr.is_null() {
                     let controller: &ICoreWebView2Controller = &*controller_ptr;
-                    controller.SetBounds(bounds).unwrap();
+                    controller.SetBounds(bounds).ok();
                 }
             }
             _ => (),

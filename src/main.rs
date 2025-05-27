@@ -141,7 +141,7 @@ fn main() {
             swaps = modules::swapper::load(&webview_window)
         };
 
-        for url in ["*://matchmaker.krunker.io/*", "wss://lobby-ranked*"] {
+        for url in ["*://matchmaker.krunker.io/game-info*"] {
             webview_window
                 .AddWebResourceRequestedFilterWithRequestSourceKinds(
                     PCWSTR(utils::create_utf_string(url).as_ptr()),
@@ -160,16 +160,16 @@ fn main() {
                         let mut uri_string = utils::create_utf_string("");
                         let uri = uri_string.as_mut_ptr() as *mut PWSTR;
                         request.Uri(uri)?;
-                        let uri = uri.as_ref().unwrap().to_string().unwrap();
+                        let uri_string = uri.as_ref().unwrap().to_string().unwrap();
                         for regex in &blocklist {
-                            if regex.is_match(&uri) {
+                            if regex.is_match(&uri_string) {
                                 request.SetUri(PCWSTR::null())?;
                                 return Ok(());
                             }
                         }
 
                         for (pattern, stream) in &swaps {
-                            if pattern.is_match(&uri) {
+                            if pattern.is_match(&uri_string) {
                                 let response = env.CreateWebResourceResponse(
                                     stream,
                                     200,
@@ -181,7 +181,7 @@ fn main() {
                                 return Ok(());
                             }
                         }
-                        if uri.contains("matchmaker.krunker.io/game-info?game") || uri.contains("lobby-ranked") {
+                        if uri_string.contains("matchmaker.krunker.io/game-info?game") || uri_string.contains("lobby-ranked") {
                             webview
                                 .unwrap()
                                 .PostWebMessageAsJson(w!("\"game-updated\""))
@@ -195,6 +195,33 @@ fn main() {
             token,
         ).unwrap();
 
+        // // if config.lock().unwrap().get("rankedWindow").unwrap_or(true) {
+        // webview_window
+        //     .CallDevToolsProtocolMethod(w!("Network.enable"), PCWSTR::null(), None)
+        //     .ok();
+
+        // webview_window
+        //         .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
+        //         .unwrap()
+        //         .add_DevToolsProtocolEventReceived(
+        //             &DevToolsProtocolEventReceivedEventHandler::create(
+        //                 Box::new(
+        //                     move |webview_window,
+        //                           args: Option<
+        //                         ICoreWebView2DevToolsProtocolEventReceivedEventArgs,
+        //                     >| {
+        //                         if let Some(args) = args {
+        //                             println!("WebSocket created");
+        //                         }
+        //                         Ok(())
+        //                     },
+        //                 ),
+        //             ),
+        //             token,
+        //         )
+        //         .unwrap();
+         
+
         let widget_wnd = Some(utils::find_child_window_by_class(
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
             "Chrome_RenderWidgetHostHWND",
@@ -206,9 +233,12 @@ fn main() {
 
         let config_clone = Arc::clone(&config);
 
-        fn set_cpu_throttling_inmenu(wv_window: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
+        fn set_cpu_throttling_inmenu(
+            webview_window: &ICoreWebView2,
+            cfg: &Arc<Mutex<config::Config>>,
+        ) {
             unsafe {
-                wv_window
+                webview_window
                     .CallDevToolsProtocolMethod(
                         w!("Emulation.setCPUThrottlingRate"),
                         PCWSTR(
@@ -228,11 +258,11 @@ fn main() {
         }
 
         unsafe fn set_cpu_throttling_ingame(
-            wv_window: &ICoreWebView2,
+            webview_window: &ICoreWebView2,
             cfg: &Arc<Mutex<config::Config>>,
         ) {
             unsafe {
-                wv_window
+                webview_window
                     .CallDevToolsProtocolMethod(
                         w!("Emulation.setCPUThrottlingRate"),
                         PCWSTR(
