@@ -1,5 +1,5 @@
 import styles from "./components/base.css";
-
+let firstLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 window.glorpClient = {
@@ -69,11 +69,13 @@ document.addEventListener("pointerlockchange", () => {
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
+		window.chrome.webview.postMessage("game-updated");
+		if (!firstLoad) return;
+		firstLoad = false;
 		if (window.localStorage.getItem("firstLaunch") === null) {
 			window.localStorage.setItem("kro_setngss_mouseAccel", false);
 			window.localStorage.setItem("kro_setngss_mouseFlick", false);
 			window.localStorage.setItem("firstLaunch", false);
-			window.expertMode();
 			window.windows[0].toggleType({ checked: true });
 			window.selectScope(-1);
 			window.selectReticle(-1);

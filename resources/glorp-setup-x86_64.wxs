@@ -38,7 +38,8 @@
 
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
-        <RemoveFile Id="CleanInstallDirFiles" Name="*.*" On="uninstall" Directory="INSTALLFOLDER" />
+        <RemoveFile Id="CleanInstallexe" Name="*.exe" On="uninstall" Directory="INSTALLFOLDER" />
+        <RemoveFile Id="CleanInstalldlls" Name="*.dll" On="uninstall" Directory="INSTALLFOLDER" />
         <RegistryValue Root="HKCU" Key="Software\glorp" Name="installed" Type="integer" Value="1" />
       </Component>
     </ComponentGroup>
