@@ -4,7 +4,7 @@ window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 window.glorpClient = {
 	settings: {},
-	newConsole: {
+	console: {
 		log: console.log.bind(console),
 	},
 };
@@ -72,16 +72,7 @@ Object.defineProperty(window, "gameLoaded", {
 		window.chrome.webview.postMessage("game-updated");
 		if (!firstLoad) return;
 		firstLoad = false;
-		if (window.localStorage.getItem("firstLaunch") === null) {
-			window.localStorage.setItem("kro_setngss_mouseAccel", false);
-			window.localStorage.setItem("kro_setngss_mouseFlick", false);
-			window.localStorage.setItem("firstLaunch", false);
-			window.windows[0].toggleType({ checked: true });
-			window.selectScope(-1);
-			window.selectReticle(-1);
-			window.selectAttachment(-1);
-			window.closWind();
-		}
+		window.windows[0].toggleType({ checked: true });
 
 		// binds shoot to f20
 		setTimeout(() => {
@@ -96,8 +87,8 @@ Object.defineProperty(window, "gameLoaded", {
 		document.querySelector("#compBtnLst").innerHTML += `
     <div class="compMenBtnS" 
         onmouseenter='SOUND.play("tick_0",.1)' 
-        onclick="playSelect(),showWindow(4)" 
-        style="background-color: #f5479b">
+		style="background-color: #f5479b"
+        onclick="playSelect(),showWindow(4)">
         <span class="material-icons" 
             style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">
             color_lens
@@ -105,14 +96,13 @@ Object.defineProperty(window, "gameLoaded", {
     </div>
     <div class="compMenBtnS"
         onmouseenter='SOUND.play("tick_0",.1)'
-        onclick="playSelect(),window.openRankedMenu()"
-        style="background-color: #5ce05a">
+		style="background-color: #5ce05a"
+        onclick="playSelect(),window.openRankedMenu()">
         <span class="material-icons"
             style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">
             star
         </span>
-    </div>
-`;
+    </div>`;
 
 		(async () => {
 			await import("./notifications.js");
