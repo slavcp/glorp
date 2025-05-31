@@ -115,6 +115,7 @@ Object.defineProperty(window, "gameLoaded", {
 
 			await import("./settings.js");
 			await import("./modules/changelog.js");
+			await import("./modules/externalQueue.js");
 			if (window.glorpClient?.settings.config?.hideBundles) window.bundlePopup = () => null;
 			if (window.glorpClient?.settings.config?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
 			if (window.glorpClient?.settings.config?.accountManager) await import("./modules/accountManager.js");

@@ -87,7 +87,7 @@ class Notification {
                 <span id="n" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">N</span>
             </div>
         `;
-		document.body.appendChild(this.notificationEl);
+		document.body.append(this.notificationEl);
 	}
 
 	startTimer() {

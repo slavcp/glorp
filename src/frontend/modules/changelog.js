@@ -17,7 +17,7 @@ function semverCompare(a, b) {
 		await showChangelogPopup(currentVersion);
 
 	async function showChangelogPopup(version) {
-		const html = await import("../components/changelog.html");
+		const html = await import("../components/changelog/changelog.html");
 		const overlay = document.createElement("div");
 		overlay.style = `
 			position: fixed;
@@ -31,16 +31,16 @@ function semverCompare(a, b) {
 			justify-content: center;
 			align-items: center;
 		`;
-		document.body.appendChild(overlay);
+		document.body.append(overlay);
 
 		const host = document.createElement("div");
 		host.id = "changelogPopupHost";
-		overlay.appendChild(host);
+		overlay.append(host);
 		const shadow = host.attachShadow({ mode: "open" });
 		const container = document.createElement("div");
 		container.innerHTML = html.default;
 
-		while (container.firstChild) shadow.appendChild(container.firstChild);
+		while (container.firstChild) shadow.append(container.firstChild);
 
 		const title = shadow.getElementById("changelogTitle");
 		if (title) title.textContent = `glorp ${version}`;

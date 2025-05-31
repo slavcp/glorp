@@ -291,7 +291,7 @@ fn main() {
             )),
             token,
         ).unwrap();
-
+        
         webview_window.add_WebMessageReceived(
             &WebMessageReceivedEventHandler::create(Box::new(
                 move |webview_window, args: Option<ICoreWebView2WebMessageReceivedEventArgs>| {

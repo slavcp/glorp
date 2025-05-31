@@ -24,7 +24,7 @@ class AccountManager {
 	toggle(enabled) {
 		if (enabled) {
 			window.chrome.webview.addEventListener("message", this.gameUpdateListener);
-			document.querySelector("#signedOutHeaderBar")?.appendChild(this.button);
+			document.querySelector("#signedOutHeaderBar")?.append(this.button);
 			this.button.addEventListener("click", this.boundCreateMenu);
 			this.checkComp();
 		} else {
@@ -150,7 +150,7 @@ class AccountManager {
 			accountHolder.classList.add("accountHolder");
 			accountHolder.style.color = account.color;
 			accountHolder.textContent = this.decode(account.username);
-			accountContainer.appendChild(accountHolder);
+			accountContainer.append(accountHolder);
 		}
 	}
 
@@ -163,7 +163,7 @@ class AccountManager {
 	createMenu() {
 		import("../components/accountManager.html").then((html) => {
 			this.container.innerHTML = html.default;
-			document.body.appendChild(this.container);
+			document.body.append(this.container);
 			this.updateAccounts();
 			this.container.addEventListener("contextmenu", this.boundRemoveAccount);
 			document.addEventListener("click", this.boundHandleMenuClick);
@@ -193,7 +193,7 @@ class AccountManager {
 
 			this.button.style.cssText =
 				"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
-			document.querySelector("#compBtnLst").appendChild(this.button);
+			document.querySelector("#compBtnLst").append(this.button);
 		}
 	}
 }
