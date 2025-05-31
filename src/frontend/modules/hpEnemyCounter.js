@@ -60,7 +60,7 @@ class HpEnemyCounter {
 
 	setupDisplay() {
 		this.pointCounter = this.numberDisplay.querySelector(".pointVal");
-		document.querySelector(".topRightCounters").appendChild(this.numberDisplay);
+		document.querySelector(".topRightCounters").append(this.numberDisplay);
 
 		this.observer = new MutationObserver(this.processTeamScores);
 		this.observer.observe(document.querySelector("#teamScores"), {

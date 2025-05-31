@@ -15,7 +15,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 					const menuTimerCSS = document.createElement("style");
 					menuTimerCSS.id = "menuTimerCSS";
 					menuTimerCSS.innerHTML = css.default;
-					document.head.appendChild(menuTimerCSS);
+					document.head.append(menuTimerCSS);
 				});
 			} else {
 				document.querySelector("#menuTimerCSS")?.remove();
@@ -27,7 +27,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 					const cleanCSS = document.createElement("style");
 					cleanCSS.id = "cleanCSS";
 					cleanCSS.innerHTML = css.default;
-					document.head.appendChild(cleanCSS);
+					document.head.append(cleanCSS);
 				});
 			} else {
 				document.querySelector("#cleanCSS")?.remove();
@@ -39,7 +39,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 				const textSelectCSS = document.createElement("style");
 				textSelectCSS.id = "textSelect";
 				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
-				document.head.appendChild(textSelectCSS);
+				document.head.append(textSelectCSS);
 			} else {
 				document.querySelector("#textSelect")?.remove();
 			}
