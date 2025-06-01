@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>External Queue</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Inter", sans-serif;
+        background: #1a1a2e;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      .queuer-container {
+        position: relative;
+        max-width: 600px;
+        max-height: 100px;
+        width: 85%;
+        height: 100%;
+        padding: 20px;
+        background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        transform: scale(1);
+        transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+      }
+
+      .queuer-container:hover {
+        transform: scale(1.01);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8),
+          0 0 0 2px rgba(255, 255, 255, 0.08);
+      }
+
+      .blur-overlay {
+        position: absolute;
+        top: -50px;
+        left: -50px;
+        width: 700px;
+        height: 250px;
+        background: radial-gradient(
+          circle at center,
+          rgba(100, 100, 255, 0.2) 0%,
+          transparent 70%
+        );
+        filter: blur(80px);
+        z-index: 0;
+        opacity: 0.7;
+        transition: opacity 0.5s ease-in-out;
+      }
+
+      .queuer-container:hover .blur-overlay {
+        opacity: 1;
+      }
+
+      .content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 90%;
+        height: 80%;
+        padding: 0 20px;
+        color: #e0e0e0;
+      }
+
+      .status-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      #queueStatus {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #a0a0ff;
+        transition: color 0.3s ease-in-out;
+      }
+
+      .queue-time-display {
+        font-size: 1.6em;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 1px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 6px 12px;
+        border-radius: 8px;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+        display: inline-block;
+        min-width: 150px;
+        text-align: center;
+        transition: background 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+      }
+
+      .controls-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      #regionSelector {
+        background: #3a3a5a;
+        color: #e0e0e0;
+        border: 1px solid #5a5a7a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 1em;
+        appearance: none;
+        cursor: pointer;
+        margin-bottom: 15px;
+        transition: background 0.3s ease-in-out, border-color 0.3s ease-in-out,
+          box-shadow 0.3s ease-in-out;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      }
+
+      #regionSelector:focus {
+        outline: none;
+        border-color: #a0a0ff;
+        box-shadow: 0 0 0 3px rgba(160, 160, 255, 0.3);
+      }
+
+      #regionSelector option {
+        background: #3a3a5a;
+        color: #e0e0e0;
+      }
+
+      #queueButton {
+        background: linear-gradient(180deg, #6a5acd, #5a4acb);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 25px;
+        font-size: 1.1em;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        transition: background 0.3s ease-in-out, transform 0.2s ease-in-out,
+          box-shadow 0.3s ease-in-out;
+        letter-spacing: 0.5px;
+      }
+
+      #queueButton:hover {
+        background: linear-gradient(180deg, #7a6aec, #6b5aec);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      }
+
+      #queueButton:active {
+        transform: translateY(1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(0, 0, 0, 0.2);
+      }
+
+      #queueButton.in-queue {
+        background: linear-gradient(180deg, #d32f2f, #b71c1c);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      #queueButton.in-queue:hover {
+        background: linear-gradient(180deg, #e53935, #c62828);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      }
+
+      #queueButton.in-queue:active {
+        transform: translateY(1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(0, 0, 0, 0.2);
+      }
+
+      #matchPopupOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      #matchPopupOverlay.active {
+        display: flex;
+      }
+
+      #matchPopup {
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(255, 255, 255, 0.05);
+        padding: 30px;
+        text-align: center;
+        color: #e0e0e0;
+        max-width: 400px;
+        width: 90%;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+      }
+
+      #matchPopupOverlay.active #matchPopup {
+        transform: translateY(0);
+      }
+
+      #matchPopup h2 {
+        color: #a0a0ff;
+        margin-bottom: 20px;
+        font-size: 1.8em;
+      }
+
+      #matchPopup p {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+      }
+
+      #matchPopup button {
+        background: linear-gradient(180deg, #6a5acd, #5a4acb);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        transition: background 0.3s ease-in-out, transform 0.2s ease-in-out,
+          box-shadow 0.3s ease-in-out;
+      }
+
+      #matchPopup button:hover {
+        background: linear-gradient(180deg, #7a6aec, #6b5aec);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      }
+
+      #matchPopup button:active {
+        transform: translateY(1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(0, 0, 0, 0.2);
+      }
+
+      #closeMatch {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      #closeMatch:hover,
+      #closeMatch:focus {
+        color: white;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <script>
+      let isQueued = false;
+      let queueStartTime;
+      let queueInterval;
+      let queueConnection;
+      let countdownInterval;
+
+
+      let audioContext = null;
+      let notificationBuffer = null;
+      let currentSource = null;
+      let audioInitialized = false;
+
+      const audioFilePath =
+        "https://api.soundbuttons.com/sounds/2025/04/1745929047-faceit_accept_sound_epic_-8962405019821701368.mp3";
+
+      const queueButton = document.querySelector("#queueButton");
+      const queueStatus = document.querySelector("#queueStatus");
+      const queueTimerDisplay = document.querySelector("#queueTimer");
+      const regionSelector = document.querySelector("#regionSelector");
+      const matchPopupOverlay = document.querySelector("#matchPopupOverlay");
+      const joinMatch = document.querySelector("#joinMatch");
+      const closeButton = document.querySelector("#closeMatch");
+      const countdownTimer = document.querySelector("#countdownTimer");
+      const matchPopup = document.querySelector("#matchPopup");
+
+      regionSelector.value = window?.info?.region || "eu";
+
+      async function initializeAudio() {
+        if (audioInitialized) return;
+        try {
+          audioContext = new window.AudioContext();
+          console.log("AudioContext initialized.");
+
+          // ensure context is "unlocked"
+          const buffer = audioContext.createBuffer(1, 1, 22050);
+          const source = audioContext.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioContext.destination);
+          source.start(0);
+          source.stop(0.001);
+
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('AudioContext resumed successfully after silent play.');
+          }
+
+          const response = await fetch(audioFilePath);
+          const arrayBuffer = await response.arrayBuffer();
+          notificationBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          console.log("Notification sound loaded successfully.");
+          audioInitialized = true;
+        } catch (e) {
+          console.error("Error initializing audio or loading sound:", e);
+          alert("Failed to initialize audio. Please ensure browser allows sound for this site.");
+        }
+      }
+
+
+      function playNotificationSound() {
+        if (notificationBuffer && audioContext && audioContext.state === 'running') {
+          if (currentSource) {
+            currentSource.stop();
+            currentSource.disconnect();
+          }
+
+          const source = audioContext.createBufferSource();
+          source.buffer = notificationBuffer;
+          source.connect(audioContext.destination);
+          source.start(0);
+          currentSource = source;
+          source.onended = () => {
+            if (currentSource === source) {
+              currentSource = null;
+            }
+            source.disconnect();
+          };
+        }
+      }
+
+      function stopNotificationSound() {
+        if (currentSource) {
+          currentSource.stop();
+          currentSource.disconnect();
+          currentSource = null;
+        }
+      }
+
+      function formatTime(seconds) {
+        const h = Math.floor(seconds / 3600);
+        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+        const s = String(seconds % 60).padStart(2, "0");
+        return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+      }
+
+      function updateQueueTimer() {
+        if (isQueued && queueStartTime) {
+          const elapsedTime = Math.floor((Date.now() - queueStartTime) / 1000);
+          queueTimerDisplay.textContent = formatTime(elapsedTime);
+        }
+      }
+
+      function startQueue() {
+        isQueued = true;
+        queueStartTime = Date.now();
+        queueButton.textContent = "Leave Queue";
+        queueButton.classList.add("in-queue");
+        queueStatus.textContent = "In queue";
+        queueStatus.style.color = "#7aff7a";
+        updateQueueTimer();
+        queueInterval = setInterval(updateQueueTimer, 1000);
+
+        queueConnection = new WebSocket(
+          `wss://gamefrontend.svc.krunker.io/v1/matchmaking/queue?token=${
+            window.info.token
+          }&maps=${window.info.maps.join(",")}&region=${regionSelector.value}`
+        );
+        queueConnection.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          switch (data.type) {
+            case "QUEUE_STATUS":
+              if (data.payload.status === "MATCHED") {
+                matchFound(
+                  data.payload.assignment.extensions.map.slice(1),
+                  data.payload.assignment.extensions.region
+                );
+              }
+              break;
+            case "INTERNAL_ERROR":
+              leaveQueue();
+              break;
+          }
+        };
+        queueConnection.onclose = (event) => leaveQueue();
+      }
+
+      function leaveQueue() {
+        isQueued = false;
+        clearInterval(queueInterval);
+        queueInterval = null;
+        queueStartTime = null;
+        queueButton.textContent = "Join Queue";
+        queueButton.classList.remove("in-queue");
+        queueStatus.textContent = "Not in queue";
+        queueStatus.style.color = "#a0a0ff";
+        queueTimerDisplay.textContent = "00:00";
+        if (queueConnection && queueConnection.readyState === WebSocket.OPEN)
+          queueConnection.close(1000, "");
+      }
+
+      function matchFound(map) {
+        playNotificationSound();
+
+        const mapBackgrounds = {
+          burg: "https://static.wikia.nocookie.net/krunkerio/images/f/fc/Burg_v5.png/revision/latest",
+          lumber:
+            "https://static.wikia.nocookie.net/krunkerio/images/2/25/Lumber-2_.png/revision/latest",
+          site: "https://static.wikia.nocookie.net/krunkerio/images/1/1c/Site-2.png/revision/latest",
+          undergrowth:
+            "https://static.wikia.nocookie.net/krunkerio/images/7/7f/Undergrowth-2.png/revision/latest",
+          industry:
+            "https://static.wikia.nocookie.net/krunkerio/images/e/e8/Industry-2.png/revision/latest",
+          sandstorm:
+            "https://static.wikia.nocookie.net/krunkerio/images/f/f7/New_Sandstorm.png/revision/latest",
+          bureau: "https://static.wikia.nocookie.net/krunkerio/images/7/71/Bureau_3.png/revision/latest"
+        };
+
+        matchPopup.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${
+          mapBackgrounds[map]
+        })`;
+        matchPopupOverlay.classList.add("active");
+
+        let timeLeft = 60;
+        const startTime = Date.now();
+        countdownInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          const remaining = Math.max(0, timeLeft - elapsed);
+
+          countdownTimer.textContent = formatTime(remaining);
+
+          if (remaining <= 0) closeMatchPopup();
+        }, 1000);
+      }
+
+      function closeMatchPopup() {
+        clearInterval(countdownInterval);
+        stopNotificationSound();
+        matchPopupOverlay.classList.remove("active");
+        leaveQueue();
+      }
+
+
+      joinMatch.onclick = () => closeMatchPopup();
+
+      closeButton.onclick = () => {
+        closeMatchPopup();
+      };
+
+      queueButton.onclick = async () => {
+        if (isQueued) {
+          leaveQueue();
+        } else {
+          if (!audioInitialized) await initializeAudio();
+          
+          startQueue();
+        }
+      };
+      regionSelector.onchange = () => leaveQueue();
+    </script>
+  </head>
+  <body>
+    <div class="queuer-container">
+      <div class="blur-overlay"></div>
+      <div class="content">
+        <div class="status-section">
+          <span id="queueStatus">Not in queue</span>
+          <div class="queue-time-display">
+            Queue Time: <span id="queueTimer">00:00</span>
+          </div>
+        </div>
+
+        <div class="controls-section">
+          <select id="regionSelector">
+            <option value="eu">Europe</option>
+            <option value="na">North America</option>
+            <option value="as">Asia</option>
+          </select>
+          <button id="queueButton">Join Queue</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="matchPopupOverlay">
+      <div id="matchPopup">
+        <h2>Match Found!</h2>
+        <span id="closeMatch">&times;</span>
+        Closing in: <span id="countdownTimer">00:00</span>
+        <br />
+        <button id="joinMatch">Join Match</button>
+      </div>
+    </div>
+  </body>
+</html>
