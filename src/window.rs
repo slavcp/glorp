@@ -38,9 +38,9 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(start_mode: &str, main: bool) -> (Self, ICoreWebView2Environment) {
+    pub fn new(start_mode: &str, main: bool, args: String) -> (Self, ICoreWebView2Environment) {
         let (hwnd, window_state) = create_window(start_mode);
-        let (controller, env, webview) = create_webview2(hwnd, "".to_string());
+        let (controller, env, webview) = create_webview2(hwnd, args);
         let window = Window {
             main,
             hwnd,
@@ -217,7 +217,7 @@ pub fn create_webview2(
 ) {
     unsafe {
         let args = args + " --autoplay-policy=no-user-gesture-required";
-        let options = CoreWebView2EnvironmentOptions::default();
+        let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
         options.set_are_browser_extensions_enabled(false);
         options.set_additional_browser_arguments(args.clone());
         options.set_language("en-US".to_string());

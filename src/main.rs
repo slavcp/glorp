@@ -72,6 +72,7 @@ fn main() {
                 .unwrap_or_else(|| String::from("Borderless Fullscreen"))
                 .as_str(),
             true,
+            args
         );
 
         modules::priority::set(
