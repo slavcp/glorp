@@ -85,6 +85,9 @@ pub fn create_window(start_mode: &str) -> HWND {
         let mut fullscreen_state = false;
 
         match start_mode {
+            "Frameless" => {
+                window_style = WS_POPUP | WS_VISIBLE;
+            }
             "Borderless Fullscreen" => {
                 window_style = WS_VISIBLE;
                 x = 0;

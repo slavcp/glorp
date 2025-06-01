@@ -1,4 +1,6 @@
+let queueWindow;
 const externalQueue = document.createElement("button");
+
 externalQueue.textContent = "open_in_new";
 externalQueue.style = `background-color: #5ce05a;
     color: #ffffff;
@@ -6,7 +8,6 @@ externalQueue.style = `background-color: #5ce05a;
     padding: 20px 21px;
     font-family: 'Material Icons Outlined';
     cursor: pointer;
-    transition: all 0.2s ease;
     font-size: 20px;
     text-shadow: 2px 2px 0px black !important;`;
 
@@ -19,31 +20,55 @@ window.openRankedMenu = () => {
 };
 
 function openExtQueue() {
-	const queueWindow = window.open("about:blank", "_blank");
+	const screenWidth = window.screen.width;
+	const screenHeight = window.screen.height;
+	const windowWidth = screenWidth * 0.3;
+	const windowHeight = windowWidth * 0.25;
+	const menuBarHeight = 150;
+	const left = (screenWidth - windowWidth) / 2;
+	const top = (screenHeight - windowHeight - menuBarHeight) / 2;
+	const queueWindow = window.open(
+		"about:blank",
+		"_blank",
+		`width=${windowWidth},height=${windowHeight},left=${left},top=${top}`,
+	);
 
-	queueWindow.token = localStorage.getItem("__FRVR_auth_access_token");
-	queueWindow.maps = ["burg_new", "sandstorm_v3", "undergrowth", "industry", "site", "bureau"];
-	const region = document.querySelector(".region-indicator").textContent.split(": ")[1];
+	let region = document.querySelector(".region-indicator").textContent.split(": ")[1];
 	switch (region) {
 		case "North America":
-			queueWindow.region = "na";
+			region = "na";
 			break;
 		case "Europe":
-			queueWindow.region = "eu";
+			region = "eu";
 			break;
 		case "Asia":
-			queueWindow.region = "as";
-			break;
-		default:
-			alert("region not found");
+			region = "as";
 			break;
 	}
+	let token = localStorage.getItem("__FRVR_auth_access_token");
+	token = token.replace(/"/g, "");
+	token = token.replace("/", "");
 
-	const core = document.createElement("div");
+	queueWindow.info = {
+		token: token,
+		maps: ["burg_new", "sandstorm_v3", "undergrowth", "industry", "site", "bureau"],
+		region: region,
+	};
 
-	import("../components/queue/queue.html").then((html) => {
-		core.innerHTML = html.default;
+	import("../components/queue/index.html").then((html) => {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(html.default, "text/html");
+		for (const child of doc.body.children) {
+			queueWindow.document.body.appendChild(child.cloneNode(true));
+		}
+		for (const child of doc.head.children) {
+			if (child.tagName === "SCRIPT") {
+				const script = document.createElement("script");
+				script.textContent = child.textContent;
+				queueWindow.document.head.appendChild(script);
+			} else {
+				queueWindow.document.head.appendChild(child.cloneNode(true));
+			}
+		}
 	});
-
-	queueWindow.document.body.append(core);
 }

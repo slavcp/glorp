@@ -25,7 +25,7 @@ document.addEventListener(
 	() => {
 		const baseCSS = document.createElement("style");
 		baseCSS.innerHTML = styles;
-		document.head.appendChild(baseCSS);
+		document.head.append(baseCSS);
 		window.localStorage.setItem("cont_shoot1Key_alt", "131");
 
 		if (window.glorpClient?.settings.config?.cleanUI) {
@@ -33,15 +33,22 @@ document.addEventListener(
 				const cleanCSS = document.createElement("style");
 				cleanCSS.id = "cleanCSS";
 				cleanCSS.innerHTML = css.default;
-				document.head.appendChild(cleanCSS);
+				document.head.append(cleanCSS);
 			});
 		}
 
-		const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
-		HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
+		const originalAddEventListener = HTMLElement.prototype.addEventListener;
+		HTMLElement.prototype.addEventListener = function (type, listener, options) {
 			if (type === "wheel")
 				window.glorpClient.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
 			return originalAddEventListener.call(this, type, listener, options);
+		};
+
+		const originalDocAddEventListener = EventTarget.prototype.addEventListener;
+		EventTarget.prototype.addEventListener = function (type, listener, options) {
+			if (type === "wheel")
+				window.glorpClient.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
+			return originalDocAddEventListener.call(this, type, listener, options);
 		};
 
 		if (window.glorpClient?.settings.config?.rawInput) {
@@ -146,7 +153,7 @@ Object.defineProperty(window, "gameLoaded", {
 				const textSelectCSS = document.createElement("style");
 				textSelectCSS.id = "textSelect";
 				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
-				document.head.appendChild(textSelectCSS);
+				document.head.append(textSelectCSS);
 			}
 
 			if (window.glorpClient?.settings.config?.menuTimer) {
@@ -154,7 +161,7 @@ Object.defineProperty(window, "gameLoaded", {
 				const menuTimerCSS = document.createElement("style");
 				menuTimerCSS.id = "menuTimerCSS";
 				menuTimerCSS.innerHTML = css.default;
-				document.head.appendChild(menuTimerCSS);
+				document.head.append(menuTimerCSS);
 			}
 		})();
 	},

@@ -195,33 +195,6 @@ fn main() {
             token,
         ).unwrap();
 
-        // // if config.lock().unwrap().get("rankedWindow").unwrap_or(true) {
-        // webview_window
-        //     .CallDevToolsProtocolMethod(w!("Network.enable"), PCWSTR::null(), None)
-        //     .ok();
-
-        // webview_window
-        //         .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
-        //         .unwrap()
-        //         .add_DevToolsProtocolEventReceived(
-        //             &DevToolsProtocolEventReceivedEventHandler::create(
-        //                 Box::new(
-        //                     move |webview_window,
-        //                           args: Option<
-        //                         ICoreWebView2DevToolsProtocolEventReceivedEventArgs,
-        //                     >| {
-        //                         if let Some(args) = args {
-        //                             println!("WebSocket created");
-        //                         }
-        //                         Ok(())
-        //                     },
-        //                 ),
-        //             ),
-        //             token,
-        //         )
-        //         .unwrap();
-         
-
         let widget_wnd = Some(utils::find_child_window_by_class(
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
             "Chrome_RenderWidgetHostHWND",
