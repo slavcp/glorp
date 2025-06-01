@@ -83,15 +83,20 @@ fn main() {
                 .as_str(),
         );
 
-        inject::hook_webview2(config.lock().unwrap().get("hardFlip").unwrap_or(false));
         let controller = webview2_components.0;
         let env = webview2_components.1;
+
 
         let webview_window: ICoreWebView2_22 = controller
             .CoreWebView2()
             .unwrap()
             .cast::<ICoreWebView2_22>()
             .unwrap();
+
+        let mut webview_pid: u32 = 0;
+        webview_window.BrowserProcessId(&mut webview_pid).unwrap();
+
+        inject::hook_webview2(config.lock().unwrap().get("hardFlip").unwrap_or(false), webview_pid);
 
         #[cfg(not(debug_assertions))]
         {
