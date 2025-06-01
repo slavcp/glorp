@@ -20,7 +20,7 @@ impl DllInjector {
     pub fn new(dll_path: &str, pid: u32) -> Self {
         let mut injector = Self {
             dll_path: dll_path.to_string(),
-            pid: pid,
+            pid,
         };
         injector.inject();
         injector
@@ -54,76 +54,76 @@ impl DllInjector {
 
     pub fn inject(&mut self) {
         unsafe {
-                let process_handle = match OpenProcess(PROCESS_ALL_ACCESS, false, self.pid) {
-                    Ok(handle) => handle,
-                    Err(e) => {
-                        self.handle_error(&format!("Failed to open process: {}", e));
-                        return;
-                    }
-                };
-
-                let kernel32 = match GetModuleHandleW(w!("kernel32.dll")) {
-                    Ok(handle) => handle,
-                    Err(e) => {
-                        self.handle_error(&format!("Failed to get kernel32 handle: {}", e));
-                        return;
-                    }
-                };
-
-                let load_library = match GetProcAddress(kernel32, s!("LoadLibraryW")) {
-                    Some(addr) => addr,
-                    None => {
-                        self.handle_error("Failed to get LoadLibraryW address");
-                        return;
-                    }
-                };
-
-                let dll_path_bytes: Vec<u16> = self
-                    .dll_path
-                    .encode_utf16()
-                    .chain(std::iter::once(0))
-                    .collect();
-
-                let alloc = VirtualAllocEx(
-                    process_handle,
-                    None,
-                    dll_path_bytes.len() * 2,
-                    MEM_COMMIT | MEM_RESERVE,
-                    PAGE_READWRITE,
-                );
-
-                if let Err(e) = WriteProcessMemory(
-                    process_handle,
-                    alloc,
-                    dll_path_bytes.as_ptr() as _,
-                    dll_path_bytes.len() * 2,
-                    None,
-                ) {
-                    self.handle_error(&format!("Failed to write to process memory: {}", e));
+            let process_handle = match OpenProcess(PROCESS_ALL_ACCESS, false, self.pid) {
+                Ok(handle) => handle,
+                Err(e) => {
+                    self.handle_error(&format!("Failed to open process: {}", e));
                     return;
                 }
+            };
 
-                if let Err(e) = CreateRemoteThread(
-                    process_handle,
-                    None,
-                    0,
-                    Some(std::mem::transmute::<
-                        unsafe extern "system" fn() -> isize,
-                        unsafe extern "system" fn(*mut std::ffi::c_void) -> u32,
-                    >(load_library)),
-                    Some(alloc),
-                    0,
-                    None,
-                ) {
-                    self.handle_error(&format!("Failed to create remote thread: {}", e));
+            let kernel32 = match GetModuleHandleW(w!("kernel32.dll")) {
+                Ok(handle) => handle,
+                Err(e) => {
+                    self.handle_error(&format!("Failed to get kernel32 handle: {}", e));
                     return;
                 }
+            };
 
-                CloseHandle(process_handle).ok();
+            let load_library = match GetProcAddress(kernel32, s!("LoadLibraryW")) {
+                Some(addr) => addr,
+                None => {
+                    self.handle_error("Failed to get LoadLibraryW address");
+                    return;
+                }
+            };
+
+            let dll_path_bytes: Vec<u16> = self
+                .dll_path
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+
+            let alloc = VirtualAllocEx(
+                process_handle,
+                None,
+                dll_path_bytes.len() * 2,
+                MEM_COMMIT | MEM_RESERVE,
+                PAGE_READWRITE,
+            );
+
+            if let Err(e) = WriteProcessMemory(
+                process_handle,
+                alloc,
+                dll_path_bytes.as_ptr() as _,
+                dll_path_bytes.len() * 2,
+                None,
+            ) {
+                self.handle_error(&format!("Failed to write to process memory: {}", e));
+                return;
+            }
+
+            if let Err(e) = CreateRemoteThread(
+                process_handle,
+                None,
+                0,
+                Some(std::mem::transmute::<
+                    unsafe extern "system" fn() -> isize,
+                    unsafe extern "system" fn(*mut std::ffi::c_void) -> u32,
+                >(load_library)),
+                Some(alloc),
+                0,
+                None,
+            ) {
+                self.handle_error(&format!("Failed to create remote thread: {}", e));
+                return;
+            }
+
+            CloseHandle(process_handle).ok();
         }
     }
 }
- fn find_renderer_process(parent_pid: u32) -> Result<u32> {
+fn find_renderer_process(parent_pid: u32) -> Result<u32> {
     unsafe {
         let mut process_entry = PROCESSENTRY32W {
             dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
@@ -155,16 +155,17 @@ impl DllInjector {
                         dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
                         ..MODULEENTRY32W::default()
                     };
-                    
+
                     let module_snapshot = CreateToolhelp32Snapshot(
-                        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, 
-                        process_entry.th32ProcessID
-                    ).unwrap_or_default();
+                        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
+                        process_entry.th32ProcessID,
+                    )
+                    .unwrap_or_default();
 
                     if Module32FirstW(module_snapshot, &mut module_entry).is_ok() {
                         loop {
                             let module_name = String::from_utf16_lossy(&module_entry.szModule);
-                            
+
                             if module_name.contains("d3d11.dll") {
                                 CloseHandle(module_snapshot).ok();
                                 CloseHandle(snapshot).ok();
@@ -201,12 +202,12 @@ pub fn hook_webview2(hard_flip: bool, pid: u32) {
             .join("webview.dll")
             .to_str()
             .unwrap(),
-            pid
-    );  
+        pid,
+    );
     if hard_flip {
         let pid = find_renderer_process(pid).unwrap_or_else(|e| {
             eprintln!("Failed to find renderer process: {}", e);
-            std::process::exit(1);
+            0
         });
 
         DllInjector::new(
@@ -216,7 +217,7 @@ pub fn hook_webview2(hard_flip: bool, pid: u32) {
                 .join("render.dll")
                 .to_str()
                 .unwrap(),
-            pid
+            pid,
         );
     }
 }

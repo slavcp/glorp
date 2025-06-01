@@ -9,12 +9,7 @@ use windows::{
 use crate::{installer, utils};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 
-use once_cell::sync::Lazy;
-use std::sync::{
-    Mutex,
-    atomic::{AtomicPtr, Ordering},
-};
-
+#[derive(Copy, Clone)]
 pub struct WindowState {
     pub fullscreen: bool,
     pub last_position: RECT,
@@ -33,11 +28,87 @@ impl Default for WindowState {
         }
     }
 }
-static WINDOW_STATE: Lazy<Mutex<WindowState>> = Lazy::new(|| Mutex::new(WindowState::default()));
-static CONTROLLER: AtomicPtr<ICoreWebView2Controller4> = AtomicPtr::new(std::ptr::null_mut());
-static WEBVIEW: AtomicPtr<ICoreWebView2_22> = AtomicPtr::new(std::ptr::null_mut());
 
-pub fn create_window(start_mode: &str) -> HWND {
+pub struct Window {
+    pub main: bool,
+    pub hwnd: HWND,
+    pub controller: ICoreWebView2Controller4,
+    pub webview: ICoreWebView2_22,
+    pub window_state: WindowState,
+}
+
+impl Window {
+    pub fn new(start_mode: &str, main: bool) -> (Self, ICoreWebView2Environment) {
+        let (hwnd, window_state) = create_window(start_mode);
+        let (controller, env, webview) = create_webview2(hwnd, "".to_string());
+        let window = Window {
+            main,
+            hwnd,
+            controller,
+            webview,
+            window_state,
+        };
+
+        unsafe {
+            let window_clone = Box::new(Window {
+                main: window.main,
+                hwnd: window.hwnd,
+                controller: window.controller.clone(),
+                webview: window.webview.clone(),
+                window_state: window.window_state,
+            });
+            SetWindowLongPtrW(
+                window.hwnd,
+                GWLP_USERDATA,
+                Box::into_raw(window_clone) as isize,
+            );
+        }
+
+        (window, env)
+    }
+    pub fn toggle_fullscreen(&mut self) {
+        unsafe {
+            if self.window_state.fullscreen {
+                SetWindowLongPtrW(
+                    self.hwnd,
+                    GWL_STYLE,
+                    (WS_VISIBLE.0 | WS_OVERLAPPEDWINDOW.0) as _,
+                );
+
+                SetWindowPos(
+                    self.hwnd,
+                    Some(HWND_TOP),
+                    self.window_state.last_position.left,
+                    self.window_state.last_position.top,
+                    self.window_state.last_position.right - self.window_state.last_position.left,
+                    self.window_state.last_position.bottom - self.window_state.last_position.top,
+                    SWP_NOZORDER | SWP_FRAMECHANGED,
+                )
+                .unwrap();
+            } else {
+                let mut rect = RECT::default();
+                let _ = GetWindowRect(self.hwnd, &mut rect);
+                self.window_state.last_position = rect;
+
+                SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
+
+                SetWindowPos(
+                    self.hwnd,
+                    Some(HWND_TOP),
+                    0,
+                    0,
+                    GetSystemMetrics(SYSTEM_METRICS_INDEX(0)),
+                    GetSystemMetrics(SYSTEM_METRICS_INDEX(1)),
+                    SWP_NOZORDER | SWP_FRAMECHANGED,
+                )
+                .ok();
+            }
+            self.window_state.fullscreen = !self.window_state.fullscreen;
+        }
+    }
+}
+
+fn create_window(start_mode: &str) -> (HWND, WindowState) {
     unsafe {
         let hinstance: HINSTANCE = GetModuleHandleW(None).unwrap().into();
         let icon = match LoadIconW(Some(hinstance), w!("icon")) {
@@ -48,7 +119,7 @@ pub fn create_window(start_mode: &str) -> HWND {
         let class_name = w!("krunker_webview");
         let wc = WNDCLASSW {
             style: CS_HREDRAW | CS_VREDRAW,
-            lpfnWndProc: Some(wnd_proc),
+            lpfnWndProc: Some(wnd_proc_setup),
             cbClsExtra: 0,
             cbWndExtra: 0,
             hInstance: hinstance,
@@ -108,13 +179,6 @@ pub fn create_window(start_mode: &str) -> HWND {
             }
         }
 
-        if let Ok(mut window_props) = WINDOW_STATE.lock() {
-            *window_props = WindowState {
-                fullscreen: fullscreen_state,
-                last_position: default_last_position,
-            };
-        }
-
         let hwnd: HWND = CreateWindowExW(
             window_ex_style,
             class_name,
@@ -130,19 +194,30 @@ pub fn create_window(start_mode: &str) -> HWND {
             None,
         )
         .unwrap();
+
         if start_mode == "Borderless Fullscreen" {
             SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
         }
-        hwnd
+
+        let window_state = WindowState {
+            fullscreen: fullscreen_state,
+            last_position: default_last_position,
+        };
+        (hwnd, window_state)
     }
 }
 
 pub fn create_webview2(
     hwnd: HWND,
     args: String,
-) -> (ICoreWebView2Controller4, ICoreWebView2Environment) {
+) -> (
+    ICoreWebView2Controller4,
+    ICoreWebView2Environment,
+    ICoreWebView2_22,
+) {
     unsafe {
-        let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
+        let args = args + " --autoplay-policy=no-user-gesture-required";
+        let options = CoreWebView2EnvironmentOptions::default();
         options.set_are_browser_extensions_enabled(false);
         options.set_additional_browser_arguments(args.clone());
         options.set_language("en-US".to_string());
@@ -189,13 +264,6 @@ pub fn create_webview2(
                         let mut rect = RECT::default();
                         GetClientRect(hwnd, &mut rect).ok();
                         controller.SetBounds(rect).ok();
-
-                        CONTROLLER
-                            .store(controller.clone().into_raw() as *mut _, Ordering::Relaxed);
-                        WEBVIEW.store(
-                            controller.CoreWebView2().unwrap().into_raw() as *mut _,
-                            Ordering::Relaxed,
-                        );
 
                         tx.send(controller).expect("error sending controller");
                         etx.send(env).expect("error sending env");
@@ -267,119 +335,77 @@ pub fn create_webview2(
         webview2_settings.SetIsZoomControlEnabled(false).ok();
         webview2_settings.SetUserAgent(w!("Electron")).ok();
 
-        WEBVIEW.store(Box::into_raw(Box::new(webview2)), Ordering::Relaxed);
-        CONTROLLER.store(
-            Box::into_raw(Box::new(controller.clone())),
-            Ordering::Relaxed,
-        );
-
         // subclass_widgetwin(hwnd);
-        (controller, env)
-    }
-}
-/*
- fn subclass_widgetwin(hwnd: HWND) {
- unsafe {
-    let child = FindWindowExW(Some(hwnd), None, w!("Chrome_WidgetWin_0"), PCWSTR::null()).unwrap();
-
-    let original_proc = GetWindowLongPtrW(child, GWLP_WNDPROC);
-    CHILD_WINDOW_PROC = transmute::<_, WNDPROC>(original_proc);
-    SetWindowLongPtrW(child, GWLP_WNDPROC, child_wnd_proc as _);
-    }
-}
-*/
-pub fn toggle_fullscreen(hwnd: HWND) {
-    unsafe {
-        let mut window_state = WINDOW_STATE.lock().unwrap();
-        if window_state.fullscreen {
-            SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0 | WS_OVERLAPPEDWINDOW.0) as _);
-
-            SetWindowPos(
-                hwnd,
-                Some(HWND_TOP),
-                window_state.last_position.left,
-                window_state.last_position.top,
-                window_state.last_position.right - window_state.last_position.left,
-                window_state.last_position.bottom - window_state.last_position.top,
-                SWP_NOZORDER | SWP_FRAMECHANGED,
-            )
-            .unwrap();
-        } else {
-            let mut rect = RECT::default();
-            let _ = GetWindowRect(hwnd, &mut rect);
-            window_state.last_position = rect;
-
-            SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
-
-            SetWindowPos(
-                hwnd,
-                Some(HWND_TOP),
-                0,
-                0,
-                GetSystemMetrics(SYSTEM_METRICS_INDEX(0)),
-                GetSystemMetrics(SYSTEM_METRICS_INDEX(1)),
-                SWP_NOZORDER | SWP_FRAMECHANGED,
-            )
-            .ok();
-        }
-        window_state.fullscreen = !window_state.fullscreen;
+        (controller, env, webview2)
     }
 }
 
-unsafe extern "system" fn wnd_proc(
+unsafe extern "system" fn wnd_proc_setup(
     hwnd: HWND,
     msg: u32,
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
     unsafe {
+        if msg == WM_NCCREATE {
+            #[allow(clippy::all)]
+                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, wnd_proc_main as isize);
+                return wnd_proc_main(hwnd, msg, wparam, lparam);
+        }
+        DefWindowProcW(hwnd, msg, wparam, lparam)
+    }
+}
+
+unsafe extern "system" fn wnd_proc_main(
+    hwnd: HWND,
+    msg: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    unsafe {
+        let window_data_ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Window;
+        if window_data_ptr.is_null() {
+            return DefWindowProcW(hwnd, msg, wparam, lparam);
+        }
+        let window = &mut *window_data_ptr;
+
         match msg {
             WM_MOUSEWHEEL => {
-                let webview_ptr = WEBVIEW.load(Ordering::Relaxed);
-                if !webview_ptr.is_null() {
-                    let webview = &*webview_ptr;
-                    let delta = utils::HIWORD(wparam.0) as i32;
-                    let scroll_amount = (delta as f32 / WHEEL_DELTA as f32) * 80.0;
+                let delta = utils::HIWORD(wparam.0) as i32;
+                let scroll_amount = (delta as f32 / WHEEL_DELTA as f32) * 80.0;
 
-                    webview
-                        .ExecuteScript(
-                            PCWSTR(
-                                utils::create_utf_string(
-                                    format!(
-                                        "window.glorpClient.handleMouseWheel({})",
-                                        scroll_amount
-                                    )
+                window
+                    .webview
+                    .ExecuteScript(
+                        PCWSTR(
+                            utils::create_utf_string(
+                                format!("window.glorpClient.handleMouseWheel({})", scroll_amount)
                                     .as_str(),
-                                )
-                                .as_ptr(),
-                            ),
-                            None,
-                        )
-                        .ok();
-                }
+                            )
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
             }
             WM_DESTROY => {
                 PostQuitMessage(0);
             }
             WM_KEYDOWN => {
-                let webview_ptr = WEBVIEW.load(Ordering::Relaxed);
-                if !webview_ptr.is_null() {
-                    let webview = &*webview_ptr;
-                    match VIRTUAL_KEY(wparam.0 as u16) {
-                        VK_F4 | VK_F6 => {
-                            webview.Navigate(w!("https://krunker.io")).ok();
-                        }
-                        VK_F5 => {
-                            webview.Reload().ok();
-                        }
-                        VK_F11 => {
-                            toggle_fullscreen(hwnd);
-                        }
-                        VK_F12 => {
-                            webview.OpenDevToolsWindow().ok();
-                        }
-                        _ => (),
-                    };
+                match VIRTUAL_KEY(wparam.0 as u16) {
+                    VK_F4 | VK_F6 => {
+                        window.webview.Navigate(w!("https://krunker.io")).ok();
+                    }
+                    VK_F5 => {
+                        window.webview.Reload().ok();
+                    }
+                    VK_F11 => {
+                        window.toggle_fullscreen();
+                    }
+                    VK_F12 => {
+                        window.webview.OpenDevToolsWindow().ok();
+                    }
+                    _ => (),
                 };
             }
             WM_SIZE => {
@@ -389,11 +415,7 @@ unsafe extern "system" fn wnd_proc(
                     right: utils::LOWORD(lparam.0 as usize) as i32,
                     bottom: utils::HIWORD(lparam.0 as usize) as i32,
                 };
-                let controller_ptr = CONTROLLER.load(Ordering::Relaxed);
-                if !controller_ptr.is_null() {
-                    let controller: &ICoreWebView2Controller = &*controller_ptr;
-                    controller.SetBounds(bounds).ok();
-                }
+                window.controller.SetBounds(bounds).ok();
             }
             _ => (),
         }

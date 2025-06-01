@@ -64,15 +64,15 @@ fn main() {
     }
 
     unsafe {
-        let hwnd: HWND = window::create_window(
+        let (mut main_window, env) = window::Window::new(
             config
                 .lock()
                 .unwrap()
                 .get::<String>("startMode")
                 .unwrap_or_else(|| String::from("Borderless Fullscreen"))
                 .as_str(),
+            true,
         );
-        let webview2_components = window::create_webview2(hwnd, args);
 
         modules::priority::set(
             config
@@ -83,20 +83,16 @@ fn main() {
                 .as_str(),
         );
 
-        let controller = webview2_components.0;
-        let env = webview2_components.1;
-
-
-        let webview_window: ICoreWebView2_22 = controller
-            .CoreWebView2()
-            .unwrap()
-            .cast::<ICoreWebView2_22>()
+        let mut webview_pid: u32 = 0;
+        main_window
+            .webview
+            .BrowserProcessId(&mut webview_pid)
             .unwrap();
 
-        let mut webview_pid: u32 = 0;
-        webview_window.BrowserProcessId(&mut webview_pid).unwrap();
-
-        inject::hook_webview2(config.lock().unwrap().get("hardFlip").unwrap_or(false), webview_pid);
+        inject::hook_webview2(
+            config.lock().unwrap().get("hardFlip").unwrap_or(false),
+            webview_pid,
+        );
 
         #[cfg(not(debug_assertions))]
         {
@@ -106,23 +102,24 @@ fn main() {
         }
 
         if config.lock().unwrap().get("userscripts").unwrap_or(false) {
-            if let Err(e) = modules::userscripts::load(&webview_window) {
+            if let Err(e) = modules::userscripts::load(&main_window.webview) {
                 eprintln!("Failed to load userscripts: {}", e);
             }
         }
 
         #[rustfmt::skip]
-        webview_window
+        main_window.webview
             .AddScriptToExecuteOnDocumentCreated(
                 PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
                 None,
             )
             .ok();
 
-        webview_window.Navigate(w!("https://krunker.io")).ok();
+        main_window.webview.Navigate(w!("https://krunker.io")).ok();
 
         // auto accept permission requests
-        webview_window
+        main_window
+            .webview
             .add_PermissionRequested(
                 &PermissionRequestedEventHandler::create(Box::new(
                     move |_, args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
@@ -140,14 +137,16 @@ fn main() {
         let mut swaps: Vec<(Regex, IStream)> = Vec::new();
 
         if config.lock().unwrap().get("blocklist").unwrap_or(true) {
-            blocklist = modules::blocklist::load(&webview_window)
+            blocklist = modules::blocklist::load(&main_window.webview)
         };
         if config.lock().unwrap().get("swapper").unwrap_or(true) {
-            swaps = modules::swapper::load(&webview_window)
+            swaps = modules::swapper::load(&main_window.webview)
         };
 
-        for url in ["*://matchmaker.krunker.io/game-info*"] {
-            webview_window
+        {
+            let url = "*://matchmaker.krunker.io/game-info*";
+            main_window
+                .webview
                 .AddWebResourceRequestedFilterWithRequestSourceKinds(
                     PCWSTR(utils::create_utf_string(url).as_ptr()),
                     COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
@@ -156,7 +155,7 @@ fn main() {
                 .unwrap();
         }
 
-        webview_window.add_WebResourceRequested(
+        main_window.webview.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(
                 move |webview: Option<ICoreWebView2>,
                       args: Option<ICoreWebView2WebResourceRequestedEventArgs>| {
@@ -211,12 +210,9 @@ fn main() {
 
         let config_clone = Arc::clone(&config);
 
-        fn set_cpu_throttling_inmenu(
-            webview_window: &ICoreWebView2,
-            cfg: &Arc<Mutex<config::Config>>,
-        ) {
+        fn set_cpu_throttling_inmenu(webview: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
             unsafe {
-                webview_window
+                webview
                     .CallDevToolsProtocolMethod(
                         w!("Emulation.setCPUThrottlingRate"),
                         PCWSTR(
@@ -236,11 +232,11 @@ fn main() {
         }
 
         unsafe fn set_cpu_throttling_ingame(
-            webview_window: &ICoreWebView2,
+            webview: &ICoreWebView2,
             cfg: &Arc<Mutex<config::Config>>,
         ) {
             unsafe {
-                webview_window
+                webview
                     .CallDevToolsProtocolMethod(
                         w!("Emulation.setCPUThrottlingRate"),
                         PCWSTR(
@@ -256,9 +252,9 @@ fn main() {
             }
         }
 
-        set_cpu_throttling_inmenu(&webview_window, &config_clone);
+        set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
 
-        webview_window.add_NavigationCompleted(
+        main_window.webview.add_NavigationCompleted(
             &NavigationCompletedEventHandler::create(Box::new(
                 move |webview, _args| {
                     let version = env!("CARGO_PKG_VERSION");
@@ -269,61 +265,69 @@ fn main() {
             )),
             token,
         ).unwrap();
-        
-        webview_window.add_WebMessageReceived(
-            &WebMessageReceivedEventHandler::create(Box::new(
-                move |webview_window, args: Option<ICoreWebView2WebMessageReceivedEventArgs>| {
-                    if let Some(args) = args {
-                        let mut message_vec = utils::create_utf_string("");
-                        let message = message_vec.as_mut_ptr() as *mut PWSTR;
-                        if let Err(e) = args.TryGetWebMessageAsString(message) {
-                            eprintln!("Failed to get web message as string: {}", e);
-                        }
 
-                        let message_string = message.as_ref().unwrap().to_string().unwrap();
-                        let message = message_string.as_str(); // fire
+        main_window
+            .webview
+            .add_WebMessageReceived(
+                &WebMessageReceivedEventHandler::create(Box::new(
+                    move |webview, args: Option<ICoreWebView2WebMessageReceivedEventArgs>| {
+                        if let Some(args) = args {
+                            let mut message_vec = utils::create_utf_string("");
+                            let message = message_vec.as_mut_ptr() as *mut PWSTR;
+                            if let Err(e) = args.TryGetWebMessageAsString(message) {
+                                eprintln!("Failed to get web message as string: {}", e);
+                            }
 
-                        let parts: Vec<&str> = message.split(',').map(|s| s.trim()).collect();
-                        match parts.first() {
-                            Some(&"setConfig") => {
+                            let message_string = message.as_ref().unwrap().to_string().unwrap();
+                            let message = message_string.as_str(); // fire
+
+                            let parts: Vec<&str> = message.split(',').map(|s| s.trim()).collect();
+                            match parts.first() {
+                                Some(&"setConfig") => {
                                     let setting = parts[1];
                                     let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
                                         serde_json::Value::Bool(bool_val)
                                     } else if let Ok(float_val) = parts[2].parse::<f64>() {
-                                        serde_json::Value::Number(serde_json::Number::from_f64((float_val * 100.0).round() / 100.0).unwrap())
+                                        serde_json::Value::Number(
+                                            serde_json::Number::from_f64(
+                                                (float_val * 100.0).round() / 100.0,
+                                            )
+                                            .unwrap(),
+                                        )
                                     } else {
                                         serde_json::Value::String(parts[2].to_string())
                                     };
                                     config_clone.lock().unwrap().set(setting, value);
-                            },
-                            Some(&"getConfig") => {
-                                config_clone.lock().unwrap().send_config(&webview_window.unwrap());
-                            }
-                            Some(&"pointerLock") => { 
-                                let value = parts[1].parse::<bool>().unwrap_or(false);
-                                PostMessageW(
-                                    widget_wnd,
-                                    WM_USER,
-                                    WPARAM(value as usize),
-                                    LPARAM(0),
-                                ).ok();
-
-                                if value {
-                                    set_cpu_throttling_ingame(&webview_window.unwrap(), &config_clone);
-                                } else {
-                                    set_cpu_throttling_inmenu(&webview_window.unwrap(), &config_clone);
                                 }
-                            }
-                            Some(&"close") => {
-                                PostQuitMessage(0);
-                            }
-                            Some(&"open") => {
-                                std::process::Command::new("cmd")
-                                    .args(["/C", "start", "", parts[1]])
-                                    .spawn()
+                                Some(&"getConfig") => {
+                                    config_clone.lock().unwrap().send_config(&webview.unwrap());
+                                }
+                                Some(&"pointerLock") => {
+                                    let value = parts[1].parse::<bool>().unwrap_or(false);
+                                    PostMessageW(
+                                        widget_wnd,
+                                        WM_USER,
+                                        WPARAM(value as usize),
+                                        LPARAM(0),
+                                    )
                                     .ok();
-                            }
-                            Some(&"rpcUpdate") => {
+
+                                    if value {
+                                        set_cpu_throttling_ingame(&webview.unwrap(), &config_clone);
+                                    } else {
+                                        set_cpu_throttling_inmenu(&webview.unwrap(), &config_clone);
+                                    }
+                                }
+                                Some(&"close") => {
+                                    PostQuitMessage(0);
+                                }
+                                Some(&"open") => {
+                                    std::process::Command::new("cmd")
+                                        .args(["/C", "start", "", parts[1]])
+                                        .spawn()
+                                        .ok();
+                                }
+                                Some(&"rpcUpdate") => {
                                     let details = "Krunker";
                                     let state = format!("{} on {}", parts[1], parts[2]);
                                     if let Some(client) = &mut *discord_client.lock().unwrap() {
@@ -336,18 +340,20 @@ fn main() {
                                             eprintln!("Failed to set rpc activity: {}", e);
                                         }
                                     }
-
+                                }
+                                _ => {}
                             }
-                            _ => {}
                         }
-                    }
-                    Ok(())
-                },
-            )),
-            token,
-        ).ok();
+                        Ok(())
+                    },
+                )),
+                token,
+            )
+            .ok();
 
-        controller
+        main_window
+            .controller
+            .clone()
             .add_AcceleratorKeyPressed(
                 &AcceleratorKeyPressedEventHandler::create(Box::new(
                     move |_, args: Option<ICoreWebView2AcceleratorKeyPressedEventArgs>| {
@@ -363,7 +369,7 @@ fn main() {
                         }
                         match VIRTUAL_KEY(pressed_key as u16) {
                             VK_F4 | VK_F6 => {
-                                webview_window.Navigate(w!("https://krunker.io")).ok();
+                                main_window.webview.Navigate(w!("https://krunker.io")).ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -373,7 +379,7 @@ fn main() {
                                 .ok();
                             }
                             VK_F5 => {
-                                webview_window.Reload().ok();
+                                main_window.webview.Reload().ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -383,10 +389,10 @@ fn main() {
                                 .ok();
                             }
                             VK_F11 => {
-                                window::toggle_fullscreen(hwnd);
+                                main_window.toggle_fullscreen();
                             }
                             VK_F12 => {
-                                webview_window.OpenDevToolsWindow().ok();
+                                main_window.webview.OpenDevToolsWindow().ok();
                             }
                             _ => {}
                         }
