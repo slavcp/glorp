@@ -7,7 +7,7 @@
     Name="glorp"
     Manufacturer="slav"
     Version="0.5.2"
-   Scope="perUser"
+    Scope="perUser"
     UpgradeCode="80b28117-cea0-4ef1-8d6f-5884f5ae7270">
         <util:CloseApplication
           Target="glorp.exe"
@@ -35,19 +35,32 @@
         <File Id="render.dll" Name="render.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
         <File Id="webview.dll" Name="webview.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
 
-
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <RemoveFile Id="CleanInstallexe" Name="*.exe" On="uninstall" Directory="INSTALLFOLDER" />
         <RemoveFile Id="CleanInstalldlls" Name="*.dll" On="uninstall" Directory="INSTALLFOLDER" />
-        <RegistryValue Root="HKCU" Key="Software\glorp" Name="installed" Type="integer" Value="1" />
       </Component>
+
+      <Component Id="ProtocolRegistrationComponent" Guid="def3f6ef-ffff-407c-904d-b2a952fb0c2f">
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp">
+            <RegistryValue Value="URL:glorp Protocol" Type="string" />
+            <RegistryValue Name="URL Protocol" Value="" Type="string" />
+        </RegistryKey>
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp\DefaultIcon">
+            <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot;,0" Type="string" />
+        </RegistryKey>
+
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp\shell\open\command">
+            <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot; &quot;%1&quot;" Type="string" />
+        </RegistryKey>
+      </Component>
+
     </ComponentGroup>
-        <CustomAction Id="ExecuteGlorp"                  
+        <CustomAction Id="ExecuteGlorp"
                 Impersonate="yes"
                 Return="asyncNoWait"
                 FileRef="glorp.exe"
-                ExeCommand="" />    
+                ExeCommand="" />
     <InstallExecuteSequence >
       <Custom Action="ExecuteGlorp" After="InstallFinalize" />
     </InstallExecuteSequence>

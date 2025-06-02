@@ -459,7 +459,9 @@
         leaveQueue();
       }
 
-      joinMatch.onclick = () => closeMatchPopup();
+      joinMatch.onclick = () => {
+        window.location.href = "glorp://ranked";
+      };
 
       closeButton.onclick = () => closeMatchPopup();
 
