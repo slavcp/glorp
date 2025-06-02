@@ -285,7 +285,7 @@ pub fn create_webview2(
                 Ok(())
             }),
         );
-        
+
         if result.is_err() {
             installer::check_webview2();
             return create_webview2(hwnd, args);
@@ -350,8 +350,8 @@ unsafe extern "system" fn wnd_proc_setup(
     unsafe {
         if msg == WM_NCCREATE {
             #[allow(clippy::all)]
-                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, wnd_proc_main as isize);
-                return wnd_proc_main(hwnd, msg, wparam, lparam);
+            SetWindowLongPtrW(hwnd, GWLP_WNDPROC, wnd_proc_main as isize);
+            return wnd_proc_main(hwnd, msg, wparam, lparam);
         }
         DefWindowProcW(hwnd, msg, wparam, lparam)
     }

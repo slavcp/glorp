@@ -3,8 +3,6 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::*;
 use std::io::*;
-use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
-use windows::core::*;
 #[derive(Deserialize)]
 struct SettingInfo {
     #[serde(default)]
@@ -95,17 +93,6 @@ impl Config {
     pub fn set<T: serde::Serialize>(&mut self, setting: &str, value: T) {
         if let Ok(value) = serde_json::to_value(value) {
             self.data.insert(setting.to_string(), value);
-        }
-    }
-
-    pub unsafe fn send_config(&self, webview_window: &ICoreWebView2) {
-        unsafe {
-            let config_json = serde_json::to_string_pretty(&self.data).unwrap();
-            webview_window
-                .PostWebMessageAsJson(PCWSTR(
-                    super::utils::create_utf_string(&config_json).as_ptr(),
-                ))
-                .ok();
         }
     }
 
