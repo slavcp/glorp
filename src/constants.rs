@@ -49,14 +49,12 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
 }"#;
 
 // most are expired, but theyre all in here to cover multiple versions
-pub const DEFAULT_FLAGS: [&str; 71] = [
+pub const DEFAULT_FLAGS: &str = r#"{
+"enabled": [
     "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection",
-    // helps with dx hooking
     "--ui-disable-partial-swap",
     "--disable-gpu-sandbox",
     "--enable-unsafe-webgpu",
-    "--use-angle=d3d11",
-    // rendering
     "--disable-features=TextureLayerSkipWaitForActivation",
     "--disable-gpu-vsync",
     "--disable-vsync-for-tests",
@@ -74,7 +72,6 @@ pub const DEFAULT_FLAGS: [&str; 71] = [
     "--enable-features=GpuUseDisplayThreadPriority",
     "--enable-features=BrowserUseDisplayThreadPriority",
     "--enable-accelerated-2d-canvas",
-    // computing (?)
     "--disable-features=CalculateNativeWinOcclusion",
     "--disable-background-timer-throttling",
     "--disable-renderer-backgrounding",
@@ -87,15 +84,13 @@ pub const DEFAULT_FLAGS: [&str; 71] = [
     "--disable-low-end-device-mode",
     "--enable-future-v8-vm-features",
     "--enable-features=JavaScriptExperimentalSharedMemory",
-    "--enable-features=V8VmFuture",
+     "--enable-features=V8VmFuture",
     "--enable-features=WebAssemblyBaseline,WebAssemblyTiering,WebAssemblyMemory64,WebAssemblyLazyCompilation",
-    // network - none of these influence a websocket once it made a connection, maybe loading is a bit faster
     "--enable-quic",
-    "--quic-max-packet-length=1460", // 1500 - 40 bytes for headers
+    "--quic-max-packet-length=1460",
     "--no-proxy-server",
     "--no-pings",
     "--dns-over-https=off",
-    // telemetry
     "--disable-logging",
     "--disable-metrics-repo",
     "--disable-metrics",
@@ -107,7 +102,6 @@ pub const DEFAULT_FLAGS: [&str; 71] = [
     "--disable-in-process-stack-traces",
     "--disable-adpf",
     "--disable-features=HappinessTrackingSurveysForDesktopDemo",
-    // disable unimportant in hopes of lowering overhead
     "--disable-bundled-ppapi-flash",
     "--disable-component-update",
     "--disable-nacl",
@@ -125,18 +119,8 @@ pub const DEFAULT_FLAGS: [&str; 71] = [
     "--disable-features=MediaRouter",
     "--disable-features=PerformanceInterventionUI",
     "--disable-features=IPH_DemoMode",
-    // trackpad gaming??
     "--overscroll-history-navigation=0",
-    "--pull-to-refresh=0",
-    /*
-     0 feasible benefiets
-    "--enable-webgl2-compute-context", not used
-    "--max-active-webgl-contexts=100", krunker does NOT use 100 webgl contexts
-    "--renderer-process-limit=100",  krunker does NOT use 100 renderer processes
-    "--in-process-gpu", worse than disable-gpu-sandbox
-    "--enable-javascript-harmony", krunker doesnt use experimental features
-    "--webrtc-max-cpu-consumption-percentage=100",
-    "--max-gum-fps=9999", related to getusermedia, some guy deadass saw fps in the name and everyone went with it
-    "--disable-features=reduced-referrer-granularity", counter productive
-    */
-];
+    "--pull-to-refresh=0"
+    ],
+    "disabled": []
+}"#;

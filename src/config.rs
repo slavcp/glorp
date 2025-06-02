@@ -27,21 +27,7 @@ impl Config {
                 .map(|(key, info)| (key.clone(), info.default_value.clone()))
                 .collect()
         }
-
-        // w/e im doing it here
         let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
-        let swap_dir = String::from(&client_dir) + "\\swapper";
-        let scripts_dir = String::from(&client_dir) + "\\scripts";
-        let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
-
-        std::fs::create_dir_all(&swap_dir).unwrap_or_default();
-        std::fs::create_dir(&scripts_dir).unwrap_or_default();
-
-        if !std::path::Path::new(&blocklist_path).exists() {
-            std::fs::write(&blocklist_path, super::constants::DEFAULT_BLOCKLIST)
-                .unwrap_or_default();
-        }
-
         let settings_path: String = client_dir + "\\settings.json";
 
         // recursively create dir
