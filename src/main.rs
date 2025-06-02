@@ -19,15 +19,15 @@ mod inject;
 mod installer;
 mod utils;
 mod window;
-
 mod modules {
     pub mod blocklist;
+    pub mod flaglist;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
 }
 
-// > memory safe langauge
+// > memory safe langauges
 // > unsafe
 
 fn main() {
@@ -37,12 +37,24 @@ fn main() {
     let config = Arc::new(Mutex::new(config::Config::load()));
     let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
-    let mut args: String = String::new();
+    let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
 
-    for flag in constants::DEFAULT_FLAGS {
-        args.push_str(flag);
-        args.push(' ');
+    let swap_dir = String::from(&client_dir) + "\\swapper";
+    let scripts_dir = String::from(&client_dir) + "\\scripts";
+    let flaglist_path = String::from(&client_dir) + "\\flags.json";
+    let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
+
+    std::fs::create_dir_all(&swap_dir).unwrap_or_default();
+    std::fs::create_dir(&scripts_dir).unwrap_or_default();
+
+    if !std::path::Path::new(&blocklist_path).exists() {
+        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST).unwrap_or_default();
     }
+    if !std::path::Path::new(&flaglist_path).exists() {
+        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).unwrap_or_default();
+    }
+
+    let mut args = modules::flaglist::load();
 
     if config.lock().unwrap().get("uncapFps").unwrap_or(true) {
         args.push_str("--disable-frame-rate-limit")
@@ -290,17 +302,25 @@ fn main() {
                                     config_clone.lock().unwrap().set(setting, value);
                                 }
                                 Some(&"getInfo") => {
-                                            let version = env!("CARGO_PKG_VERSION");
-                                            let config = config_clone.lock().unwrap();
-                                            let mut config_map = serde_json::Map::new();
-                                            config_map.insert("settings".to_string(), serde_json::json!(&*config));
-                                            config_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
-                                            let config_json = serde_json::to_string_pretty(&config_map).unwrap();
-                                            webview.unwrap()
-                                                .PostWebMessageAsJson(PCWSTR(
-                                                    utils::create_utf_string(&config_json).as_ptr(),
-                                                ))
-                                                .ok();
+                                    let version = env!("CARGO_PKG_VERSION");
+                                    let config = config_clone.lock().unwrap();
+                                    let mut config_map = serde_json::Map::new();
+                                    config_map.insert(
+                                        "settings".to_string(),
+                                        serde_json::json!(&*config),
+                                    );
+                                    config_map.insert(
+                                        "version".to_string(),
+                                        serde_json::Value::String(version.to_string()),
+                                    );
+                                    let config_json =
+                                        serde_json::to_string_pretty(&config_map).unwrap();
+                                    webview
+                                        .unwrap()
+                                        .PostWebMessageAsJson(PCWSTR(
+                                            utils::create_utf_string(&config_json).as_ptr(),
+                                        ))
+                                        .ok();
                                 }
                                 Some(&"pointerLock") => {
                                     let value = parts[1].parse::<bool>().unwrap_or(false);
