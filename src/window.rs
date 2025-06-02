@@ -285,6 +285,7 @@ pub fn create_webview2(
                 Ok(())
             }),
         );
+        
         if result.is_err() {
             installer::check_webview2();
             return create_webview2(hwnd, args);
