@@ -84,7 +84,7 @@ pub const DEFAULT_FLAGS: &str = r#"{
     "--disable-low-end-device-mode",
     "--enable-future-v8-vm-features",
     "--enable-features=JavaScriptExperimentalSharedMemory",
-     "--enable-features=V8VmFuture",
+    "--enable-features=V8VmFuture",
     "--enable-features=WebAssemblyBaseline,WebAssemblyTiering,WebAssemblyMemory64,WebAssemblyLazyCompilation",
     "--enable-quic",
     "--quic-max-packet-length=1460",
