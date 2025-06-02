@@ -289,7 +289,6 @@
       let queueConnection;
       let countdownInterval;
 
-
       let audioContext = null;
       let notificationBuffer = null;
       let currentSource = null;
@@ -311,38 +310,28 @@
       regionSelector.value = window?.info?.region || "eu";
 
       async function initializeAudio() {
-        if (audioInitialized) return;
-        try {
-          audioContext = new window.AudioContext();
-          console.log("AudioContext initialized.");
+        audioContext = new window.AudioContext();
+        const buffer = audioContext.createBuffer(1, 1, 22050);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+        source.stop(0.001);
 
-          // ensure context is "unlocked"
-          const buffer = audioContext.createBuffer(1, 1, 22050);
-          const source = audioContext.createBufferSource();
-          source.buffer = buffer;
-          source.connect(audioContext.destination);
-          source.start(0);
-          source.stop(0.001);
+        if (audioContext.state === "suspended") await audioContext.resume();
 
-          if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-            console.log('AudioContext resumed successfully after silent play.');
-          }
-
-          const response = await fetch(audioFilePath);
-          const arrayBuffer = await response.arrayBuffer();
-          notificationBuffer = await audioContext.decodeAudioData(arrayBuffer);
-          console.log("Notification sound loaded successfully.");
-          audioInitialized = true;
-        } catch (e) {
-          console.error("Error initializing audio or loading sound:", e);
-          alert("Failed to initialize audio. Please ensure browser allows sound for this site.");
-        }
+        const response = await fetch(audioFilePath);
+        const arrayBuffer = await response.arrayBuffer();
+        notificationBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioInitialized = true;
       }
 
-
       function playNotificationSound() {
-        if (notificationBuffer && audioContext && audioContext.state === 'running') {
+        if (
+          notificationBuffer &&
+          audioContext &&
+          audioContext.state === "running"
+        ) {
           if (currentSource) {
             currentSource.stop();
             currentSource.disconnect();
@@ -354,9 +343,7 @@
           source.start(0);
           currentSource = source;
           source.onended = () => {
-            if (currentSource === source) {
-              currentSource = null;
-            }
+            if (currentSource === source) currentSource = null;
             source.disconnect();
           };
         }
@@ -446,12 +433,11 @@
             "https://static.wikia.nocookie.net/krunkerio/images/e/e8/Industry-2.png/revision/latest",
           sandstorm:
             "https://static.wikia.nocookie.net/krunkerio/images/f/f7/New_Sandstorm.png/revision/latest",
-          bureau: "https://static.wikia.nocookie.net/krunkerio/images/7/71/Bureau_3.png/revision/latest"
+          bureau:
+            "https://static.wikia.nocookie.net/krunkerio/images/7/71/Bureau_3.png/revision/latest",
         };
 
-        matchPopup.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${
-          mapBackgrounds[map]
-        })`;
+        matchPopup.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${mapBackgrounds[map]})`;
         matchPopupOverlay.classList.add("active");
 
         let timeLeft = 60;
@@ -473,19 +459,16 @@
         leaveQueue();
       }
 
-
       joinMatch.onclick = () => closeMatchPopup();
 
-      closeButton.onclick = () => {
-        closeMatchPopup();
-      };
+      closeButton.onclick = () => closeMatchPopup();
 
       queueButton.onclick = async () => {
         if (isQueued) {
           leaveQueue();
         } else {
           if (!audioInitialized) await initializeAudio();
-          
+
           startQueue();
         }
       };

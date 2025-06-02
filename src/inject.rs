@@ -61,7 +61,7 @@ impl DllInjector {
                     return;
                 }
             };
-
+            
             let kernel32 = match GetModuleHandleW(w!("kernel32.dll")) {
                 Ok(handle) => handle,
                 Err(e) => {
@@ -69,6 +69,49 @@ impl DllInjector {
                     return;
                 }
             };
+
+            if is_dll_loaded(self.pid, "webview.dll") {
+                // unloading the existing DLL
+                    let mut module_entry = MODULEENTRY32W {
+                        dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
+                        ..MODULEENTRY32W::default()
+                    };
+
+                    let module_snapshot = match CreateToolhelp32Snapshot(
+                        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
+                        self.pid,
+                    ) {
+                        Ok(handle) => handle,
+                        Err(_) => return,
+                    };
+
+                    if Module32FirstW(module_snapshot, &mut module_entry).is_ok() {
+                        loop {
+                            let module_name = String::from_utf16_lossy(&module_entry.szModule);
+                            if module_name.contains("webview.dll") {
+                                if let Some(free_library) = GetProcAddress(kernel32, s!("FreeLibrary")) {
+                                    CreateRemoteThread(
+                                        process_handle,
+                                        None,
+                                        0,
+                                        Some(std::mem::transmute::<unsafe extern "system" fn() -> isize, unsafe extern "system" fn(*mut std::ffi::c_void) -> u32>(free_library)),
+                                        Some(module_entry.modBaseAddr as *mut std::ffi::c_void),
+                                        0,
+                                        None,
+                                    ).ok();
+                                }
+                                break;
+                            }
+
+                            if Module32NextW(module_snapshot, &mut module_entry).is_err() {
+                                break;
+                            }
+                        }
+                    }
+                    CloseHandle(module_snapshot).ok();
+
+                    std::thread::sleep(std::time::Duration::from_millis(1000));
+                }
 
             let load_library = match GetProcAddress(kernel32, s!("LoadLibraryW")) {
                 Some(addr) => addr,
@@ -122,7 +165,45 @@ impl DllInjector {
             CloseHandle(process_handle).ok();
         }
     }
+
 }
+
+fn is_dll_loaded(pid: u32, dll_name: &str) -> bool {
+    unsafe {
+        let mut module_entry = MODULEENTRY32W {
+            dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
+            ..MODULEENTRY32W::default()
+        };
+
+        let module_snapshot = match CreateToolhelp32Snapshot(
+            TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
+            pid,
+        ) {
+            Ok(handle) => handle,
+            Err(_) => {
+                return false;
+            }
+        };
+
+        if Module32FirstW(module_snapshot, &mut module_entry).is_ok() {
+            loop {
+                let module_name = String::from_utf16_lossy(&module_entry.szModule);
+                if module_name.contains(dll_name) {
+                    CloseHandle(module_snapshot).ok();
+                    return true;
+                }
+
+                if Module32NextW(module_snapshot, &mut module_entry).is_err() {
+                    break;
+                }
+            }
+        }
+
+        CloseHandle(module_snapshot).ok();
+        false
+    }
+}
+
 fn find_renderer_process(parent_pid: u32) -> Result<u32> {
     unsafe {
         let mut process_entry = PROCESSENTRY32W {
@@ -149,35 +230,9 @@ fn find_renderer_process(parent_pid: u32) -> Result<u32> {
                 let is_webview = process_name.to_lowercase().contains("msedgewebview2.exe");
                 let is_child = process_entry.th32ParentProcessID == parent_pid;
 
-                if is_webview && is_child {
-                    // check if d3d11.dll is loaded
-                    let mut module_entry = MODULEENTRY32W {
-                        dwSize: std::mem::size_of::<MODULEENTRY32W>() as u32,
-                        ..MODULEENTRY32W::default()
-                    };
-
-                    let module_snapshot = CreateToolhelp32Snapshot(
-                        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32,
-                        process_entry.th32ProcessID,
-                    )
-                    .unwrap_or_default();
-
-                    if Module32FirstW(module_snapshot, &mut module_entry).is_ok() {
-                        loop {
-                            let module_name = String::from_utf16_lossy(&module_entry.szModule);
-
-                            if module_name.contains("d3d11.dll") {
-                                CloseHandle(module_snapshot).ok();
-                                CloseHandle(snapshot).ok();
-                                return Ok(process_entry.th32ProcessID);
-                            }
-
-                            if Module32NextW(module_snapshot, &mut module_entry).is_err() {
-                                break;
-                            }
-                        }
-                    }
-                    CloseHandle(module_snapshot).ok();
+                if is_webview && is_child && is_dll_loaded(process_entry.th32ProcessID, "d3d11.dll") {
+                            CloseHandle(snapshot).ok();
+                            return Ok(process_entry.th32ProcessID);
                 }
 
                 if Process32NextW(snapshot, &mut process_entry).is_err() {

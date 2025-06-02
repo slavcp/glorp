@@ -72,7 +72,7 @@ fn main() {
                 .unwrap_or_else(|| String::from("Borderless Fullscreen"))
                 .as_str(),
             true,
-            args
+            args,
         );
 
         modules::priority::set(
@@ -90,6 +90,7 @@ fn main() {
             .BrowserProcessId(&mut webview_pid)
             .unwrap();
 
+            println!("Webview PID: {}", webview_pid);
         inject::hook_webview2(
             config.lock().unwrap().get("hardFlip").unwrap_or(false),
             webview_pid,
