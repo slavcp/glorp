@@ -58,7 +58,7 @@ window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
 		window.glorpClient.settings[toggleFunctionName](value);
 	}
 
-	window.glorpClient.settings.config[id] = value;
+	window.glorpClient.settings.data[id] = value;
 	window.chrome.webview.postMessage(`setConfig,${id},${value}`);
 };
 
@@ -81,7 +81,7 @@ class SettingsManager {
 	}
 
 	generateHtml(option) {
-		const value = window.glorpClient.settings.config[option.id];
+		const value = window.glorpClient.settings.data[option.id];
 		switch (option.type) {
 			// biome-ignore format: it looks like straight ass when biome formats it
 			case "checkbox":

@@ -10,14 +10,10 @@ window.glorpClient = {
 };
 
 (async () => {
-	try {
-		window.glorpClient.settings.config = await new Promise((resolve) => {
-			window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
-			window.chrome.webview.postMessage("getConfig");
-		});
-	} catch (e) {
-		console.error("Failed to get config:", e);
-	}
+	window.glorpClient = await new Promise((resolve) => {
+		window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
+		window.chrome.webview.postMessage("getInfo");
+	});
 })();
 
 document.addEventListener(
@@ -28,7 +24,7 @@ document.addEventListener(
 		document.head.append(baseCSS);
 		window.localStorage.setItem("cont_shoot1Key_alt", "131");
 
-		if (window.glorpClient?.settings.config?.cleanUI) {
+		if (window.glorpClient?.settings.data?.cleanUI) {
 			import("./components/clean.css").then((css) => {
 				const cleanCSS = document.createElement("style");
 				cleanCSS.id = "cleanCSS";
@@ -51,7 +47,7 @@ document.addEventListener(
 			return originalDocAddEventListener.call(this, type, listener, options);
 		};
 
-		if (window.glorpClient?.settings.config?.rawInput) {
+		if (window.glorpClient?.settings.data?.rawInput) {
 			const originalRequestPointerLock = HTMLCanvasElement.prototype.requestPointerLock;
 			HTMLCanvasElement.prototype.requestPointerLock = function (options) {
 				return originalRequestPointerLock.call(this, {
@@ -61,7 +57,7 @@ document.addEventListener(
 			};
 		}
 
-		if (window.glorpClient?.settings.config?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorpClient?.settings.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
 	},
 	{ once: true },
 );
@@ -123,12 +119,12 @@ Object.defineProperty(window, "gameLoaded", {
 			await import("./settings.js");
 			await import("./modules/changelog.js");
 			await import("./modules/externalQueue.js");
-			if (window.glorpClient?.settings.config?.hideBundles) window.bundlePopup = () => null;
-			if (window.glorpClient?.settings.config?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
-			if (window.glorpClient?.settings.config?.accountManager) await import("./modules/accountManager.js");
-			if (window.glorpClient?.settings.config?.showPing) await import("./modules/showPing.js");
+			if (window.glorpClient?.settings.data?.hideBundles) window.bundlePopup = () => null;
+			if (window.glorpClient?.settings.data?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
+			if (window.glorpClient?.settings.data?.accountManager) await import("./modules/accountManager.js");
+			if (window.glorpClient?.settings.data?.showPing) await import("./modules/showPing.js");
 
-			if (window.glorpClient?.settings.config?.autoSpec) {
+			if (window.glorpClient?.settings.data?.autoSpec) {
 				const trySetSpect = async () => {
 					const activity = window.getGameActivity();
 					if (activity.map === null) {
@@ -140,7 +136,7 @@ Object.defineProperty(window, "gameLoaded", {
 				await trySetSpect();
 			}
 
-			if (window.glorpClient?.settings.config?.discordRPC) {
+			if (window.glorpClient?.settings.data?.discordRPC) {
 				window.chrome.webview.addEventListener("message", async (event) => {
 					if (event.data !== "game-updated") return;
 					await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -149,14 +145,14 @@ Object.defineProperty(window, "gameLoaded", {
 				});
 			}
 
-			if (window.glorpClient?.settings.config?.textSelect) {
+			if (window.glorpClient?.settings.data?.textSelect) {
 				const textSelectCSS = document.createElement("style");
 				textSelectCSS.id = "textSelect";
 				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
 				document.head.append(textSelectCSS);
 			}
 
-			if (window.glorpClient?.settings.config?.menuTimer) {
+			if (window.glorpClient?.settings.data?.menuTimer) {
 				const css = await import("./components/menuTimer.css");
 				const menuTimerCSS = document.createElement("style");
 				menuTimerCSS.id = "menuTimerCSS";

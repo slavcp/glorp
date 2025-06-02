@@ -90,7 +90,7 @@ fn main() {
             .BrowserProcessId(&mut webview_pid)
             .unwrap();
 
-            println!("Webview PID: {}", webview_pid);
+        println!("Webview PID: {}", webview_pid);
         inject::hook_webview2(
             config.lock().unwrap().get("hardFlip").unwrap_or(false),
             webview_pid,
@@ -256,18 +256,6 @@ fn main() {
 
         set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
 
-        main_window.webview.add_NavigationCompleted(
-            &NavigationCompletedEventHandler::create(Box::new(
-                move |webview, _args| {
-                    let version = env!("CARGO_PKG_VERSION");
-                    let script = format!("window.glorpClient = window.glorpClient || {{}}; window.glorpClient.version = '{}';", version);
-                    webview.unwrap().ExecuteScript(PCWSTR(utils::create_utf_string(&script).as_ptr()), None).unwrap();
-                    Ok(())
-                }
-            )),
-            token,
-        ).unwrap();
-
         main_window
             .webview
             .add_WebMessageReceived(
@@ -301,8 +289,18 @@ fn main() {
                                     };
                                     config_clone.lock().unwrap().set(setting, value);
                                 }
-                                Some(&"getConfig") => {
-                                    config_clone.lock().unwrap().send_config(&webview.unwrap());
+                                Some(&"getInfo") => {
+                                            let version = env!("CARGO_PKG_VERSION");
+                                            let config = config_clone.lock().unwrap();
+                                            let mut config_map = serde_json::Map::new();
+                                            config_map.insert("settings".to_string(), serde_json::json!(&*config));
+                                            config_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
+                                            let config_json = serde_json::to_string_pretty(&config_map).unwrap();
+                                            webview.unwrap()
+                                                .PostWebMessageAsJson(PCWSTR(
+                                                    utils::create_utf_string(&config_json).as_ptr(),
+                                                ))
+                                                .ok();
                                 }
                                 Some(&"pointerLock") => {
                                     let value = parts[1].parse::<bool>().unwrap_or(false);
