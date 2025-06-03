@@ -1,6 +1,24 @@
 let queueWindow;
 const externalQueue = document.createElement("button");
 
+if (window.glorpClient?.launchArguments?.includes("glorp://ranked")) {
+	if (window.openRankedMenu) {
+		window.openRankedMenu();
+		const startButton = document.querySelector(".start-button");
+		if (startButton) {
+			const observer = new MutationObserver((mutations) => {
+				for (const mutation of mutations) {
+					// if (mutation.attributeName === "disabled" && !startButton.disabled) {
+					// 	startButton.click();
+					// 	observer.disconnect();
+					// }
+				}
+				observer.observe(startButton, { attributes: true });
+			});
+		}
+	}
+}
+
 externalQueue.textContent = "open_in_new";
 externalQueue.style = `background-color: #5ce05a;
     color: #ffffff;

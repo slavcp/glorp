@@ -27,6 +27,7 @@ impl DllInjector {
     }
 
     fn handle_error(&mut self, error_msg: &str) {
+        println!("{}", error_msg);
         let error = PCWSTR(error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr());
         unsafe {
             OutputDebugStringW(error);
@@ -39,11 +40,12 @@ impl DllInjector {
                 MessageBoxW(
                     None,
                     w!(
-                        "Error: Error injecting dlls. this is usually because the WebView2 runtime is not running at the same process level as glorp.exe; if you ran the client as admin, restart it as normal and see if it works."
+                        "Error injecting dlls, please retry launching (terminating webview processes)"
                     ),
                     error,
                     MB_ICONERROR | MB_SYSTEMMODAL,
                 );
+                super::utils::kill("msedgewebview2.exe");
                 std::process::exit(0);
             }
         };
@@ -114,8 +116,7 @@ impl DllInjector {
                     }
                 }
                 CloseHandle(module_snapshot).ok();
-
-                std::thread::sleep(std::time::Duration::from_millis(1000));
+                std::thread::sleep(std::time::Duration::from_secs(1));
             }
 
             let load_library = match GetProcAddress(kernel32, s!("LoadLibraryW")) {
