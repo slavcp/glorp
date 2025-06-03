@@ -8,10 +8,6 @@ if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage
 	const observer = new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
 			if (!startButton) return;
-			alert(`Debug info:
-attributeName: ${mutation.attributeName}
-startButton disabled: ${!startButton.disabled}
-overlay container exists: ${!document.querySelector(".overlay-container")}`);
 			if (mutation.attributeName === "disabled" && !startButton.disabled) {
 				startButton.click();
 				observer.disconnect();
