@@ -18,12 +18,10 @@ static ERROR_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32:
 
 impl DllInjector {
     pub fn new(dll_path: &str, pid: u32) -> Self {
-        let mut injector = Self {
+        Self {
             dll_path: dll_path.to_string(),
             pid,
-        };
-        injector.inject();
-        injector
+        }
     }
 
     fn handle_error(&mut self, error_msg: &str) {
@@ -40,7 +38,7 @@ impl DllInjector {
                 MessageBoxW(
                     None,
                     w!(
-                        "Error injecting dlls, please retry launching (terminating webview processes)"
+                        "Error injecting dlls, please retry launching"
                     ),
                     error,
                     MB_ICONERROR | MB_SYSTEMMODAL,
@@ -254,7 +252,7 @@ fn find_renderer_process(parent_pid: u32) -> Result<u32> {
 }
 pub fn hook_webview2(hard_flip: bool, pid: u32) {
     let current_exe = std::env::current_exe().unwrap();
-    DllInjector::new(
+    let mut webview_injector = DllInjector::new(
         current_exe
             .parent()
             .unwrap()
@@ -263,13 +261,14 @@ pub fn hook_webview2(hard_flip: bool, pid: u32) {
             .unwrap(),
         pid,
     );
+    webview_injector.inject();
     if hard_flip {
         let pid = find_renderer_process(pid).unwrap_or_else(|e| {
             eprintln!("Failed to find renderer process: {}", e);
             0
         });
 
-        DllInjector::new(
+        let mut render_injector = DllInjector::new(
             current_exe
                 .parent()
                 .unwrap()
@@ -278,5 +277,6 @@ pub fn hook_webview2(hard_flip: bool, pid: u32) {
                 .unwrap(),
             pid,
         );
+        render_injector.inject();
     }
 }
