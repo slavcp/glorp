@@ -106,6 +106,13 @@ Object.defineProperty(window, "gameLoaded", {
         </span>
     </div>`;
 
+		// avoid not being able to shoot when importing settings
+		const originalImportSettings = window.importSettings;
+		window.importSettings = () => {
+			originalImportSettings.call();
+			bindF20();
+		};
+
 		(async () => {
 			await import("./notifications.js");
 			// trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
