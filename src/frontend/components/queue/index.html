@@ -293,6 +293,7 @@
       let queueInterval;
       let queueConnection;
       let countdownInterval;
+      let isConnecting = false;
 
       let audioContext = null;
       let notificationBuffer = null;
@@ -377,15 +378,6 @@
       }
 
       function startQueue() {
-        isQueued = true;
-        queueStartTime = Date.now();
-        queueButton.textContent = "Leave Queue";
-        queueButton.classList.add("in-queue");
-        queueStatus.textContent = "In queue";
-        queueStatus.style.color = "#7aff7a";
-        updateQueueTimer();
-        queueInterval = setInterval(updateQueueTimer, 1000);
-
         queueConnection = new WebSocket(
           `wss://gamefrontend.svc.krunker.io/v1/matchmaking/queue?token=${
             window.info.token
@@ -395,32 +387,42 @@
           const data = JSON.parse(event.data);
           switch (data.type) {
             case "QUEUE_STATUS":
-              if (data.payload.status === "MATCHED") {
+              if (data.payload.status === "MATCHED")
                 matchFound(data.payload.assignment.extensions.map.trim());
-              }
               break;
             case "INTERNAL_ERROR":
-              leaveQueue();
+              queueConnection.close();
+              isQueued = false;
+              isConnecting = false;
+              queueButton.disabled = false;
               break;
           }
         };
-        queueConnection.onclose = (event) => leaveQueue();
-      }
+        queueConnection.onclose = () => {
+          isQueued = false;
+          isConnecting = false; 
+          clearInterval(queueInterval);
+          queueButton.textContent = "Join Queue";
+          queueButton.classList.remove("in-queue");
+          queueStatus.textContent = "Not in queue";
+          queueStatus.style.color = "#ff7a7a";
+          queueTimerDisplay.textContent = "00:00";
+          queueButton.disabled = false;
+        };
 
-      function leaveQueue() {
-        isQueued = false;
-        clearInterval(queueInterval);
-        queueInterval = null;
-        queueStartTime = null;
-        queueButton.textContent = "Join Queue";
-        queueButton.classList.remove("in-queue");
-        queueStatus.textContent = "Not in queue";
-        queueStatus.style.color = "#a0a0ff";
-        queueTimerDisplay.textContent = "00:00";
-        if (queueConnection && queueConnection.readyState === WebSocket.OPEN)
-          queueConnection.close(1000, "");
+        queueConnection.onopen = () => {
+          isQueued = true;
+          isConnecting = false;
+          queueStartTime = Date.now();
+          queueButton.textContent = "Leave Queue";
+          queueButton.classList.add("in-queue");
+          queueStatus.textContent = "In queue";
+          queueStatus.style.color = "#7aff7a";
+          updateQueueTimer();
+          queueInterval = setInterval(updateQueueTimer, 1000);
+          queueButton.disabled = false;
+        };
       }
-
       function matchFound(map) {
         playNotificationSound();
 
@@ -458,25 +460,28 @@
         clearInterval(countdownInterval);
         stopNotificationSound();
         matchPopupOverlay.classList.remove("active");
-        leaveQueue();
       }
 
-      joinMatch.onclick = () => {
-        window.location.href = "glorp://ranked";
-      };
+      joinMatch.onclick = () => (window.location.href = "glorp://ranked");
 
       closeButton.onclick = () => closeMatchPopup();
 
       queueButton.onclick = async () => {
+        if (isConnecting) return;
+
+        queueButton.disabled = true;
+        isConnecting = true;
+
         if (isQueued) {
-          leaveQueue();
+          queueConnection.close();
         } else {
           if (!audioInitialized) await initializeAudio();
-
           startQueue();
         }
       };
-      regionSelector.onchange = () => leaveQueue();
+      regionSelector.onchange = () => {
+        if (isQueued) queueConnection.close();
+      };
     </script>
   </head>
   <body>
