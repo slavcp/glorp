@@ -53,7 +53,7 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
     }
 }
 
-pub fn kill_glorps() {
+pub fn kill(wanted_process_name: &str) {
     unsafe {
         let current_pid = GetCurrentProcessId();
         let mut entry = PROCESSENTRY32W {
@@ -66,7 +66,8 @@ pub fn kill_glorps() {
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
                 let process_name = String::from_utf16_lossy(&entry.szExeFile);
-                if process_name.contains("glorp") && entry.th32ProcessID != current_pid {
+                if process_name.contains(wanted_process_name) && entry.th32ProcessID != current_pid
+                {
                     if let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, entry.th32ProcessID)
                     {
                         TerminateProcess(process, 0).ok();

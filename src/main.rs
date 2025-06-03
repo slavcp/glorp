@@ -31,7 +31,7 @@ mod modules {
 // > unsafe
 
 fn main() {
-    utils::kill_glorps(); //NOOOOO
+    utils::kill("glorp.exe"); //NOOOOO
 
     let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     let config = Arc::new(Mutex::new(config::Config::load()));
@@ -305,6 +305,14 @@ fn main() {
                                     let version = env!("CARGO_PKG_VERSION");
                                     let config = config_clone.lock().unwrap();
                                     let mut config_map = serde_json::Map::new();
+                                    let args_str =
+                                        std::env::args().skip(1).collect::<Vec<String>>().join(" ");
+                                    if !args_str.is_empty() {
+                                        config_map.insert(
+                                            "launchArgs".to_string(),
+                                            serde_json::Value::String(args_str),
+                                        );
+                                    }
                                     config_map.insert(
                                         "settings".to_string(),
                                         serde_json::json!(&*config),
@@ -313,6 +321,7 @@ fn main() {
                                         "version".to_string(),
                                         serde_json::Value::String(version.to_string()),
                                     );
+
                                     let config_json =
                                         serde_json::to_string_pretty(&config_map).unwrap();
                                     webview

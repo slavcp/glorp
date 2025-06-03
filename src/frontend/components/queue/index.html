@@ -206,9 +206,9 @@
       }
 
       #matchPopup {
-        background-size: cover;
+        background-size: cover!important;
         background-position: center;
-        background-repeat: no-repeat;
+        background-repeat: no-repeat!important;
         background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
         border-radius: 18px;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6),
@@ -392,7 +392,7 @@
             case "QUEUE_STATUS":
               if (data.payload.status === "MATCHED") {
                 matchFound(
-                  data.payload.assignment.extensions.map.slice(1),
+                  data.payload.assignment.extensions.map,
                   data.payload.assignment.extensions.region
                 );
               }
@@ -503,7 +503,7 @@
       <div id="matchPopup">
         <h2>Match Found!</h2>
         <span id="closeMatch">&times;</span>
-        Closing in: <span id="countdownTimer">00:00</span>
+        Closing in: <span id="countdownTimer">01:00</span>
         <br />
         <button id="joinMatch">Join Match</button>
       </div>
