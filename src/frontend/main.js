@@ -33,18 +33,11 @@ document.addEventListener(
 			});
 		}
 
-		const originalAddEventListener = HTMLElement.prototype.addEventListener;
-		HTMLElement.prototype.addEventListener = function (type, listener, options) {
+		const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
+		HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
 			if (type === "wheel")
 				window.glorpClient.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
 			return originalAddEventListener.call(this, type, listener, options);
-		};
-
-		const originalDocAddEventListener = EventTarget.prototype.addEventListener;
-		EventTarget.prototype.addEventListener = function (type, listener, options) {
-			if (type === "wheel")
-				window.glorpClient.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
-			return originalDocAddEventListener.call(this, type, listener, options);
 		};
 
 		if (window.glorpClient?.settings.data?.rawInput) {
@@ -69,22 +62,28 @@ document.addEventListener("pointerlockchange", () => {
 	setTimeout(() => window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`), 1000);
 });
 
+function bindF20() {
+	window.changeContSet();
+	window.changeCont("shoot", 1, undefined);
+	document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: 131, bubbles: true }));
+	document.dispatchEvent(new KeyboardEvent("keyup", { keyCode: 131, bubbles: true }));
+	window.closWind();
+}
+
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
 		window.chrome.webview.postMessage("game-updated");
 		if (!firstLoad) return;
+		const justLaunched = sessionStorage.getItem("justLaunched");
+		if (justLaunched === null) sessionStorage.setItem("justLaunched", true);
+		else sessionStorage.setItem("justLaunched", false);
+
 		firstLoad = false;
 		window.windows[0].toggleType({ checked: true });
 
 		// binds shoot to f20
-		setTimeout(() => {
-			window.changeContSet();
-			window.changeCont("shoot", 1, undefined);
-			document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: 131, bubbles: true }));
-			document.dispatchEvent(new KeyboardEvent("keyup", { keyCode: 131, bubbles: true }));
-			window.closWind();
-		}, 1400);
+		setTimeout(() => bindF20(), 1400);
 
 		// append ranked and mod button to comp host ui
 		document.querySelector("#compBtnLst").innerHTML += `

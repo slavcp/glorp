@@ -1,22 +1,24 @@
 let queueWindow;
 const externalQueue = document.createElement("button");
 
-if (window.glorpClient?.launchArguments?.includes("glorp://ranked")) {
-	if (window.openRankedMenu) {
-		window.openRankedMenu();
-		const startButton = document.querySelector(".start-button");
-		if (startButton) {
-			const observer = new MutationObserver((mutations) => {
-				for (const mutation of mutations) {
-					// if (mutation.attributeName === "disabled" && !startButton.disabled) {
-					// 	startButton.click();
-					// 	observer.disconnect();
-					// }
-				}
-				observer.observe(startButton, { attributes: true });
-			});
+if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched")) {
+	window.openRankedMenu();
+	const startButton = document.querySelector(".start-button");
+
+	const observer = new MutationObserver((mutations) => {
+		for (const mutation of mutations) {
+			if (!startButton) return;
+			alert(`Debug info:
+attributeName: ${mutation.attributeName}
+startButton disabled: ${!startButton.disabled}
+overlay container exists: ${!document.querySelector(".overlay-container")}`);
+			if (mutation.attributeName === "disabled" && !startButton.disabled) {
+				startButton.click();
+				observer.disconnect();
+			}
 		}
-	}
+	});
+	observer.observe(startButton, { attributes: true });
 }
 
 externalQueue.textContent = "open_in_new";
