@@ -139,6 +139,10 @@
         color: #e0e0e0;
       }
 
+      #CountDownTimer {
+        margin-bottom: 4px;
+      }
+
       #queueButton {
         background: linear-gradient(180deg, #6a5acd, #5a4acb);
         color: #ffffff;
@@ -250,6 +254,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
         transition: background 0.3s ease-in-out, transform 0.2s ease-in-out,
           box-shadow 0.3s ease-in-out;
+          margin-top: 5px;
       }
 
       #matchPopup button:hover {
@@ -503,7 +508,8 @@
       <div id="matchPopup">
         <h2>Match Found!</h2>
         <span id="closeMatch">&times;</span>
-        Closing in: <span id="countdownTimer">01:00</span>
+        <p>if joining doesnt work just launch the client and rejoin the game from the ranked menu</p>
+        <span id="countdownTimer">01:00</span>
         <br />
         <button id="joinMatch">Join Match</button>
       </div>

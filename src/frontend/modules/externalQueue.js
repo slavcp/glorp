@@ -39,7 +39,7 @@ function openExtQueue() {
 	const screenWidth = window.screen.width;
 	const screenHeight = window.screen.height;
 	const windowWidth = screenWidth * 0.3;
-	const windowHeight = windowWidth * 0.25;
+	const windowHeight = windowWidth * 0.3;
 	const menuBarHeight = 150;
 	const left = (screenWidth - windowWidth) / 2;
 	const top = (screenHeight - windowHeight - menuBarHeight) / 2;
