@@ -37,9 +37,7 @@ impl DllInjector {
             unsafe {
                 MessageBoxW(
                     None,
-                    w!(
-                        "Error injecting dlls, please retry launching"
-                    ),
+                    w!("Error injecting dlls, please retry launching"),
                     error,
                     MB_ICONERROR | MB_SYSTEMMODAL,
                 );
@@ -263,20 +261,19 @@ pub fn hook_webview2(hard_flip: bool, pid: u32) {
     );
     webview_injector.inject();
     if hard_flip {
-        let pid = find_renderer_process(pid).unwrap_or_else(|e| {
-            eprintln!("Failed to find renderer process: {}", e);
-            0
-        });
-
-        let mut render_injector = DllInjector::new(
-            current_exe
-                .parent()
-                .unwrap()
-                .join("render.dll")
-                .to_str()
-                .unwrap(),
-            pid,
-        );
-        render_injector.inject();
+        if let Ok(renderer_pid) = find_renderer_process(pid) {
+            let mut render_injector = DllInjector::new(
+                current_exe
+                    .parent()
+                    .unwrap()
+                    .join("render.dll")
+                    .to_str()
+                    .unwrap(),
+                renderer_pid,
+            );
+            render_injector.inject();
+        } else {
+            eprintln!("Failed to find renderer process");
+        }
     }
 }
