@@ -1,7 +1,7 @@
 let queueWindow;
 const externalQueue = document.createElement("button");
 
-if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched")) {
+if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched") === true) {
 	window.openRankedMenu();
 	const startButton = document.querySelector(".start-button");
 

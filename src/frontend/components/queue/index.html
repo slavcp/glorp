@@ -210,9 +210,9 @@
       }
 
       #matchPopup {
-        background-size: cover!important;
+        background-size: cover !important;
         background-position: center;
-        background-repeat: no-repeat!important;
+        background-repeat: no-repeat !important;
         background: linear-gradient(145deg, #2a2a4a, #1a1a2e);
         border-radius: 18px;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6),
@@ -254,7 +254,7 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
         transition: background 0.3s ease-in-out, transform 0.2s ease-in-out,
           box-shadow 0.3s ease-in-out;
-          margin-top: 5px;
+        margin-top: 5px;
       }
 
       #matchPopup button:hover {
@@ -396,10 +396,7 @@
           switch (data.type) {
             case "QUEUE_STATUS":
               if (data.payload.status === "MATCHED") {
-                matchFound(
-                  data.payload.assignment.extensions.map,
-                  data.payload.assignment.extensions.region
-                );
+                matchFound(data.payload.assignment.extensions.map.trim());
               }
               break;
             case "INTERNAL_ERROR":
@@ -453,7 +450,7 @@
 
           countdownTimer.textContent = formatTime(remaining);
 
-          if (remaining <= 0) closeMatchPopup();
+          if (remaining <= 0) window.close();
         }, 1000);
       }
 
@@ -508,7 +505,10 @@
       <div id="matchPopup">
         <h2>Match Found!</h2>
         <span id="closeMatch">&times;</span>
-        <p>if joining doesnt work just launch the client and rejoin the game from the ranked menu</p>
+        <p>
+          if joining doesnt work just launch the client and rejoin the game from
+          the ranked menu
+        </p>
         <span id="countdownTimer">01:00</span>
         <br />
         <button id="joinMatch">Join Match</button>
