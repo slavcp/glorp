@@ -315,6 +315,22 @@
 
       regionSelector.value = window?.info?.region || "eu";
 
+      
+      const maps = {
+          burg_new: "https://static.wikia.nocookie.net/krunkerio/images/f/fc/Burg_v5.png/revision/latest",
+          lumber: "https://static.wikia.nocookie.net/krunkerio/images/2/25/Lumber-2_.png/revision/latest",
+          site: "https://static.wikia.nocookie.net/krunkerio/images/1/1c/Site-2.png/revision/latest", 
+          undergrowth: "https://static.wikia.nocookie.net/krunkerio/images/7/7f/Undergrowth-2.png/revision/latest",
+          industry: "https://static.wikia.nocookie.net/krunkerio/images/e/e8/Industry-2.png/revision/latest",
+          sandstorm_v3: "https://static.wikia.nocookie.net/krunkerio/images/f/f7/New_Sandstorm.png/revision/latest",
+          bureau: "https://static.wikia.nocookie.net/krunkerio/images/7/71/Bureau_3.png/revision/latest",
+      };
+
+      Object.values(maps).forEach(url => {
+          const img = new Image();
+          img.src = url;
+      });
+
       async function initializeAudio() {
         audioContext = new window.AudioContext();
         const buffer = audioContext.createBuffer(1, 1, 22050);
@@ -381,7 +397,7 @@
         queueConnection = new WebSocket(
           `wss://gamefrontend.svc.krunker.io/v1/matchmaking/queue?token=${
             window.info.token
-          }&maps=${window.info.maps.join(",")}&region=${regionSelector.value}`
+          }&maps=${Object.keys(maps).join(",")}&region=${regionSelector.value}`
         );
         queueConnection.onmessage = (event) => {
           const data = JSON.parse(event.data);
@@ -425,23 +441,7 @@
       }
       function matchFound(map) {
         playNotificationSound();
-
-        const mapBackgrounds = {
-          burg: "https://static.wikia.nocookie.net/krunkerio/images/f/fc/Burg_v5.png/revision/latest",
-          lumber:
-            "https://static.wikia.nocookie.net/krunkerio/images/2/25/Lumber-2_.png/revision/latest",
-          site: "https://static.wikia.nocookie.net/krunkerio/images/1/1c/Site-2.png/revision/latest",
-          undergrowth:
-            "https://static.wikia.nocookie.net/krunkerio/images/7/7f/Undergrowth-2.png/revision/latest",
-          industry:
-            "https://static.wikia.nocookie.net/krunkerio/images/e/e8/Industry-2.png/revision/latest",
-          sandstorm:
-            "https://static.wikia.nocookie.net/krunkerio/images/f/f7/New_Sandstorm.png/revision/latest",
-          bureau:
-            "https://static.wikia.nocookie.net/krunkerio/images/7/71/Bureau_3.png/revision/latest",
-        };
-
-        matchPopup.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${mapBackgrounds[map]})`;
+        matchPopup.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(${maps[map]})`;
         matchPopupOverlay.classList.add("active");
 
         let timeLeft = 60;

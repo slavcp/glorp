@@ -1,5 +1,6 @@
 import styles from "./components/base.css";
 let firstLoad = true;
+let safeguardTimeout;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 window.glorpClient = {
@@ -57,9 +58,11 @@ document.addEventListener(
 
 document.addEventListener("pointerlockchange", () => {
 	window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`);
-
-	// safeguard
-	setTimeout(() => window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`), 1000);
+	clearTimeout(safeguardTimeout);
+	safeguardTimeout = setTimeout(
+		() => window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`),
+		1000,
+	);
 });
 
 function bindF20() {
