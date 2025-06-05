@@ -13,7 +13,7 @@ function semverCompare(a, b) {
 	const lastSeenVersion = window.localStorage.getItem("glorp_lastSeenVersion");
 	const isNewVersion = semverCompare(currentVersion, lastSeenVersion) > 0;
 	window.localStorage.setItem("glorp_lastSeenVersion", currentVersion);
-	if (window.glorpClient?.settings.config?.showChangelog && lastSeenVersion && currentVersion && isNewVersion)
+	if (window.glorpClient?.settings.data?.showChangelog && lastSeenVersion && currentVersion && isNewVersion)
 		await showChangelogPopup(currentVersion);
 
 	async function showChangelogPopup(version) {
