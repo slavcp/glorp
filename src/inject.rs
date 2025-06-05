@@ -25,7 +25,7 @@ impl DllInjector {
     }
 
     fn handle_error(&mut self, error_msg: &str) {
-        println!("{}", error_msg);
+        eprintln!("{}", error_msg);
         let error = PCWSTR(error_msg.encode_utf16().collect::<Vec<u16>>().as_ptr());
         unsafe {
             OutputDebugStringW(error);
@@ -122,7 +122,6 @@ impl DllInjector {
                     return;
                 }
             };
-
             let dll_path_bytes: Vec<u16> = self
                 .dll_path
                 .encode_utf16()
@@ -147,7 +146,6 @@ impl DllInjector {
                 self.handle_error(&format!("Failed to write to process memory: {}", e));
                 return;
             }
-
             if let Err(e) = CreateRemoteThread(
                 process_handle,
                 None,

@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use std::mem::transmute;
-use std::sync::atomic::{AtomicBool, AtomicPtr};
+use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32};
 use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
@@ -57,6 +57,7 @@ static mut PREV_WNDPROC_2: WNDPROC = None;
 
 static LOCK_STATUS: AtomicBool = AtomicBool::new(false);
 static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
+static HOOK_HANDLE: AtomicPtr<HWINEVENTHOOK> = AtomicPtr::new(std::ptr::null_mut());
 
 struct ChromeWindows {
     chrome_window: HWND,
@@ -118,8 +119,28 @@ impl ChromeWindows {
 
 #[unsafe(no_mangle)]
 extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
-    if call_reason == DLL_PROCESS_ATTACH {
-        attach();
+    match call_reason {
+        DLL_PROCESS_ATTACH => attach(),
+        DLL_PROCESS_DETACH => detach(),
+        _ => (),
+    }
+}
+
+static THREAD_ID: AtomicU32 = AtomicU32::new(0);
+
+fn detach() {
+    unsafe {
+        let hook_handle = HOOK_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+        if !hook_handle.is_null() {
+            let _ = UnhookWinEvent(*hook_handle);
+            drop(Box::from_raw(hook_handle));
+        }
+
+        //  terminate the message loop otherwise launching just crashes if webview2 is still running
+        let thread_id = THREAD_ID.load(std::sync::atomic::Ordering::Relaxed);
+        if thread_id != 0 {
+            PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)).ok();
+        }
     }
 }
 
@@ -131,10 +152,11 @@ fn attach() {
         let chrome_windows = ChromeWindows::get(parent);
         chrome_windows.set_window_procs();
 
-        std::thread::spawn(|| {
+        std::thread::spawn(move || {
+            THREAD_ID.store(GetCurrentThreadId(), std::sync::atomic::Ordering::Relaxed);
             let mut msg: MSG = MSG::default();
             // check whenever a window is created if it has the attribute Chrome.WindowTranslucent (the one that warns about pointer lock) and if it does, destroy it
-            SetWinEventHook(
+            let hook = SetWinEventHook(
                 EVENT_OBJECT_CREATE,
                 EVENT_OBJECT_CREATE,
                 None,
@@ -143,10 +165,17 @@ fn attach() {
                 0,
                 WINEVENT_OUTOFCONTEXT,
             );
+            let hook_ptr = Box::into_raw(Box::new(hook));
+            HOOK_HANDLE.store(hook_ptr, std::sync::atomic::Ordering::Relaxed);
 
-            while GetMessageW(&mut msg, None, 0, 0).into() {
-                let _ = TranslateMessage(&msg);
-                DispatchMessageW(&msg);
+            loop {
+                if GetMessageW(&mut msg, None, 0, 0).into() {
+                    let _ = TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                } else {
+                    OutputDebugStringW(w!("killing myself\0"));
+                    break;
+                }
             }
         });
     }
@@ -182,6 +211,10 @@ unsafe extern "system" fn wnd_proc_1(
         match message {
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_CHAR => LRESULT(1),
+            WM_QUIT => {
+                detach();
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+            }
             WM_KEYDOWN | WM_KEYUP => {
                 if wparam.0 == VK_ESCAPE.0 as usize
                     && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)

@@ -1,7 +1,7 @@
 let queueWindow;
 const externalQueue = document.createElement("button");
 
-if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched") === true) {
+if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched") === "true") {
 	window.openRankedMenu();
 	const startButton = document.querySelector(".start-button");
 
@@ -38,8 +38,8 @@ window.openRankedMenu = () => {
 function openExtQueue() {
 	const screenWidth = window.screen.width;
 	const screenHeight = window.screen.height;
-	const windowWidth = screenWidth * 0.3;
-	const windowHeight = windowWidth * 0.3;
+	const windowWidth = screenWidth * 0.35;
+	const windowHeight = windowWidth * 0.4;
 	const menuBarHeight = 150;
 	const left = (screenWidth - windowWidth) / 2;
 	const top = (screenHeight - windowHeight - menuBarHeight) / 2;
@@ -67,7 +67,6 @@ function openExtQueue() {
 
 	queueWindow.info = {
 		token: token,
-		maps: ["burg_new", "sandstorm_v3", "undergrowth", "industry", "site", "bureau"],
 		region: region,
 	};
 
