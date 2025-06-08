@@ -1,10 +1,15 @@
 #![allow(non_snake_case)]
-use windows::Win32::{
-    Foundation::{BOOL, HWND, LPARAM},
-    System::{Diagnostics::ToolHelp::*, Threading::*},
-    UI::WindowsAndMessaging::*,
+use windows::{
+    Win32::{
+        Foundation::{BOOL, HWND, LPARAM},
+        System::{
+            Diagnostics::ToolHelp::*,
+            Threading::*,
+        },
+        UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, *},
+    },
+    core::*,
 };
-
 pub fn create_utf_string(string: &str) -> Vec<u16> {
     let mut string_utf: Vec<u16> = string.encode_utf16().collect();
     string_utf.push(0);
@@ -51,6 +56,34 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
 
         data.0
     }
+}
+
+pub fn set_panic_hook() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        let exe_path = std::env::current_exe()
+            .unwrap_or_else(|_| "unknown_path".into());
+        let log_dir = exe_path.parent().unwrap_or_else(|| "./".as_ref());
+        let log_file_path = log_dir.join("crash_log.txt");
+
+        let crash_message = format!(
+            "Application crashed!\n\nPanic occurred at: {}\n\nMessage: {}\n\nBacktrace:\n{:?}",
+            panic_info.location().unwrap_or(&std::panic::Location::caller()),
+            panic_info.payload().downcast_ref::<&str>().unwrap_or(&"<unknown>"),
+            backtrace::Backtrace::new()
+        );
+
+        if let Err(e) = std::fs::write(&log_file_path, &crash_message) {
+            eprintln!("Failed to write crash log: {}", e);
+        }
+        unsafe {
+            MessageBoxW(
+                None,
+                PCWSTR(create_utf_string("An unexpected error occurred. A crash log has been created in the installation folder.").as_ptr()),
+                PCWSTR(create_utf_string("Application Error").as_ptr()),
+                MB_OK | MB_ICONERROR,
+            );
+        }
+    }));
 }
 
 pub fn kill(wanted_process_name: &str) {
