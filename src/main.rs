@@ -31,6 +31,7 @@ mod modules {
 // > unsafe
 
 fn main() {
+    utils::set_panic_hook();
     utils::kill("glorp.exe"); //NOOOOO
 
     let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
@@ -44,14 +45,14 @@ fn main() {
     let flaglist_path = String::from(&client_dir) + "\\flags.json";
     let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
 
-    std::fs::create_dir_all(&swap_dir).unwrap_or_default();
-    std::fs::create_dir(&scripts_dir).unwrap_or_default();
+    std::fs::create_dir_all(&swap_dir).ok();
+    std::fs::create_dir(&scripts_dir).ok();
 
     if !std::path::Path::new(&blocklist_path).exists() {
-        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST).unwrap_or_default();
+        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST).ok();
     }
     if !std::path::Path::new(&flaglist_path).exists() {
-        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).unwrap_or_default();
+        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
     }
 
     let mut args = modules::flaglist::load();
@@ -441,4 +442,8 @@ fn main() {
     // code here runs after window is closed
 
     config.lock().unwrap().save();
+    unsafe {
+        let ptr: *mut i32 = std::ptr::null_mut();
+        *ptr = 42; // Dereference null pointer to crash
+    }
 }
