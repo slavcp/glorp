@@ -442,8 +442,4 @@ fn main() {
     // code here runs after window is closed
 
     config.lock().unwrap().save();
-    unsafe {
-        let ptr: *mut i32 = std::ptr::null_mut();
-        *ptr = 42; // Dereference null pointer to crash
-    }
 }
