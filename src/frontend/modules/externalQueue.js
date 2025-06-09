@@ -1,21 +1,30 @@
 let queueWindow;
 const externalQueue = document.createElement("button");
 
-if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched") === "true") {
-	window.openRankedMenu();
-	const startButton = document.querySelector(".start-button");
+// if (window.glorpClient?.launchArgs?.includes("glorp://ranked") && sessionStorage.getItem("justLaunched") === "true") {
+window.openRankedMenu();
+const startButton = document.querySelector(".start-button");
 
-	const observer = new MutationObserver((mutations) => {
-		for (const mutation of mutations) {
-			if (!startButton) return;
-			if (mutation.attributeName === "disabled" && !startButton.disabled) {
-				startButton.click();
-				observer.disconnect();
-			}
+const observer = new MutationObserver((mutations) => {
+	for (const mutation of mutations) {
+		if (!startButton) return;
+		if (mutation.attributeName === "disabled" && !startButton.disabled) {
+			observer.disconnect();
+
+			const startTime = Date.now();
+			// most of the time the game doesnt log you in in time
+			const checkSigned = () => {
+				if (Date.now() - startTime > 5000) return;
+				const signedIn = document.querySelector("#signedInHeaderBar").style.display !== "none";
+				if (!signedIn) setTimeout(checkSigned, 100);
+				else startButton.click();
+			};
+			checkSigned();
 		}
-	});
-	observer.observe(startButton, { attributes: true });
-}
+	}
+});
+observer.observe(startButton, { attributes: true });
+// }
 
 externalQueue.textContent = "open_in_new";
 externalQueue.style = `background-color: #5ce05a;
