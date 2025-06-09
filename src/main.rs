@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(feature = "console-hidden", windows_subsystem = "windows")]
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use regex::Regex;
 use std::sync::{Arc, Mutex};
