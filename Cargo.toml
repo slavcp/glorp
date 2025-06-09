@@ -17,8 +17,7 @@ codegen-units = 1
 lto = true
 opt-level = 3
 debug-assertions = true
-debug = true
-strip = "none"
+strip = "symbols"
 
 [features]
 console-hidden = []
