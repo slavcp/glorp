@@ -3,7 +3,7 @@ use windows::{
     Win32::{
         Foundation::{BOOL, HWND, LPARAM},
         System::{
-            Diagnostics::ToolHelp::*,
+            Diagnostics::{Debug::OutputDebugStringA, ToolHelp::*},
             Threading::*,
         },
         UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, *},
@@ -60,25 +60,64 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
 
 pub fn set_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
-        let exe_path = std::env::current_exe()
-            .unwrap_or_else(|_| "unknown_path".into());
-        let log_dir = exe_path.parent().unwrap_or_else(|| "./".as_ref());
+        unsafe {
+            OutputDebugStringA(s!("Panic occurred - logging details"));
+        }
+
+        let exe_path =
+            std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("unknown_path"));
+        let log_dir = exe_path
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("./"));
         let log_file_path = log_dir.join("crash_log.txt");
 
         let crash_message = format!(
-            "Application crashed!\n\nPanic occurred at: {}\n\nMessage: {}\n\nBacktrace:\n{:?}",
-            panic_info.location().unwrap_or(&std::panic::Location::caller()),
-            panic_info.payload().downcast_ref::<&str>().unwrap_or(&"<unknown>"),
-            backtrace::Backtrace::new()
+            "Location: {}\n\
+            Message: {}\n\
+            \nStack Trace:\n{}\n",
+            {
+                let loc_string = panic_info
+                    .location()
+                    .map(|loc| loc.to_string())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                loc_string.to_string()
+            },
+            panic_info
+                .payload()
+                .downcast_ref::<String>()
+                .map(|s| s.as_str())
+                .or_else(|| panic_info.payload().downcast_ref::<&str>().copied())
+                .unwrap_or("<unknown>"),
+            std::backtrace::Backtrace::force_capture()
         );
 
         if let Err(e) = std::fs::write(&log_file_path, &crash_message) {
-            eprintln!("Failed to write crash log: {}", e);
+            unsafe {
+                OutputDebugStringA(s!("Failed to write crash log file"));
+            }
+            eprintln!(
+                "Failed to write crash log to {}: {}",
+                log_file_path.display(),
+                e
+            );
+        } else {
+            unsafe {
+                OutputDebugStringA(s!("Crash log written successfully"));
+            }
         }
+
         unsafe {
             MessageBoxW(
                 None,
-                PCWSTR(create_utf_string("An unexpected error occurred. A crash log has been created in the installation folder.").as_ptr()),
+                PCWSTR(
+                    create_utf_string(&format!(
+                        "A critical error has occurred.\n\
+                     A detailed crash report has been saved to:\n\
+                     {}",
+                        log_file_path.display()
+                    ))
+                    .as_ptr(),
+                ),
                 PCWSTR(create_utf_string("Application Error").as_ptr()),
                 MB_OK | MB_ICONERROR,
             );

@@ -83,7 +83,8 @@ impl Window {
                     self.window_state.last_position.right - self.window_state.last_position.left,
                     self.window_state.last_position.bottom - self.window_state.last_position.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED,
-                ).ok();
+                )
+                .ok();
             } else {
                 let mut rect = RECT::default();
                 let _ = GetWindowRect(self.hwnd, &mut rect);
