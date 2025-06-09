@@ -33,6 +33,7 @@
       <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
         <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
         <File Id="render.dll" Name="render.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
+        <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
         <File Id="webview.dll" Name="webview.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
 
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />

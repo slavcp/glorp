@@ -11,14 +11,14 @@ members = ["crates/*"]
 # https://doc.rust-lang.org/rustc/codegen-options/index.html
 [profile.dev]
 incremental = true
-debug = "full"
-panic = 'unwind'
 
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = 3
 debug-assertions = true
+debug = true
+strip = "none"
 
 [features]
 console-hidden = []
