@@ -2,7 +2,7 @@
 	"scripts": {
 		"esbuild": "node esbuild.config.mjs",
 		"dev": "pnpm run esbuild && cargo build --workspace && cargo run",
-		"build": "pnpm run esbuild && cargo build --workspace --release --features console-hidden --target x86_64-pc-windows-msvc",
+		"build": "pnpm run esbuild && cargo build --workspace --release --features packaged --target x86_64-pc-windows-msvc",
 		"package": "pnpm run build && wix build ./resources/glorp-setup-x86_64.wxs -ext WixToolset.Util.wixext"
 	},
 	"devDependencies": {

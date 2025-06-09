@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "console-hidden", windows_subsystem = "windows")]
+#![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use regex::Regex;
 use std::sync::{Arc, Mutex};
@@ -31,15 +31,13 @@ mod modules {
 // > unsafe
 
 fn main() {
-    utils::set_panic_hook();
+    #[cfg(feature = "packaged")] {
+        utils::set_panic_hook();
+    }
+    
     utils::kill("glorp.exe"); //NOOOOO
 
-    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
-    let config = Arc::new(Mutex::new(config::Config::load()));
-    let token: *mut EventRegistrationToken = std::ptr::null_mut();
-
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
-
     let swap_dir = String::from(&client_dir) + "\\swapper";
     let scripts_dir = String::from(&client_dir) + "\\scripts";
     let flaglist_path = String::from(&client_dir) + "\\flags.json";
@@ -54,6 +52,10 @@ fn main() {
     if !std::path::Path::new(&flaglist_path).exists() {
         std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
     }
+
+    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
+    let config = Arc::new(Mutex::new(config::Config::load()));
+    let token: *mut EventRegistrationToken = std::ptr::null_mut();
 
     let mut args = modules::flaglist::load();
 
@@ -109,8 +111,7 @@ fn main() {
             webview_pid,
         );
 
-        #[cfg(not(debug_assertions))]
-        {
+        #[cfg(feature = "packaged")] {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
                 installer::check_update();
             }

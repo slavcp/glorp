@@ -1,12 +1,11 @@
-#![allow(unused)]
+#![allow(dead_code)]
+use std::io::Read;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
-use windows::Win32::Storage::FileSystem::*;
 use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 const INSTALLER_URL: &str = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
 const INSTALLER_FILENAME: &str = "MicrosoftEdgeWebView2Setup.exe";
 
-use std::io::Read;
 const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
 
 pub fn check_webview2() {
@@ -91,8 +90,6 @@ fn install_webview2() {
         std::fs::remove_file(&output_path).ok();
     }
 }
-
-#[cfg(not(debug_assertions))]
 pub fn check_update() {
     std::thread::spawn(|| {
         let mut response = match ureq::get(UPDATE_URL).call() {
