@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 use windows::{
     Win32::{
         Foundation::{BOOL, HWND, LPARAM},
@@ -6,7 +7,10 @@ use windows::{
             Diagnostics::{Debug::OutputDebugStringA, ToolHelp::*},
             Threading::*,
         },
-        UI::{Shell::ShellExecuteW, WindowsAndMessaging::{MB_ICONERROR, *}},
+        UI::{
+            Shell::ShellExecuteW,
+            WindowsAndMessaging::{MB_ICONERROR, *},
+        },
     },
     core::*,
 };
@@ -123,7 +127,8 @@ pub fn set_panic_hook() {
                 MB_YESNO | MB_ICONERROR,
             );
 
-            if result.0 == 6 { // IDYES = 6
+            if result.0 == 6 {
+                // IDYES = 6
                 ShellExecuteW(
                     None,
                     PCWSTR(create_utf_string("open").as_ptr()),
