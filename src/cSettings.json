@@ -71,9 +71,9 @@
 		"defaultValue": true
 	},
 	"rampBoost": {
-		"name": "Allow Ramp Boosting",
+		"name": "Ramp Boosting",
 		"id": "rampBoost",
-		"description": "scroll on ramp go fast",
+		"description": "scroll on ramp go fast (not really); a much less powerful ",
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": false,
