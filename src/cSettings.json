@@ -73,7 +73,7 @@
 	"rampBoost": {
 		"name": "Ramp Boosting",
 		"id": "rampBoost",
-		"description": "scroll on ramp go fast (not really); a much less powerful ",
+		"description": "scroll on ramp go fast (not really); a much less powerful version of regular rampboosting but way easier to hit consistently (and more useful in regular matches i'd say)",
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": false,
