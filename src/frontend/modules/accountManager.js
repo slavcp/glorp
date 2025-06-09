@@ -187,8 +187,7 @@ class AccountManager {
 	}
 
 	checkComp() {
-		const gameStatus = window.getGameActivity();
-		if (gameStatus.custom && gameStatus.mode === "Hardpoint") {
+		if (document.querySelector(".cmpTmHed")) {
 			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 
 			this.button.style.cssText =
