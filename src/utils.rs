@@ -6,7 +6,7 @@ use windows::{
             Diagnostics::{Debug::OutputDebugStringA, ToolHelp::*},
             Threading::*,
         },
-        UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, *},
+        UI::{Shell::ShellExecuteW, WindowsAndMessaging::{MB_ICONERROR, *}},
     },
     core::*,
 };
@@ -107,20 +107,32 @@ pub fn set_panic_hook() {
         }
 
         unsafe {
-            MessageBoxW(
+            let result = MessageBoxW(
                 None,
                 PCWSTR(
                     create_utf_string(&format!(
-                        "A critical error has occurred.\n\
-                     A detailed crash report has been saved to:\n\
-                     {}",
+                        "An error has occurred.\n\
+                     A crash report has been saved to:\n\
+                     {}\n\n\
+                     Click Yes to open the log.",
                         log_file_path.display()
                     ))
                     .as_ptr(),
                 ),
                 PCWSTR(create_utf_string("Application Error").as_ptr()),
-                MB_OK | MB_ICONERROR,
+                MB_YESNO | MB_ICONERROR,
             );
+
+            if result.0 == 6 { // IDYES = 6
+                ShellExecuteW(
+                    None,
+                    PCWSTR(create_utf_string("open").as_ptr()),
+                    PCWSTR(create_utf_string(&log_file_path.to_string_lossy()).as_ptr()),
+                    PCWSTR::null(),
+                    PCWSTR::null(),
+                    SW_SHOW,
+                );
+            }
         }
     }));
 }
