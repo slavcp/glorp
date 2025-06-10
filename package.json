@@ -1,8 +1,8 @@
 {
 	"scripts": {
 		"esbuild": "node esbuild.config.mjs",
-		"dev": "pnpm run esbuild && cargo build --workspace && cargo run",
-		"build": "pnpm run esbuild && cargo build --workspace --release --features packaged --target x86_64-pc-windows-msvc",
+		"dev": "pnpm run esbuild && cargo build --workspace && cargo run --features editor-ignore",
+		"build": "pnpm run esbuild && cargo build --workspace --release --features packaged,editor-ignore --target x86_64-pc-windows-msvc",
 		"package": "pnpm run build && wix build ./resources/installer_script.wxs -ext WixToolset.Util.wixext -o target/glorp-setup-x86_64.msi"
 	},
 	"devDependencies": {
@@ -14,10 +14,7 @@
 		"marked": "^15.0.11"
 	},
 	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@biomejs/biome",
-			"esbuild"
-		]
+		"onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
 	},
 	"packageManager": "pnpm@10.12.1"
 }
