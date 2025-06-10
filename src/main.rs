@@ -123,14 +123,15 @@ fn main() {
             }
         }
 
-        #[rustfmt::skip]
+        #[cfg(feature = "editor-ignore")] {
         main_window.webview
             .AddScriptToExecuteOnDocumentCreated(
                 PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
                 None,
             )
             .ok();
-
+        }
+        
         main_window.webview.Navigate(w!("https://krunker.io")).ok();
 
         // auto accept permission requests
