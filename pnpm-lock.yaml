@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       marked:
-        specifier: ^15.0.12
+        specifier: ^15.0.11
         version: 15.0.12
     devDependencies:
       '@biomejs/biome':
@@ -19,7 +19,7 @@ importers:
         specifier: ^0.18.2
         version: 0.18.2
       esbuild:
-        specifier: ^0.25.5
+        specifier: ^0.25.4
         version: 0.25.5
 
 packages:
