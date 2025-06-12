@@ -3,6 +3,7 @@ pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
 pub const DEFAULT_BLOCKLIST: &str = r#"{
     "enabled": [
         "*://*.pollfish.com/*",
+        "*://storage.googleapis.com/pollfish_production/*",
         "*://*.paypalobjects.com/*", 
         "*://c.amazon-adsystem.com/*",
         "*://config.aps.amazon-adsystem.com/*",
@@ -21,7 +22,6 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://apis.google.com/js/platform.js",
         "*://imasdk.googleapis.com/*",
         "*://*.googlesyndication.com/*",
-        "*://fran-cdn.frvr.com/*",
         "*://krunker.io/manifest.json*",
         "*://krunker.io/css/google-play.css*",
         "*://krunker.io/img/btc_icn.png*",
@@ -42,7 +42,7 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://krunker.io/img/client.png*",
         "*://krunker.io/libs/nipplejs.min.js*",
         "*://user-assets.krunker.io/60585/*",
-        "*://user-assets.krunker.io/60585/model.glb*"
+        "*://fran-cdn.frvr.com/prebid*"
     ],
     "disabled": [
         "*://krunker.io/libs/frvr-channel-web*"
