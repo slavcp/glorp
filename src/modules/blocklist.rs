@@ -1,6 +1,6 @@
+use std::{collections::HashSet, fs::*, io::*};
+
 use regex::Regex;
-use std::fs::*;
-use std::io::*;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
 
@@ -9,8 +9,8 @@ use crate::utils;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct BlocklistConfig {
-    enabled: Vec<String>,
-    disabled: Vec<String>,
+    enabled: HashSet<String>,
+    disabled: HashSet<String>,
 }
 
 pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
@@ -45,11 +45,18 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
     let default_urls =
         serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap();
 
-    for url in default_urls.enabled {
-        if !blocklist.enabled.contains(&url) && !blocklist.disabled.contains(&url) {
-            blocklist.enabled.push(url);
-        }
+    for url in default_urls.disabled {
+        blocklist.disabled.insert(url);
     }
+
+    for url in default_urls.enabled {
+        blocklist.enabled.insert(url);
+    }
+
+    // remove URLs from "enabled" if they are also in "disabled"
+    blocklist
+        .enabled
+        .retain(|url| !blocklist.disabled.contains(url));
 
     let updated_blocklist_string = serde_json::to_string_pretty(&blocklist).unwrap();
     blocklist_file.set_len(0).unwrap();
@@ -60,7 +67,7 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
 
     let mut blocklist_regex: Vec<Regex> = Vec::<Regex>::new();
 
-    for url in &blocklist.enabled {
+    for url in blocklist.enabled.iter() {
         unsafe {
             if let Err(e) = webview_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
                 PCWSTR(utils::create_utf_string(url).as_ptr()),

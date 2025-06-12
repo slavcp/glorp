@@ -53,15 +53,6 @@ class AccountManager {
 			}
 		}
 	}
-	checkCaptcha() {
-		const checkCheckbox = () => {
-			const captcha = document.querySelector("#altcha_checkbox");
-			if (captcha) {
-				captcha.click();
-			} else setTimeout(checkCheckbox, 100);
-		};
-		checkCheckbox();
-	}
 
 	encode(decoded) {
 		const key = decoded.length;
@@ -107,22 +98,21 @@ class AccountManager {
 
 		this.removeWindow();
 		window.loginOrRegister();
-		if (document.querySelector(".auth-toggle-btn").textContent.includes("username"))
-			document.querySelector(".auth-toggle-btn").click();
 
 		setTimeout(() => {
-			const nameInput = document.querySelector("#accName");
-			const passInput = document.querySelector("#accPass");
-			nameInput.value = this.decode(account.username);
-			passInput.value = this.decode(account.password);
-			// send input otherwise it thinks its empty
+			if (document.querySelector(".auth-toggle-btn").textContent.includes("username"))
+				document.querySelector(".auth-toggle-btn").click();
 
-			document.querySelector("#accName").value = this.decode(account.username);
-			document.querySelector("#accPass").value = this.decode(account.password);
-			nameInput.dispatchEvent(new Event("input", { bubbles: true }));
-			passInput.dispatchEvent(new Event("input", { bubbles: true }));
-			document.querySelector(".io-button").click();
-			this.checkCaptcha();
+			setTimeout(() => {
+				const nameInput = document.querySelector("#accName");
+				const passInput = document.querySelector("#accPass");
+				nameInput.value = this.decode(account.username);
+				passInput.value = this.decode(account.password);
+				// send input otherwise it thinks its empty
+				nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+				passInput.dispatchEvent(new Event("input", { bubbles: true }));
+				document.querySelector(".io-button").click();
+			}, 1);
 		}, 1);
 	}
 

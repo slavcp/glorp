@@ -31,10 +31,11 @@ mod modules {
 // > unsafe
 
 fn main() {
-    #[cfg(feature = "packaged")] {
+    #[cfg(feature = "packaged")]
+    {
         utils::set_panic_hook();
     }
-    
+
     utils::kill("glorp.exe"); //NOOOOO
 
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
@@ -111,7 +112,8 @@ fn main() {
             webview_pid,
         );
 
-        #[cfg(feature = "packaged")] {
+        #[cfg(feature = "packaged")]
+        {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
                 installer::check_update();
             }
@@ -123,15 +125,17 @@ fn main() {
             }
         }
 
-        #[cfg(feature = "editor-ignore")] {
-        main_window.webview
-            .AddScriptToExecuteOnDocumentCreated(
-                PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
-                None,
-            )
-            .ok();
+        #[cfg(feature = "editor-ignore")]
+        {
+            main_window
+                .webview
+                .AddScriptToExecuteOnDocumentCreated(
+                    PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
+                    None,
+                )
+                .ok();
         }
-        
+
         main_window.webview.Navigate(w!("https://krunker.io")).ok();
 
         // auto accept permission requests

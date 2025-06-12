@@ -22,7 +22,6 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://imasdk.googleapis.com/*",
         "*://*.googlesyndication.com/*",
         "*://fran-cdn.frvr.com/*",
-        "*://krunker.io/libs/frvr-channel-web*",
         "*://krunker.io/manifest.json*",
         "*://krunker.io/css/google-play.css*",
         "*://krunker.io/img/btc_icn.png*",
@@ -45,7 +44,9 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://user-assets.krunker.io/60585/*",
         "*://user-assets.krunker.io/60585/model.glb*"
     ],
-    "disabled": []
+    "disabled": [
+        "*://krunker.io/libs/frvr-channel-web*"
+    ]
 }"#;
 
 // most are expired, but theyre all in here to cover multiple versions
