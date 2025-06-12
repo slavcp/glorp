@@ -386,6 +386,19 @@
         return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
       }
 
+      function updateCooldownTimer(seconds) {
+        if (seconds <= 0) {
+          queueStatus.textContent = "Not in queue";
+          queueStatus.style.color = "#ff7a7a";
+          queueButton.disabled = false;
+          return;
+        }
+        queueStatus.textContent = `Cooldown: ${formatTime(seconds)}`;
+        queueStatus.style.color = "#ff7a7a";
+        queueButton.disabled = true;
+        setTimeout(() => updateCooldownTimer(seconds - 1), 1000);
+      }
+
       function updateQueueTimer() {
         if (isQueued && queueStartTime) {
           const elapsedTime = Math.floor((Date.now() - queueStartTime) / 1000);
@@ -405,6 +418,14 @@
             case "QUEUE_STATUS":
               if (data.payload.status === "MATCHED")
                 matchFound(data.payload.assignment.extensions.map.trim());
+              break;
+            case "ERROR":
+              if (data.payload.code === "COOLDOWN") {
+                queueConnection.close();
+                isQueued = false;
+                isConnecting = false;
+                updateCooldownTimer(data.payload.payload.cooldown);
+              }
               break;
             case "INTERNAL_ERROR":
               queueConnection.close();
