@@ -294,7 +294,6 @@
       let queueConnection;
       let countdownInterval;
       let isConnecting = false;
-
       let audioContext = null;
       let notificationBuffer = null;
       let currentSource = null;
@@ -386,6 +385,30 @@
         return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
       }
 
+      function updateCooldownTimer(seconds) {
+
+        const endTime = new Date(Date.now() + seconds * 1000);
+        
+        function updateDisplay() {
+          const now = new Date();
+          const remainingSeconds = Math.ceil((endTime - now) / 1000);
+          
+          if (remainingSeconds <= 0) {
+            queueStatus.textContent = "Not in queue";
+            queueStatus.style.color = "#ff7a7a";
+            queueButton.disabled = false;
+            return;
+          }
+
+          queueStatus.textContent = `Cooldown: ${formatTime(remainingSeconds)}`;
+          queueStatus.style.color = "#ff7a7a";
+          queueButton.disabled = true;
+          setTimeout(updateDisplay, 1000);
+        }
+
+        updateDisplay();
+      }
+      
       function updateQueueTimer() {
         if (isQueued && queueStartTime) {
           const elapsedTime = Math.floor((Date.now() - queueStartTime) / 1000);
@@ -405,6 +428,14 @@
             case "QUEUE_STATUS":
               if (data.payload.status === "MATCHED")
                 matchFound(data.payload.assignment.extensions.map.trim());
+              break;
+            case "ERROR":
+              if (data.payload.code === "COOLDOWN") {
+                queueConnection.close();
+                isQueued = false;
+                isConnecting = false;
+                updateCooldownTimer(data.payload.payload.cooldown);
+              }
               break;
             case "INTERNAL_ERROR":
               queueConnection.close();
