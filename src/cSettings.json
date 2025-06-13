@@ -94,6 +94,13 @@
 		"category": "Game",
 		"defaultValue": false
 	},
+	"realPing": {
+		"name": "Shows real ping",
+		"id": "realPing",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": true
+	},
 	"showPing": {
 		"name": "Player List Ping",
 		"id": "showPing",
