@@ -31,6 +31,26 @@ mod modules {
 // > unsafe
 
 fn main() {
+
+    unsafe {
+        let hr = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        if hr.is_err() {
+            eprintln!("Failed to initialize COM: {:?}", hr);
+            return;
+        }
+    }
+
+    // Ensure COM is cleaned up when the function exits
+    struct ComGuard;
+    impl Drop for ComGuard {
+        fn drop(&mut self) {
+            unsafe {
+                CoUninitialize();
+            }
+        }
+    }
+    let _com_guard = ComGuard;
+
     #[cfg(feature = "packaged")]
     {
         utils::set_panic_hook();
