@@ -51,12 +51,12 @@ pub fn load() -> String {
         .enabled
         .retain(|url| !flaglist.disabled.contains(url));
 
-        let updated_flaglist_string = serde_json::to_string_pretty(&flaglist).unwrap();
-        flaglist_file.set_len(0).unwrap();
-        flaglist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
-        flaglist_file
-            .write_all(updated_flaglist_string.as_bytes())
-            .unwrap();
+    let updated_flaglist_string = serde_json::to_string_pretty(&flaglist).unwrap();
+    flaglist_file.set_len(0).unwrap();
+    flaglist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
+    flaglist_file
+        .write_all(updated_flaglist_string.as_bytes())
+        .unwrap();
 
     let mut args_str = String::new();
     for flag in &flaglist.enabled {
