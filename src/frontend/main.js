@@ -127,6 +127,7 @@ Object.defineProperty(window, "gameLoaded", {
 			if (window.glorpClient?.settings.data?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
 			if (window.glorpClient?.settings.data?.accountManager) await import("./modules/accountManager.js");
 			if (window.glorpClient?.settings.data?.showPing) await import("./modules/showPing.js");
+			if (window.glorpClient?.settings.data?.realPing) await import("./modules/realPing.js");
 
 			if (window.glorpClient?.settings.data?.autoSpec) {
 				const trySetSpect = async () => {
