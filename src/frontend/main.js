@@ -3,12 +3,7 @@ let firstLoad = true;
 let safeguardTimeout;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
-window.glorpClient = {
-	settings: {},
-	console: {
-		log: console.log.bind(console),
-	},
-};
+window.originalConsole = { ...window.console };
 
 (async () => {
 	window.glorpClient = await new Promise((resolve) => {
