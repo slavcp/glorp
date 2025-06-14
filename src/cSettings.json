@@ -94,14 +94,6 @@
 		"category": "Game",
 		"defaultValue": false
 	},
-	"realPing": {
-		"name": "Shows actual ping",
-		"id": "realPing",
-		"description": "Forces the game to show real ping to include the time for packets to travel back.",
-		"type":"checkbox",
-		"category":"Game",
-		"defaultValue":false
-	},
 	"showPing": {
 		"name": "Player List Ping",
 		"id": "showPing",
@@ -116,6 +108,13 @@
 		"category": "UI",
 		"defaultValue": true
 	},
+	"menuTimer": {
+		"name": "Menu Timer",
+		"id": "menuTimer",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": true
+	},
 	"cleanUI": {
 		"name": "Cleaner Menu",
 		"id": "cleanUI",
@@ -124,16 +123,25 @@
 		"category": "UI",
 		"defaultValue": false
 	},
-	"menuTimer": {
-		"name": "Menu Timer",
-		"id": "menuTimer",
+	"hideBundles": {
+		"name": "Hide Bundle Popups",
+		"id": "hideBundles",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false
+	},
+	"textSelect": {
+		"name": "Selectable Chat",
+		"id": "textSelect",
+		"description": "Make game chat selectable",
 		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": true
 	},
-	"hideBundles": {
-		"name": "Hide Bundle Popups",
-		"id": "hideBundles",
+	"realPing": {
+		"name": "Actual Ping",
+		"id": "realPing",
+		"description": "Show real ping (include the time it takes for the packets to travel back) | 1.7mlt",
 		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": false
@@ -144,14 +152,6 @@
 		"type": "checkbox",
 		"button": "Show Now",
 		"buttonAction": "window.glorpClient.showChangelogPopup(window.glorpClient.version)",
-		"category": "UI",
-		"defaultValue": true
-	},
-	"textSelect": {
-		"name": "Selectable Chat",
-		"id": "textSelect",
-		"description": "Make game chat selectable",
-		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": true
 	},
