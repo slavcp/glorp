@@ -2,19 +2,20 @@ class RealPing {
 	constructor() {
 		this.ingamePing = null;
 		this.menuPing = null;
-		this.originalTextContent = null;
+		this.originalTextContentDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "textContent");
+		this.interval = null;
+		this.listener = null;
 
 		window.glorpClient.settings.toggleRealPing = (enabled) => this.toggle(enabled);
 		this.toggle(true);
+	}
 
-		setInterval(() => {
-			window.chrome.webview.postMessage("ping");
-		}, 5000);
-
-		window.chrome.webview.addEventListener("message", (event) => {
-			window.originalConsole.log(event);
-			if (!event.data.pingInfo) return;
-			window.glorpClient.settings.ping = Number.parseInt(event.data.pingInfo);
+	applyPingDisplay(element) {
+		if (!element) return;
+		Object.defineProperty(element, "textContent", {
+			set: () => {},
+			get: () => this.originalTextContentDescriptor.get.call(element),
+			configurable: true,
 		});
 	}
 
@@ -41,39 +42,29 @@ class RealPing {
 		});
 	}
 
-	setRealPing(element) {
-		if (!element) return;
-
-		this.originalTextContent = Object.getOwnPropertyDescriptor(Element.prototype, "textContent");
-
-		Object.defineProperty(element, "textContent", {
-			set: (e) => {
-				if (window.glorpClient.settings.ping) element.innerText = window.glorpClient.settings.ping;
-				else element.innerText = 0;
-			},
-			get: () => element.innerText,
-		});
-	}
-
-	restoreOriginalProperty(element) {
-		if (!element || !this.originalTextContent) return;
-		Object.defineProperty(element, "textContent", this.originalTextContent);
-	}
-
 	async toggle(enabled) {
 		if (enabled) {
-			const [ingamePing, menuPing] = await Promise.all([
+			[this.ingamePing, this.menuPing] = await Promise.all([
 				this.waitForElement("pingText"),
 				this.waitForElement("menuPingText"),
 			]);
-			this.ingamePing = ingamePing;
-			this.menuPing = menuPing;
 
-			if (ingamePing) this.setRealPing(ingamePing);
-			if (menuPing) this.setRealPing(menuPing);
+			this.applyPingDisplay(this.ingamePing);
+			this.applyPingDisplay(this.menuPing);
+			this.interval = setInterval(() => {
+				window.chrome.webview.postMessage("ping");
+			}, 3000);
+
+			this.listener = window.chrome.webview.addEventListener("message", (event) => {
+				if (!event.data.pingInfo) return;
+				this.ingamePing.innerText = event.data.pingInfo;
+				this.menuPing.innerText = event.data.pingInfo;
+			});
 		} else {
-			if (this.ingamePing) this.restoreOriginalProperty(this.ingamePing);
-			if (this.menuPing) this.restoreOriginalProperty(this.menuPing);
+			clearInterval(this.interval);
+			window.chrome.webview.removeEventListener("message", this.listener);
+			if (this.ingamePing) Object.defineProperty(this.ingamePing, "textContent", this.originalTextContentDescriptor);
+			if (this.menuPing) Object.defineProperty(this.menuPing, "textContent", this.originalTextContentDescriptor);
 		}
 	}
 }

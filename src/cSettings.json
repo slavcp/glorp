@@ -99,7 +99,8 @@
 		"id": "showPing",
 		"type": "checkbox",
 		"category": "Game",
-		"defaultValue": true
+		"defaultValue": true,
+		"needsRestart": true
 	},
 	"exitButton": {
 		"name": "Exit Button",
@@ -139,9 +140,9 @@
 		"defaultValue": true
 	},
 	"realPing": {
-		"name": "Actual Ping",
+		"name": "(Really) Real Ping",
 		"id": "realPing",
-		"description": "Show real ping (include the time it takes for the packets to travel back) | 1.7mlt",
+		"description": "Show real network latency™️! pings the lobby every few seconds;",
 		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": false
