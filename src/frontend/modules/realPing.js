@@ -12,9 +12,9 @@ class RealPing {
 		}, 5000);
 
 		window.chrome.webview.addEventListener("message", (event) => {
-			window.glorpClient.console.log("ping", event.data);
-			const data = JSON.parse(event.data);
-			window.glorpClient.settings.ping = Number.parseInt(data.ping);
+			window.originalConsole.log(event);
+			if (!event.data.pingInfo) return;
+			window.glorpClient.settings.ping = Number.parseInt(event.data.pingInfo);
 		});
 	}
 
@@ -49,7 +49,7 @@ class RealPing {
 		Object.defineProperty(element, "textContent", {
 			set: (e) => {
 				if (window.glorpClient.settings.ping) element.innerText = window.glorpClient.settings.ping;
-				else element.innerText = e;
+				else element.innerText = 0;
 			},
 			get: () => element.innerText,
 		});

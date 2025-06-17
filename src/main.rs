@@ -37,6 +37,9 @@ static LAST_CONNECTED_LOBBY: once_cell::sync::Lazy<Arc<Mutex<std::net::IpAddr>>>
         ))))
     });
 
+static PING: once_cell::sync::Lazy<Arc<Mutex<u32>>> =
+    once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(0)));
+
 fn main() {
     #[cfg(feature = "packaged")]
     {
@@ -277,6 +280,24 @@ fn main() {
             ws_receiver
                 .add_DevToolsProtocolEventReceived(&handler, token)
                 .unwrap();
+
+            std::thread::spawn(move || {
+                loop {
+                let result = ping_rs::send_ping(
+                    &*LAST_CONNECTED_LOBBY.lock().unwrap(),
+                    std::time::Duration::from_secs(1),
+                    Default::default(),
+                    Some(&ping_rs::PingOptions {
+                        ttl: 128,
+                        dont_fragment: true,
+                    }),
+                );
+                if let Ok(reply) = result {
+                    *PING.lock().unwrap() = reply.rtt;
+                }
+                std::thread::sleep(std::time::Duration::from_secs(5));
+            }
+            });
         }
         let config_clone = Arc::clone(&config);
 
@@ -338,7 +359,8 @@ fn main() {
 
                             let message_string = message.as_ref().unwrap().to_string().unwrap();
 
-                            let parts: Vec<&str> = message_string.split(',').map(|s| s.trim()).collect();
+                            let parts: Vec<&str> =
+                                message_string.split(',').map(|s| s.trim()).collect();
                             match parts.first() {
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
@@ -412,11 +434,10 @@ fn main() {
                                         .ok();
                                 }
                                 Some(&"rpcUpdate") => {
-                                    let details = "Krunker";
                                     let state = format!("{} on {}", parts[1], parts[2]);
                                     if let Some(client) = &mut *discord_client.lock().unwrap() {
                                         let activity = activity::Activity::new()
-                                            .details(details)
+                                            .details("Krunker")
                                             .state(&state)
                                             .assets(activity::Assets::new());
 
@@ -426,32 +447,17 @@ fn main() {
                                     }
                                 }
                                 Some(&"ping") => {
-                                    println!("ping");
-                                    let ip_addr = LAST_CONNECTED_LOBBY.lock().unwrap();
-                                    let result = ping_rs::send_ping(
-                                        &*ip_addr,
-                                        std::time::Duration::from_secs(1),
-                                        &[],
-                                        Some(&ping_rs::PingOptions {
-                                            ttl: 128,
-                                            dont_fragment: true,
-                                        }),
-                                    );
-                                    match result {
-                                        Ok(reply) => {
-                                            webview
-                                                .unwrap()
-                                                .PostWebMessageAsJson(PCWSTR(
-                                                    utils::create_utf_string(&format!(
-                                                        "{{\"ping\":{}}}",
-                                                        reply.rtt
-                                                    ))
-                                                    .as_ptr(),
-                                                ))
-                                                .ok();
-                                        }
-                                        Err(e) => println!("{:?}", e),
-                                    }
+                                    let webview = webview.unwrap();
+                                    let ping = PING.lock().unwrap();
+                                    webview
+                                        .PostWebMessageAsJson(PCWSTR(
+                                            utils::create_utf_string(&format!(
+                                                "{{\"pingInfo\":{}}}",
+                                                &ping
+                                            ))
+                                            .as_ptr(),
+                                        ))
+                                        .ok();
                                 }
                                 _ => {}
                             }
