@@ -283,20 +283,20 @@ fn main() {
 
             std::thread::spawn(move || {
                 loop {
-                let result = ping_rs::send_ping(
-                    &*LAST_CONNECTED_LOBBY.lock().unwrap(),
-                    std::time::Duration::from_secs(1),
-                    Default::default(),
-                    Some(&ping_rs::PingOptions {
-                        ttl: 128,
-                        dont_fragment: true,
-                    }),
-                );
-                if let Ok(reply) = result {
-                    *PING.lock().unwrap() = reply.rtt;
+                    let result = ping_rs::send_ping(
+                        &LAST_CONNECTED_LOBBY.lock().unwrap(),
+                        std::time::Duration::from_secs(1),
+                        Default::default(),
+                        Some(&ping_rs::PingOptions {
+                            ttl: 128,
+                            dont_fragment: true,
+                        }),
+                    );
+                    if let Ok(reply) = result {
+                        *PING.lock().unwrap() = reply.rtt;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(2500));
                 }
-                std::thread::sleep(std::time::Duration::from_secs(5));
-            }
             });
         }
         let config_clone = Arc::clone(&config);
