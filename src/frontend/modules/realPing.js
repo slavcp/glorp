@@ -3,14 +3,21 @@ class RealPing {
 		this.ingamePing = null;
 		this.menuPing = null;
 		this.originalTextContent = null;
-		this.multiplier = 1.7;
 
 		window.glorpClient.settings.toggleRealPing = (enabled) => this.toggle(enabled);
 		this.toggle(true);
+
+		setInterval(() => {
+			window.chrome.webview.postMessage("ping");
+		}, 5000);
+
+		window.chrome.webview.addEventListener("message", (event) => {
+			window.glorpClient.console.log("ping", event.data);
+			const data = JSON.parse(event.data);
+			window.glorpClient.settings.ping = Number.parseInt(data.ping);
+		});
 	}
 
-	// stole this from pc7 LOL
-	// - aashten
 	async waitForElement(id, delay = 500, maxChecks = 30) {
 		return new Promise((resolve) => {
 			let currentChecks = 0;
@@ -40,14 +47,9 @@ class RealPing {
 		this.originalTextContent = Object.getOwnPropertyDescriptor(Element.prototype, "textContent");
 
 		Object.defineProperty(element, "textContent", {
-			set: (value) => {
-				const numValue = Number(value);
-				if (!Number.isNaN(numValue)) {
-					const multiplied = Math.round(numValue * this.multiplier);
-					element.innerText = multiplied;
-				} else {
-					element.innerText = value;
-				}
+			set: (e) => {
+				if (window.glorpClient.settings.ping) element.innerText = window.glorpClient.settings.ping;
+				else element.innerText = e;
 			},
 			get: () => element.innerText,
 		});

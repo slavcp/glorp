@@ -30,6 +30,13 @@ mod modules {
 // > memory safe langauges
 // > unsafe
 
+static LAST_CONNECTED_LOBBY: once_cell::sync::Lazy<Arc<Mutex<std::net::IpAddr>>> =
+    once_cell::sync::Lazy::new(|| {
+        Arc::new(Mutex::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(
+            127, 0, 0, 1,
+        ))))
+    });
+
 fn main() {
     #[cfg(feature = "packaged")]
     {
@@ -43,7 +50,6 @@ fn main() {
     let scripts_dir = String::from(&client_dir) + "\\scripts";
     let flaglist_path = String::from(&client_dir) + "\\flags.json";
     let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
-
     std::fs::create_dir_all(&swap_dir).ok();
     std::fs::create_dir(&scripts_dir).ok();
 
@@ -229,6 +235,49 @@ fn main() {
             PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
         }
 
+        if config.lock().unwrap().get("realPing").unwrap_or(false) {
+            main_window
+                .webview
+                .CallDevToolsProtocolMethod(w!("Network.enable"), w!("{}"), None)
+                .unwrap();
+            let ws_receiver = main_window
+                .webview
+                .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
+                .unwrap();
+
+            let handler =
+                DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
+                    if let Some(args) = args {
+                        let mut params_vec = utils::create_utf_string("");
+                        let params = params_vec.as_mut_ptr() as *mut PWSTR;
+                        args.ParameterObjectAsJson(params)?;
+                        let json = serde_json::from_str::<serde_json::Value>(
+                            &params.as_ref().unwrap().to_string().unwrap(),
+                        )
+                        .unwrap();
+                        let url = json.get("url").unwrap().to_string();
+                        if url.contains("lobby-") {
+                            let host = url
+                                .split("://")
+                                .last()
+                                .unwrap()
+                                .split("/")
+                                .next()
+                                .unwrap()
+                                .to_string();
+                            let resolved_ips = dns_lookup::lookup_host(&host).unwrap_or_default();
+                            if let Some(ip) = resolved_ips.into_iter().next() {
+                                *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
+                            }
+                        }
+                    }
+                    Ok(())
+                }));
+
+            ws_receiver
+                .add_DevToolsProtocolEventReceived(&handler, token)
+                .unwrap();
+        }
         let config_clone = Arc::clone(&config);
 
         fn set_cpu_throttling_inmenu(webview: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
@@ -288,9 +337,8 @@ fn main() {
                             }
 
                             let message_string = message.as_ref().unwrap().to_string().unwrap();
-                            let message = message_string.as_str(); // fire
 
-                            let parts: Vec<&str> = message.split(',').map(|s| s.trim()).collect();
+                            let parts: Vec<&str> = message_string.split(',').map(|s| s.trim()).collect();
                             match parts.first() {
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
@@ -375,6 +423,34 @@ fn main() {
                                         if let Err(e) = client.set_activity(activity) {
                                             eprintln!("Failed to set rpc activity: {}", e);
                                         }
+                                    }
+                                }
+                                Some(&"ping") => {
+                                    println!("ping");
+                                    let ip_addr = LAST_CONNECTED_LOBBY.lock().unwrap();
+                                    let result = ping_rs::send_ping(
+                                        &*ip_addr,
+                                        std::time::Duration::from_secs(1),
+                                        &[],
+                                        Some(&ping_rs::PingOptions {
+                                            ttl: 128,
+                                            dont_fragment: true,
+                                        }),
+                                    );
+                                    match result {
+                                        Ok(reply) => {
+                                            webview
+                                                .unwrap()
+                                                .PostWebMessageAsJson(PCWSTR(
+                                                    utils::create_utf_string(&format!(
+                                                        "{{\"ping\":{}}}",
+                                                        reply.rtt
+                                                    ))
+                                                    .as_ptr(),
+                                                ))
+                                                .ok();
+                                        }
+                                        Err(e) => println!("{:?}", e),
                                     }
                                 }
                                 _ => {}

@@ -146,7 +146,7 @@ Object.defineProperty(window, "gameLoaded", {
 					if (event.data !== "game-updated") return;
 					await new Promise((resolve) => setTimeout(resolve, 2000));
 					const gameStatus = window.getGameActivity();
-					window.window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
+					window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
 				});
 			}
 
