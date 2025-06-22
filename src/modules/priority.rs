@@ -4,13 +4,11 @@ use windows::Win32::{
 };
 pub fn set(level: &str) {
     let priority_class = match level {
-        "!! Realtime !!" => REALTIME_PRIORITY_CLASS,
         "High" => HIGH_PRIORITY_CLASS,
         "Above Normal" => ABOVE_NORMAL_PRIORITY_CLASS,
-        "Normal" => NORMAL_PRIORITY_CLASS,
         "Below Normal" => BELOW_NORMAL_PRIORITY_CLASS,
         "Idle" => IDLE_PRIORITY_CLASS,
-        _ => return,
+        _ => NORMAL_PRIORITY_CLASS,
     };
 
     unsafe {

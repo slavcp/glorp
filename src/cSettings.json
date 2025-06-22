@@ -73,7 +73,7 @@
 	"rampBoost": {
 		"name": "Ramp Boosting",
 		"id": "rampBoost",
-		"description": "scroll on ramp go fast (not really); a much less powerful version of regular rampboosting but way easier to hit consistently (and more useful in regular matches i'd say)",
+		"description": "a much less powerful version of the regular rampboosting but way easier to hit consistently (and more useful in regular matches i'd say); turn off if you plan on using external software",
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": false,
@@ -140,12 +140,13 @@
 		"defaultValue": true
 	},
 	"realPing": {
-		"name": "(Really) Real Ping",
+		"name": "Real Ping™️",
 		"id": "realPing",
-		"description": "Show real network latency™️! pings the lobby every few seconds;",
+		"description": "Show real network latency™️! pings the lobby every few seconds to get a value;",
 		"type": "checkbox",
 		"category": "UI",
-		"defaultValue": false
+		"defaultValue": false,
+		"needsRestart": true
 	},
 	"showChangelog": {
 		"name": "Show Changelogs",
@@ -179,7 +180,7 @@
 	"inMenuThrottle": {
 		"name": "CPU Throttling in Menu",
 		"id": "inMenuThrottle",
-		"description": "Throttle CPU in menus, fixes an issue related to render FPS in menus",
+		"description": "Throttle CPU in menus, fixes an issue related to render FPS",
 		"type": "slider",
 		"min": 1,
 		"max": 3,
@@ -195,7 +196,7 @@
 		"category": "Tweaks",
 		"defaultValue": "Normal",
 		"needsRestart": true,
-		"options": ["!! Realtime !!", "High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+		"options": ["High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
 	},
 	"hardFlip": {
 		"name": "Hook DXGI Swapchain Creation",
