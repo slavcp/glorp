@@ -41,7 +41,7 @@ static SPACE_UP: INPUT = INPUT {
 static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
     let (tx, rx) = channel();
     std::thread::spawn(move || {
-        while let Ok(_) = rx.recv() {
+        while rx.recv().is_ok() {
             unsafe {
                 SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
                 Sleep(5);
@@ -284,6 +284,7 @@ unsafe extern "system" fn wnd_proc_1(
     }
 }
 
+#[allow(clippy::fn_to_numeric_cast)]
 #[unsafe(no_mangle)]
 unsafe extern "system" fn wnd_proc_widget(
     window: HWND,

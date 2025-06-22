@@ -16,7 +16,7 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://*.twitter.com/*",
         "*://*.youtube.com/*",
         "*://*.doubleclick.net/*",
-        "*://unpkg.com/*",
+        "*://unpkg.com/web3*",
         "*://*.google.com/*",
         "*://*.googletagmanager.com/*",
         "*://apis.google.com/js/platform.js",
@@ -42,7 +42,8 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://krunker.io/img/client.png*",
         "*://krunker.io/libs/nipplejs.min.js*",
         "*://user-assets.krunker.io/60585/*",
-        "*://fran-cdn.frvr.com/prebid*"
+        "*://fran-cdn.frvr.com/prebid*",
+        "*://cdn.frvr.com/fran/prebid*"
     ],
     "disabled": [
         "*://krunker.io/libs/frvr-channel-web*"

@@ -113,7 +113,7 @@ fn main() {
         main_window
             .webview
             .BrowserProcessId(&mut webview_pid)
-            .unwrap();
+            .ok();
 
         println!("Webview PID: {}", webview_pid);
         inject::hook_webview2(
@@ -182,7 +182,7 @@ fn main() {
                     COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
                     COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
                 )
-                .unwrap();
+                .ok();
         }
 
         main_window.webview.add_WebResourceRequested(
@@ -227,7 +227,7 @@ fn main() {
                 },
             )),
             token,
-        ).unwrap();
+        ).ok();
 
         let widget_wnd = Some(utils::find_child_window_by_class(
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
@@ -242,7 +242,7 @@ fn main() {
             main_window
                 .webview
                 .CallDevToolsProtocolMethod(w!("Network.enable"), w!("{}"), None)
-                .unwrap();
+                .ok();
             let ws_receiver = main_window
                 .webview
                 .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
@@ -279,7 +279,7 @@ fn main() {
 
             ws_receiver
                 .add_DevToolsProtocolEventReceived(&handler, token)
-                .unwrap();
+                .ok();
 
             std::thread::spawn(move || {
                 loop {
@@ -519,7 +519,7 @@ fn main() {
                 )),
                 token,
             )
-            .unwrap();
+            .ok();
 
         let mut msg: MSG = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).into() {
