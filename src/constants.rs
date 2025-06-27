@@ -26,10 +26,7 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://krunker.io/css/google-play.css*",
         "*://krunker.io/img/btc_icn.png*",
         "*://krunker.io/img/app_1.png*",
-        "*://assets.krunker.io/img/guide/*",
         "*://krunker.io/img/app_0.png.png*",
-        "*://krunker.io/img/social/reddit.png*",
-        "*://krunker.io/img/social/discord.png*",
         "*://krunker.io/libs/chart.bundle*",
         "*://krunker.io/img/muzflash.png*",
         "*://krunker.io/service-worker.js*",
@@ -46,6 +43,8 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://cdn.frvr.com/fran/prebid*"
     ],
     "disabled": [
+        "*://krunker.io/img/social/reddit.png*",
+        "*://krunker.io/img/social/discord.png*",
         "*://krunker.io/libs/frvr-channel-web*"
     ]
 }"#;
