@@ -19,6 +19,8 @@ I strongly urge you to **review the source code** if you have any doubts.
 - [x] Resource swapper
 - [x] Custom script support
 - [x] Account Manager
+- [x] Queue ranked without the game open
+- [x] Find out your real ping to the servers
 - [x] Lightweight autoupdater
 - [x] External queue for ranked 
 - [x] CPU Throttler
