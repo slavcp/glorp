@@ -83,8 +83,7 @@ impl Window {
                     self.window_state.last_position.right - self.window_state.last_position.left,
                     self.window_state.last_position.bottom - self.window_state.last_position.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED,
-                )
-                .ok();
+                ).ok();
             } else {
                 let mut rect = RECT::default();
                 let _ = GetWindowRect(self.hwnd, &mut rect);
@@ -271,17 +270,11 @@ pub fn create_webview2(
                         Ok(())
                     }),
                 )
-                .unwrap_or_else(|e| {
-                    let error_msg = format!("Failed to create WebView2 environment: {:?}", e);
-                    MessageBoxW(
-                        None,
-                        PCWSTR(utils::create_utf_string(&error_msg).as_ptr()),
-                        w!("Error"),
-                        MB_OK | MB_ICONERROR,
-                    );
-                    panic!("{}", error_msg);
+                .unwrap_or_else(|_| {
+                        utils::kill("msedgewebview2.exe");
+                        std::process::Command::new(std::env::current_exe().unwrap()).spawn().unwrap();
+                        std::process::exit(0);
                 });
-
                 Ok(())
             }),
         );

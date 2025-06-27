@@ -36,6 +36,11 @@
 	animation: none;
 }
 
+#menuAccountUsername {
+	animation: none;
+	border: 0;
+}
+
 .ranked-matchmaking-status {
 	animation: none !important;
 	box-shadow: none !important;

@@ -486,14 +486,12 @@
           if (remaining <= 0) window.close();
         }, 1000);
       }
-
+      
       function closeMatchPopup() {
         clearInterval(countdownInterval);
         stopNotificationSound();
         matchPopupOverlay.classList.remove("active");
       }
-
-      joinMatch.onclick = () => (window.location.href = "glorp://ranked");
 
       closeButton.onclick = () => closeMatchPopup();
 
@@ -542,12 +540,11 @@
         <h2>Match Found!</h2>
         <span id="closeMatch">&times;</span>
         <p>
-          if joining doesnt work just launch the client and rejoin the game from
-          the ranked menu
+          Open the client and rejoin the game from
+          the ranked menu!
         </p>
         <span id="countdownTimer">01:00</span>
         <br />
-        <button id="joinMatch">Join Match</button>
       </div>
     </div>
   </body>

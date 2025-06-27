@@ -110,10 +110,7 @@ fn main() {
         );
 
         let mut webview_pid: u32 = 0;
-        main_window
-            .webview
-            .BrowserProcessId(&mut webview_pid)
-            .ok();
+        main_window.webview.BrowserProcessId(&mut webview_pid).ok();
 
         println!("Webview PID: {}", webview_pid);
         inject::hook_webview2(

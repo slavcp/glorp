@@ -167,7 +167,18 @@ fn attach() {
         debug_print(format!("factory: {:?}", factory));
 
         MinHook::enable_all_hooks().unwrap();
-        ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<*mut c_void, Option<unsafe fn(*mut c_void, *mut c_void, *const DXGI_SWAP_CHAIN_DESC1, *mut c_void, *mut *mut c_void) -> HRESULT>>(original_create_swapchain);
+        ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<
+            *mut c_void,
+            Option<
+                unsafe fn(
+                    *mut c_void,
+                    *mut c_void,
+                    *const DXGI_SWAP_CHAIN_DESC1,
+                    *mut c_void,
+                    *mut *mut c_void,
+                ) -> HRESULT,
+            >,
+        >(original_create_swapchain);
         // ORIGINAL_PRESENT = std::mem::transmute(original_present);
     }
 }
