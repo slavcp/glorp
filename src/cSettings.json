@@ -196,7 +196,7 @@
 		"category": "Tweaks",
 		"defaultValue": "Normal",
 		"needsRestart": true,
-		"options": ["High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+		"options": ["High", "Above Normal", "Normal", "Below Normal", "Low", "Idle"]
 	},
 	"hardFlip": {
 		"name": "Hook DXGI Swapchain Creation",

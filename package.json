@@ -8,13 +8,13 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@chialab/esbuild-plugin-html": "^0.18.2",
-		"esbuild": "^0.25.4"
+		"esbuild": "^0.25.5"
 	},
 	"dependencies": {
-		"marked": "^15.0.11"
+		"marked": "^15.0.12"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
 	},
-	"packageManager": "pnpm@10.12.1"
+	"packageManager": "pnpm@10.12.4"
 }
