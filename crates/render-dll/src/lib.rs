@@ -1,7 +1,7 @@
 use minhook::MinHook;
 use std::ffi::c_void;
 use windows::Win32::{
-    Foundation::{BOOL, HINSTANCE, HMODULE, LPARAM, WPARAM},
+    Foundation::{HINSTANCE, HMODULE, LPARAM, WPARAM},
     Graphics::{
         Direct3D::*,
         Direct3D11::*,

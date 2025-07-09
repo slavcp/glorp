@@ -5,11 +5,7 @@ use std::sync::{Arc, Mutex};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
-    Win32::{
-        Foundation::*,
-        System::{Com::*, WinRT::*},
-        UI::WindowsAndMessaging::*,
-    },
+    Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
     core::*,
 };
 
@@ -65,7 +61,7 @@ fn main() {
 
     let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     let config = Arc::new(Mutex::new(config::Config::load()));
-    let token: *mut EventRegistrationToken = std::ptr::null_mut();
+    let token: *mut i64 = &mut 0i64 as *mut i64;
 
     let mut args = modules::flaglist::load();
 

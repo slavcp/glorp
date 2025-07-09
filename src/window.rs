@@ -83,7 +83,8 @@ impl Window {
                     self.window_state.last_position.right - self.window_state.last_position.left,
                     self.window_state.last_position.bottom - self.window_state.last_position.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED,
-                ).ok();
+                )
+                .ok();
             } else {
                 let mut rect = RECT::default();
                 let _ = GetWindowRect(self.hwnd, &mut rect);
@@ -271,9 +272,11 @@ pub fn create_webview2(
                     }),
                 )
                 .unwrap_or_else(|_| {
-                        utils::kill("msedgewebview2.exe");
-                        std::process::Command::new(std::env::current_exe().unwrap()).spawn().unwrap();
-                        std::process::exit(0);
+                    utils::kill("msedgewebview2.exe");
+                    std::process::Command::new(std::env::current_exe().unwrap())
+                        .spawn()
+                        .unwrap();
+                    std::process::exit(0);
                 });
                 Ok(())
             }),
