@@ -1,13 +1,12 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
-	"files": { "ignoreUnknown": true, "ignore": [] },
+	"files": { "includes": ["src/**/*.js"] },
 	"formatter": { "enabled": true, "indentStyle": "tab", "lineWidth": 120 },
-	"organizeImports": { "enabled": true },
 	"linter": {
 		"enabled": true,
 		"rules": { "recommended": true }
