@@ -5,7 +5,6 @@ use std::sync::mpsc::{Sender, channel};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
 use windows::Win32::{
-    Foundation::BOOL,
     Foundation::*,
     System::{Diagnostics::Debug::*, SystemServices::*, Threading::*},
     UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},

@@ -24,7 +24,7 @@ packaged = []
 editor-ignore = []
 
 [dependencies]
-windows = { version = "0.59.*", features = [
+windows = { version = "0.61.*", features = [
        "Win32_UI_WindowsAndMessaging",
        "Win32_UI_Input_KeyboardAndMouse",
        "Win32_UI_Shell",
@@ -43,12 +43,12 @@ windows = { version = "0.59.*", features = [
        "Win32_Security_Authorization",
 ] }
 
-webview2-com = { version = "0.35.*", default-features = false }
+webview2-com = { version = "0.38.*", default-features = false }
 ureq = { version = "3.0.*", features = ["rustls"], default-features = false }
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
 regex = { version = "1.11.*", features = ["std", "perf", "perf-dfa-full", "unicode-perl"], default-features = false }
 serde_json = "1.0.*"
-once_cell = "1.20.*"
+once_cell = "1.21.*"
 walkdir = "2.5.*"
 semver = "1.0.*"
 discord-rich-presence = "0.2.*"
