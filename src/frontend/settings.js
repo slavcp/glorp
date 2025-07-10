@@ -1,9 +1,32 @@
 import cSettings from "../cSettings.json";
 
-window.glorpClient.settings.changeSetting = (id, value, fromSlider) => {
-	if (document.querySelector(`#input_${id}`) && fromSlider) {
-		document.querySelector(`#input_${id}`).value = value;
-	} else document.querySelector(`#${id}`).value = value;
+const debounceTimers = {};
+
+window.glorpClient.settings.changeSetting = (id, value, slider) => {
+	if (value === "") return;
+	document.querySelector(`#${id}`).value = value;
+
+	if (typeof value === "string") {
+		const numberRegex = /^-?\d*\.?\d+$/;
+		if (numberRegex.test(value)) {
+			if (value.includes(".")) value = Number.parseFloat(value);
+			else value = Number.parseInt(value);
+		}
+	}
+
+	if (document.querySelector(`#slid_input_${id}`) && slider) {
+		document.querySelector(`#slid_input_${id}`).value = value;
+
+		if (debounceTimers[id]) clearTimeout(debounceTimers[id]);
+
+		debounceTimers[id] = setTimeout(() => {
+			window.glorpClient.settings.data[id] = value;
+			window.chrome.webview.postMessage(`setConfig,${id},${value}`);
+
+			delete debounceTimers[id];
+		}, 500);
+		return;
+	}
 
 	switch (id) {
 		case "exitButton":
@@ -97,8 +120,8 @@ class SettingsManager {
 					}`;
 			// biome-ignore format: see above
 			case "slider":
-				return `<input type="number" class="sliderVal" id="input_${option.id}" min="1" max="5" value="${value || 1}" 
-                step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)' style="margin-right:0px;border-width:0px">
+				return `<input type="number" class="sliderVal" id="slid_input_${option.id}" min="${option.min}" value="${value || option.min}" 
+                step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)' style="margin-right:0px;border-width:0px">
                 <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}" 
 				step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
 			// biome-ignore format: see above

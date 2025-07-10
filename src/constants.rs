@@ -40,7 +40,16 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://krunker.io/libs/nipplejs.min.js*",
         "*://user-assets.krunker.io/60585/*",
         "*://fran-cdn.frvr.com/prebid*",
-        "*://cdn.frvr.com/fran/prebid*"
+        "*://cdn.frvr.com/fran/prebid*",
+        "https://user-assets.krunker.io/61822/model.obj",
+        "https://user-assets.krunker.io/61818/model.obj",
+        "https://user-assets.krunker.io/61814/model.obj",
+        "https://user-assets.krunker.io/61824/model.obj",
+        "https://user-assets.krunker.io/61815/model.obj",
+        "https://user-assets.krunker.io/61820/model.obj",
+        "https://user-assets.krunker.io/61821/model.obj",
+        "https://user-assets.krunker.io/61806/model.obj"
+
     ],
     "disabled": [
         "*://krunker.io/img/social/reddit.png*",
