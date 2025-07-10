@@ -10,7 +10,7 @@ const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/lat
 
 pub fn check_webview2() {
     unsafe {
-        let mut version_string: Vec<u16> = super::utils::create_utf_string("");
+        let mut version_string: Vec<u16> = crate::utils::create_utf_string("");
         let version_info = version_string.as_mut_ptr() as *mut PWSTR;
         match GetAvailableCoreWebView2BrowserVersionString(None, version_info) {
             Ok(_) => {}
@@ -22,7 +22,7 @@ pub fn check_webview2() {
                     w!("Error launching client"),
                     MB_ICONERROR | MB_YESNO | MB_SYSTEMMODAL,
                 ) {
-                    MESSAGEBOX_RESULT(6) => install_webview2(),
+                    IDYES => install_webview2(),
                     _ => std::process::exit(0),
                 }
             }
@@ -42,7 +42,7 @@ fn install_webview2() {
                 MessageBoxW(
                     None,
                     PCWSTR(
-                        super::utils::create_utf_string(
+                        crate::utils::create_utf_string(
                             format!("Cannot download runtime: {}", e).as_str(),
                         )
                         .as_ptr(),
@@ -65,7 +65,7 @@ fn install_webview2() {
                 MessageBoxW(
                     None,
                     PCWSTR(
-                        super::utils::create_utf_string(
+                        crate::utils::create_utf_string(
                             format!("failed to copy installer file: {}", e).as_str(),
                         )
                         .as_ptr(),
@@ -126,7 +126,7 @@ pub fn check_update() {
                     MessageBoxW(
                         None,
                         PCWSTR(
-                            super::utils::create_utf_string(
+                            crate::utils::create_utf_string(
                                 format!("Failed to download: {:?}", e).as_str(),
                             )
                             .as_ptr(),
@@ -146,7 +146,7 @@ pub fn check_update() {
                     MessageBoxW(
                         None,
                         PCWSTR(
-                            super::utils::create_utf_string(
+                            crate::utils::create_utf_string(
                                 format!("Failed to create file: {:?}", e).as_str(),
                             )
                             .as_ptr(),
@@ -173,7 +173,7 @@ pub fn check_update() {
                 ShellExecuteW(
                     None,
                     w!("open"),
-                    PCWSTR(super::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
+                    PCWSTR(crate::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
                     w!("/q"),
                     None,
                     SW_NORMAL,

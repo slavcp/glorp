@@ -6,7 +6,7 @@ use windows::{
     core::*,
 };
 
-use crate::{installer, utils};
+use crate::{modules::installer, utils};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 
 #[derive(Copy, Clone)]
@@ -30,7 +30,6 @@ impl Default for WindowState {
 }
 
 pub struct Window {
-    pub main: bool,
     pub hwnd: HWND,
     pub controller: ICoreWebView2Controller4,
     pub webview: ICoreWebView2_22,
@@ -38,11 +37,10 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(start_mode: &str, main: bool, args: String) -> (Self, ICoreWebView2Environment) {
+    pub fn new(start_mode: &str, args: String) -> (Self, ICoreWebView2Environment) {
         let (hwnd, window_state) = create_window(start_mode);
         let (controller, env, webview) = create_webview2(hwnd, args);
         let window = Window {
-            main,
             hwnd,
             controller,
             webview,
@@ -51,7 +49,6 @@ impl Window {
 
         unsafe {
             let window_clone = Box::new(Window {
-                main: window.main,
                 hwnd: window.hwnd,
                 controller: window.controller.clone(),
                 webview: window.webview.clone(),

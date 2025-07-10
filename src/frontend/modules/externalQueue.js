@@ -1,4 +1,3 @@
-let queueWindow;
 const externalQueue = document.createElement("button");
 
 externalQueue.textContent = "open_in_new";
