@@ -41,7 +41,7 @@ impl DllInjector {
                     error,
                     MB_ICONERROR | MB_SYSTEMMODAL,
                 );
-                super::utils::kill("msedgewebview2.exe");
+                crate::utils::kill("msedgewebview2.exe");
                 std::process::exit(0);
             }
         };

@@ -11,13 +11,14 @@ use windows::{
 
 mod config;
 mod constants;
-mod inject;
-mod installer;
+
 mod utils;
 mod window;
 mod modules {
     pub mod blocklist;
     pub mod flaglist;
+    pub mod inject;
+    pub mod installer;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
@@ -92,7 +93,6 @@ fn main() {
                 .get::<String>("startMode")
                 .unwrap_or_else(|| String::from("Borderless Fullscreen"))
                 .as_str(),
-            true,
             args,
         );
 
@@ -109,7 +109,7 @@ fn main() {
         main_window.webview.BrowserProcessId(&mut webview_pid).ok();
 
         println!("Webview PID: {}", webview_pid);
-        inject::hook_webview2(
+        modules::inject::hook_webview2(
             config.lock().unwrap().get("hardFlip").unwrap_or(false),
             webview_pid,
         );
