@@ -15,7 +15,10 @@
 	}
 }
 
+
+.settName[title="Frame per second cap (0 = unlimited)"],
 .carousel,
+.onSpect #hpEnemyCounter,
 #settHolder div.setHed:not([id]),
 #homeStoreAd,
 #newUserGuide,
@@ -34,6 +37,11 @@
 #uiBase.onDeathScrn #chatHolder {
 	backdrop-filter: none;
 	animation: none;
+}
+
+#menuAccountUsername {
+	animation: none;
+	border: 0;
 }
 
 .ranked-matchmaking-status {

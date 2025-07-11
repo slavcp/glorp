@@ -1,14 +1,9 @@
 import styles from "./components/base.css";
+
 let firstLoad = true;
-let safeguardTimeout;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
-window.glorpClient = {
-	settings: {},
-	console: {
-		log: console.log.bind(console),
-	},
-};
+window.originalConsole = { ...window.console };
 
 (async () => {
 	window.glorpClient = await new Promise((resolve) => {
@@ -20,19 +15,12 @@ window.glorpClient = {
 document.addEventListener(
 	"DOMContentLoaded",
 	() => {
+		// load noticeable style changes and stuff that requires hooks earlier
+
 		const baseCSS = document.createElement("style");
 		baseCSS.innerHTML = styles;
 		document.head.append(baseCSS);
 		window.localStorage.setItem("cont_shoot1Key_alt", "131");
-
-		if (window.glorpClient?.settings.data?.cleanUI) {
-			import("./components/clean.css").then((css) => {
-				const cleanCSS = document.createElement("style");
-				cleanCSS.id = "cleanCSS";
-				cleanCSS.innerHTML = css.default;
-				document.head.append(cleanCSS);
-			});
-		}
 
 		const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
 		HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
@@ -41,7 +29,17 @@ document.addEventListener(
 			return originalAddEventListener.call(this, type, listener, options);
 		};
 
-		if (window.glorpClient?.settings.data?.rawInput) {
+		if (window.glorpClient?.settings?.data?.cleanUI) {
+			import("./components/clean.css").then((css) => {
+				const cleanCSS = document.createElement("style");
+				cleanCSS.id = "cleanUICSS";
+				cleanCSS.innerHTML = css.default;
+				document.head.append(cleanCSS);
+			});
+		}
+		if (window.glorpClient?.settings?.data) import("./modules/frameCap.js");
+
+		if (window.glorpClient?.settings?.data?.rawInput) {
 			const originalRequestPointerLock = HTMLCanvasElement.prototype.requestPointerLock;
 			HTMLCanvasElement.prototype.requestPointerLock = function (options) {
 				return originalRequestPointerLock.call(this, {
@@ -51,18 +49,16 @@ document.addEventListener(
 			};
 		}
 
-		if (window.glorpClient?.settings.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorpClient?.settings?.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
 	},
 	{ once: true },
 );
 
 document.addEventListener("pointerlockchange", () => {
-	window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`);
-	clearTimeout(safeguardTimeout);
-	safeguardTimeout = setTimeout(
-		() => window.chrome.webview.postMessage(`pointerLock,${document.pointerLockElement !== null}`),
-		1000,
-	);
+	const pointerLock = document.pointerLockElement !== null;
+	window.chrome.webview.postMessage(`pointerLock,${pointerLock}`);
+	if (pointerLock) window.glorpClient.settings.setupFrameCap(window.glorpClient.settings.data.frameCap);
+	else window.glorpClient.settings.setupFrameCap(window.glorpClient.settings.data.menuFrameCap);
 });
 
 function bindF20() {
@@ -151,13 +147,13 @@ Object.defineProperty(window, "gameLoaded", {
 					if (event.data !== "game-updated") return;
 					await new Promise((resolve) => setTimeout(resolve, 2000));
 					const gameStatus = window.getGameActivity();
-					window.window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
+					window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
 				});
 			}
 
 			if (window.glorpClient?.settings.data?.textSelect) {
 				const textSelectCSS = document.createElement("style");
-				textSelectCSS.id = "textSelect";
+				textSelectCSS.id = "textSelectCSS";
 				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
 				document.head.append(textSelectCSS);
 			}

@@ -294,7 +294,6 @@
       let queueConnection;
       let countdownInterval;
       let isConnecting = false;
-
       let audioContext = null;
       let notificationBuffer = null;
       let currentSource = null;
@@ -387,18 +386,29 @@
       }
 
       function updateCooldownTimer(seconds) {
-        if (seconds <= 0) {
-          queueStatus.textContent = "Not in queue";
-          queueStatus.style.color = "#ff7a7a";
-          queueButton.disabled = false;
-          return;
-        }
-        queueStatus.textContent = `Cooldown: ${formatTime(seconds)}`;
-        queueStatus.style.color = "#ff7a7a";
-        queueButton.disabled = true;
-        setTimeout(() => updateCooldownTimer(seconds - 1), 1000);
-      }
 
+        const endTime = new Date(Date.now() + seconds * 1000);
+        
+        function updateDisplay() {
+          const now = new Date();
+          const remainingSeconds = Math.ceil((endTime - now) / 1000);
+          
+          if (remainingSeconds <= 0) {
+            queueStatus.textContent = "Not in queue";
+            queueStatus.style.color = "#ff7a7a";
+            queueButton.disabled = false;
+            return;
+          }
+
+          queueStatus.textContent = `Cooldown: ${formatTime(remainingSeconds)}`;
+          queueStatus.style.color = "#ff7a7a";
+          queueButton.disabled = true;
+          setTimeout(updateDisplay, 1000);
+        }
+
+        updateDisplay();
+      }
+      
       function updateQueueTimer() {
         if (isQueued && queueStartTime) {
           const elapsedTime = Math.floor((Date.now() - queueStartTime) / 1000);
@@ -476,14 +486,12 @@
           if (remaining <= 0) window.close();
         }, 1000);
       }
-
+      
       function closeMatchPopup() {
         clearInterval(countdownInterval);
         stopNotificationSound();
         matchPopupOverlay.classList.remove("active");
       }
-
-      joinMatch.onclick = () => (window.location.href = "glorp://ranked");
 
       closeButton.onclick = () => closeMatchPopup();
 
@@ -532,12 +540,11 @@
         <h2>Match Found!</h2>
         <span id="closeMatch">&times;</span>
         <p>
-          if joining doesnt work just launch the client and rejoin the game from
-          the ranked menu
+          Open the client and rejoin the game from
+          the ranked menu!
         </p>
         <span id="countdownTimer">01:00</span>
         <br />
-        <button id="joinMatch">Join Match</button>
       </div>
     </div>
   </body>

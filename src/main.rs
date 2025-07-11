@@ -5,23 +5,20 @@ use std::sync::{Arc, Mutex};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
-    Win32::{
-        Foundation::*,
-        System::{Com::*, WinRT::*},
-        UI::WindowsAndMessaging::*,
-    },
+    Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
     core::*,
 };
 
 mod config;
 mod constants;
-mod inject;
-mod installer;
+
 mod utils;
 mod window;
 mod modules {
     pub mod blocklist;
     pub mod flaglist;
+    pub mod inject;
+    pub mod installer;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
@@ -29,6 +26,16 @@ mod modules {
 
 // > memory safe langauges
 // > unsafe
+
+static LAST_CONNECTED_LOBBY: once_cell::sync::Lazy<Arc<Mutex<std::net::IpAddr>>> =
+    once_cell::sync::Lazy::new(|| {
+        Arc::new(Mutex::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(
+            127, 0, 0, 1,
+        ))))
+    });
+
+static PING: once_cell::sync::Lazy<Arc<Mutex<u32>>> =
+    once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(0)));
 
 fn main() {
     #[cfg(feature = "packaged")]
@@ -43,7 +50,6 @@ fn main() {
     let scripts_dir = String::from(&client_dir) + "\\scripts";
     let flaglist_path = String::from(&client_dir) + "\\flags.json";
     let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
-
     std::fs::create_dir_all(&swap_dir).ok();
     std::fs::create_dir(&scripts_dir).ok();
 
@@ -56,7 +62,7 @@ fn main() {
 
     let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     let config = Arc::new(Mutex::new(config::Config::load()));
-    let token: *mut EventRegistrationToken = std::ptr::null_mut();
+    let token: *mut i64 = &mut 0i64 as *mut i64;
 
     let mut args = modules::flaglist::load();
 
@@ -87,7 +93,6 @@ fn main() {
                 .get::<String>("startMode")
                 .unwrap_or_else(|| String::from("Borderless Fullscreen"))
                 .as_str(),
-            true,
             args,
         );
 
@@ -101,13 +106,10 @@ fn main() {
         );
 
         let mut webview_pid: u32 = 0;
-        main_window
-            .webview
-            .BrowserProcessId(&mut webview_pid)
-            .unwrap();
+        main_window.webview.BrowserProcessId(&mut webview_pid).ok();
 
         println!("Webview PID: {}", webview_pid);
-        inject::hook_webview2(
+        modules::inject::hook_webview2(
             config.lock().unwrap().get("hardFlip").unwrap_or(false),
             webview_pid,
         );
@@ -115,7 +117,7 @@ fn main() {
         #[cfg(feature = "packaged")]
         {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-                installer::check_update();
+                modules::installer::check_update();
             }
         }
 
@@ -173,7 +175,7 @@ fn main() {
                     COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
                     COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
                 )
-                .unwrap();
+                .ok();
         }
 
         main_window.webview.add_WebResourceRequested(
@@ -218,7 +220,7 @@ fn main() {
                 },
             )),
             token,
-        ).unwrap();
+        ).ok();
 
         let widget_wnd = Some(utils::find_child_window_by_class(
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
@@ -229,51 +231,68 @@ fn main() {
             PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
         }
 
+        if config.lock().unwrap().get("realPing").unwrap_or(false) {
+            main_window
+                .webview
+                .CallDevToolsProtocolMethod(w!("Network.enable"), w!("{}"), None)
+                .ok();
+            let ws_receiver = main_window
+                .webview
+                .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
+                .unwrap();
+
+            let handler =
+                DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
+                    if let Some(args) = args {
+                        let mut params_vec = utils::create_utf_string("");
+                        let params = params_vec.as_mut_ptr() as *mut PWSTR;
+                        args.ParameterObjectAsJson(params)?;
+                        let json = serde_json::from_str::<serde_json::Value>(
+                            &params.as_ref().unwrap().to_string().unwrap(),
+                        )
+                        .unwrap();
+                        let url = json.get("url").unwrap().to_string();
+                        if url.contains("lobby-") {
+                            let host = url
+                                .split("://")
+                                .last()
+                                .unwrap()
+                                .split("/")
+                                .next()
+                                .unwrap()
+                                .to_string();
+                            let resolved_ips = dns_lookup::lookup_host(&host).unwrap_or_default();
+                            if let Some(ip) = resolved_ips.into_iter().next() {
+                                *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
+                            }
+                        }
+                    }
+                    Ok(())
+                }));
+
+            ws_receiver
+                .add_DevToolsProtocolEventReceived(&handler, token)
+                .ok();
+
+            std::thread::spawn(move || {
+                loop {
+                    let result = ping_rs::send_ping(
+                        &LAST_CONNECTED_LOBBY.lock().unwrap(),
+                        std::time::Duration::from_secs(1),
+                        Default::default(),
+                        Some(&ping_rs::PingOptions {
+                            ttl: 128,
+                            dont_fragment: true,
+                        }),
+                    );
+                    if let Ok(reply) = result {
+                        *PING.lock().unwrap() = reply.rtt;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(2500));
+                }
+            });
+        }
         let config_clone = Arc::clone(&config);
-
-        fn set_cpu_throttling_inmenu(webview: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
-            unsafe {
-                webview
-                    .CallDevToolsProtocolMethod(
-                        w!("Emulation.setCPUThrottlingRate"),
-                        PCWSTR(
-                            utils::create_utf_string(&format!(
-                                "{{\"rate\":{}}}",
-                                cfg.lock()
-                                    .unwrap()
-                                    .get::<f32>("inMenuThrottle")
-                                    .unwrap_or(2.0)
-                            ))
-                            .as_ptr(),
-                        ),
-                        None,
-                    )
-                    .ok();
-            }
-        }
-
-        unsafe fn set_cpu_throttling_ingame(
-            webview: &ICoreWebView2,
-            cfg: &Arc<Mutex<config::Config>>,
-        ) {
-            unsafe {
-                webview
-                    .CallDevToolsProtocolMethod(
-                        w!("Emulation.setCPUThrottlingRate"),
-                        PCWSTR(
-                            utils::create_utf_string(&format!(
-                                "{{\"rate\":{}}}",
-                                cfg.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
-                            ))
-                            .as_ptr(),
-                        ),
-                        None,
-                    )
-                    .ok();
-            }
-        }
-
-        set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
 
         main_window
             .webview
@@ -288,14 +307,16 @@ fn main() {
                             }
 
                             let message_string = message.as_ref().unwrap().to_string().unwrap();
-                            let message = message_string.as_str(); // fire
 
-                            let parts: Vec<&str> = message.split(',').map(|s| s.trim()).collect();
+                            let parts: Vec<&str> =
+                                message_string.split(',').map(|s| s.trim()).collect();
                             match parts.first() {
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
                                     let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
                                         serde_json::Value::Bool(bool_val)
+                                    } else if let Ok(int_val) = parts[2].parse::<i64>() {
+                                        serde_json::Value::Number(serde_json::Number::from(int_val))
                                     } else if let Ok(float_val) = parts[2].parse::<f64>() {
                                         serde_json::Value::Number(
                                             serde_json::Number::from_f64(
@@ -347,12 +368,6 @@ fn main() {
                                         LPARAM(0),
                                     )
                                     .ok();
-
-                                    if value {
-                                        set_cpu_throttling_ingame(&webview.unwrap(), &config_clone);
-                                    } else {
-                                        set_cpu_throttling_inmenu(&webview.unwrap(), &config_clone);
-                                    }
                                 }
                                 Some(&"close") => {
                                     PostQuitMessage(0);
@@ -364,11 +379,10 @@ fn main() {
                                         .ok();
                                 }
                                 Some(&"rpcUpdate") => {
-                                    let details = "Krunker";
                                     let state = format!("{} on {}", parts[1], parts[2]);
                                     if let Some(client) = &mut *discord_client.lock().unwrap() {
                                         let activity = activity::Activity::new()
-                                            .details(details)
+                                            .details("Krunker")
                                             .state(&state)
                                             .assets(activity::Assets::new());
 
@@ -376,6 +390,19 @@ fn main() {
                                             eprintln!("Failed to set rpc activity: {}", e);
                                         }
                                     }
+                                }
+                                Some(&"ping") => {
+                                    let webview = webview.unwrap();
+                                    let ping = PING.lock().unwrap();
+                                    webview
+                                        .PostWebMessageAsJson(PCWSTR(
+                                            utils::create_utf_string(&format!(
+                                                "{{\"pingInfo\":{}}}",
+                                                &ping
+                                            ))
+                                            .as_ptr(),
+                                        ))
+                                        .ok();
                                 }
                                 _ => {}
                             }
@@ -437,7 +464,7 @@ fn main() {
                 )),
                 token,
             )
-            .unwrap();
+            .ok();
 
         let mut msg: MSG = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).into() {
