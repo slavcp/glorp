@@ -14,20 +14,20 @@ I strongly urge you to **review the source code** if you have any doubts.
 - [x] **Proper** Raw input
 - [x] Increased performance
 - [x] Hook DXGI parameters in an attempt of lowering latency
-- [x] Optimized URL blocklist (only ~40 entries, customizable)
+- [x] Optimized URL blocklist (only ~50 entries, and fully customizable)
 - [x] Lightweight - bundle size ~4mb
 - [x] Resource swapper
 - [x] Custom script support
 - [x] Account Manager
 - [x] Lightweight autoupdater
 - [x] External queue for ranked 
-- [x] CPU Throttler
+- [x] Frame Cap
 - [x] and more...
 
 ## Potential issues
 
 If in a GPU bottleneck, the amount of frames displayed will drop severely, but the game's render loop won't slow down, this results in the client being almost unusable. <br>
-Consider using the CPU throttler in such scenario
+Consider using the ingame Frame Cap in such scenario
 
 ## Building
 
