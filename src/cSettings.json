@@ -73,7 +73,7 @@
 	"rampBoost": {
 		"name": "Ramp Boosting",
 		"id": "rampBoost",
-		"description": "scroll on ramp go fast (not really); a much less powerful version of regular rampboosting but way easier to hit consistently (and more useful in regular matches i'd say)",
+		"description": "a much less powerful version of the regular rampboosting but way easier to hit consistently (and more useful in regular matches i'd say); turn off if you plan on using external software",
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": false,
@@ -107,11 +107,19 @@
 		"id": "showPing",
 		"type": "checkbox",
 		"category": "Game",
-		"defaultValue": true
+		"defaultValue": true,
+		"needsRestart": true
 	},
 	"exitButton": {
 		"name": "Exit Button",
 		"id": "exitButton",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": true
+	},
+	"menuTimer": {
+		"name": "Menu Timer",
+		"id": "menuTimer",
 		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": true
@@ -124,13 +132,6 @@
 		"category": "UI",
 		"defaultValue": false
 	},
-	"menuTimer": {
-		"name": "Menu Timer",
-		"id": "menuTimer",
-		"type": "checkbox",
-		"category": "UI",
-		"defaultValue": true
-	},
 	"hideBundles": {
 		"name": "Hide Bundle Popups",
 		"id": "hideBundles",
@@ -138,20 +139,29 @@
 		"category": "UI",
 		"defaultValue": false
 	},
+	"textSelect": {
+		"name": "Selectable Chat",
+		"id": "textSelect",
+		"description": "Make game chat selectable",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": true
+	},
+	"realPing": {
+		"name": "Real Ping™️",
+		"id": "realPing",
+		"description": "Show real network latency™️! pings the lobby every few seconds to get a value;",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false,
+		"needsRestart": true
+	},
 	"showChangelog": {
 		"name": "Show Changelogs",
 		"id": "showChangelog",
 		"type": "checkbox",
 		"button": "Show Now",
 		"buttonAction": "window.glorpClient.showChangelogPopup(window.glorpClient.version)",
-		"category": "UI",
-		"defaultValue": true
-	},
-	"textSelect": {
-		"name": "Selectable Chat",
-		"id": "textSelect",
-		"description": "Make game chat selectable",
-		"type": "checkbox",
 		"category": "UI",
 		"defaultValue": true
 	},
@@ -164,27 +174,26 @@
 		"defaultValue": true,
 		"needsRestart": true
 	},
-	"throttle": {
-		"name": "CPU Throttling",
-		"id": "throttle",
-		"description": "Throttle CPU, value is the multiplier (2 is 50%), ONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
+	"frameCap": {
+		"name": "Frame Cap",
+		"id": "frameCap",
+		"description": "like the in game one but it works (if you wanna go higher than 1k for some reason the number input isnt capped)",
 		"type": "slider",
-		"min": 1,
-		"max": 3,
-		"step": 0.01,
+		"min": 0,
+		"max": 1000,
+		"step": 10,
 		"category": "Tweaks",
-		"defaultValue": 1
+		"defaultValue": 0
 	},
-	"inMenuThrottle": {
-		"name": "CPU Throttling in Menu",
-		"id": "inMenuThrottle",
-		"description": "Throttle CPU in menus, fixes an issue related to render FPS in menus",
+		"menuFrameCap": {
+		"name": "Menu Frame Cap",
+		"id": "menuFrameCap",
 		"type": "slider",
-		"min": 1,
-		"max": 3,
-		"step": 0.01,
+		"min": 0,
+		"max": 360,
+		"step": 10,
 		"category": "Tweaks",
-		"defaultValue": 1.5
+		"defaultValue": 120
 	},
 	"webviewPriority": {
 		"name": "Webview Priority",
@@ -194,7 +203,7 @@
 		"category": "Tweaks",
 		"defaultValue": "Normal",
 		"needsRestart": true,
-		"options": ["!! Realtime !!", "High", "Above Normal", "Normal", "Low", "Below Normal", "Idle"]
+		"options": ["High", "Above Normal", "Normal", "Below Normal", "Low", "Idle"]
 	},
 	"hardFlip": {
 		"name": "Hook DXGI Swapchain Creation",

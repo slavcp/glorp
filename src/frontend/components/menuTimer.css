@@ -1,8 +1,9 @@
+/* shoutout crankshaft */
+
 #uiBase.onMenu #spectateUI {
 	display: block !important;
 }
 
-/* added on comp menu fix */
 #uiBase.onCompMenu.onMenu #specTimer,
 #uiBase.onMenu #specGMessage,
 #uiBase.onMenu #spec1,

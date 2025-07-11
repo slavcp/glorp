@@ -6,7 +6,7 @@ use windows::{
     core::*,
 };
 
-use crate::{installer, utils};
+use crate::{modules::installer, utils};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 
 #[derive(Copy, Clone)]
@@ -30,7 +30,6 @@ impl Default for WindowState {
 }
 
 pub struct Window {
-    pub main: bool,
     pub hwnd: HWND,
     pub controller: ICoreWebView2Controller4,
     pub webview: ICoreWebView2_22,
@@ -38,11 +37,10 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(start_mode: &str, main: bool, args: String) -> (Self, ICoreWebView2Environment) {
+    pub fn new(start_mode: &str, args: String) -> (Self, ICoreWebView2Environment) {
         let (hwnd, window_state) = create_window(start_mode);
         let (controller, env, webview) = create_webview2(hwnd, args);
         let window = Window {
-            main,
             hwnd,
             controller,
             webview,
@@ -51,7 +49,6 @@ impl Window {
 
         unsafe {
             let window_clone = Box::new(Window {
-                main: window.main,
                 hwnd: window.hwnd,
                 controller: window.controller.clone(),
                 webview: window.webview.clone(),
@@ -271,17 +268,13 @@ pub fn create_webview2(
                         Ok(())
                     }),
                 )
-                .unwrap_or_else(|e| {
-                    let error_msg = format!("Failed to create WebView2 environment: {:?}", e);
-                    MessageBoxW(
-                        None,
-                        PCWSTR(utils::create_utf_string(&error_msg).as_ptr()),
-                        w!("Error"),
-                        MB_OK | MB_ICONERROR,
-                    );
-                    panic!("{}", error_msg);
+                .unwrap_or_else(|_| {
+                    utils::kill("msedgewebview2.exe");
+                    std::process::Command::new(std::env::current_exe().unwrap())
+                        .spawn()
+                        .unwrap();
+                    std::process::exit(0);
                 });
-
                 Ok(())
             }),
         );

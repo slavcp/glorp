@@ -1,7 +1,7 @@
 use minhook::MinHook;
 use std::ffi::c_void;
 use windows::Win32::{
-    Foundation::{BOOL, HINSTANCE, HMODULE, LPARAM, WPARAM},
+    Foundation::{HINSTANCE, HMODULE, LPARAM, WPARAM},
     Graphics::{
         Direct3D::*,
         Direct3D11::*,
@@ -113,6 +113,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
     }
 }
 
+#[allow(clippy::type_complexity)]
 static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
     unsafe fn(
         *mut c_void,
@@ -122,7 +123,6 @@ static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
         *mut *mut c_void,
     ) -> HRESULT,
 > = None;
-
 // static mut ORIGINAL_PRESENT: unsafe fn(
 //     *mut c_void,
 //     u32,
@@ -167,7 +167,18 @@ fn attach() {
         debug_print(format!("factory: {:?}", factory));
 
         MinHook::enable_all_hooks().unwrap();
-        ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute(original_create_swapchain);
+        ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<
+            *mut c_void,
+            Option<
+                unsafe fn(
+                    *mut c_void,
+                    *mut c_void,
+                    *const DXGI_SWAP_CHAIN_DESC1,
+                    *mut c_void,
+                    *mut *mut c_void,
+                ) -> HRESULT,
+            >,
+        >(original_create_swapchain);
         // ORIGINAL_PRESENT = std::mem::transmute(original_present);
     }
 }

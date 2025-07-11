@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 use windows::{
     Win32::{
-        Foundation::{BOOL, HWND, LPARAM},
+        Foundation::{HWND, LPARAM},
         System::{
             Diagnostics::{Debug::OutputDebugStringA, ToolHelp::*},
             Threading::*,

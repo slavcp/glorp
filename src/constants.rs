@@ -3,6 +3,7 @@ pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
 pub const DEFAULT_BLOCKLIST: &str = r#"{
     "enabled": [
         "*://*.pollfish.com/*",
+        "*://storage.googleapis.com/pollfish_production/*",
         "*://*.paypalobjects.com/*", 
         "*://c.amazon-adsystem.com/*",
         "*://config.aps.amazon-adsystem.com/*",
@@ -15,21 +16,17 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://*.twitter.com/*",
         "*://*.youtube.com/*",
         "*://*.doubleclick.net/*",
-        "*://unpkg.com/*",
+        "*://unpkg.com/web3*",
         "*://*.google.com/*",
         "*://*.googletagmanager.com/*",
         "*://apis.google.com/js/platform.js",
         "*://imasdk.googleapis.com/*",
         "*://*.googlesyndication.com/*",
-        "*://fran-cdn.frvr.com/*",
         "*://krunker.io/manifest.json*",
         "*://krunker.io/css/google-play.css*",
         "*://krunker.io/img/btc_icn.png*",
         "*://krunker.io/img/app_1.png*",
-        "*://assets.krunker.io/img/guide/*",
         "*://krunker.io/img/app_0.png.png*",
-        "*://krunker.io/img/social/reddit.png*",
-        "*://krunker.io/img/social/discord.png*",
         "*://krunker.io/libs/chart.bundle*",
         "*://krunker.io/img/muzflash.png*",
         "*://krunker.io/service-worker.js*",
@@ -42,9 +39,21 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "*://krunker.io/img/client.png*",
         "*://krunker.io/libs/nipplejs.min.js*",
         "*://user-assets.krunker.io/60585/*",
-        "*://user-assets.krunker.io/60585/model.glb*"
+        "*://fran-cdn.frvr.com/prebid*",
+        "*://cdn.frvr.com/fran/prebid*",
+        "https://user-assets.krunker.io/61822/model.obj",
+        "https://user-assets.krunker.io/61818/model.obj",
+        "https://user-assets.krunker.io/61814/model.obj",
+        "https://user-assets.krunker.io/61824/model.obj",
+        "https://user-assets.krunker.io/61815/model.obj",
+        "https://user-assets.krunker.io/61820/model.obj",
+        "https://user-assets.krunker.io/61821/model.obj",
+        "https://user-assets.krunker.io/61806/model.obj"
+
     ],
     "disabled": [
+        "*://krunker.io/img/social/reddit.png*",
+        "*://krunker.io/img/social/discord.png*",
         "*://krunker.io/libs/frvr-channel-web*"
     ]
 }"#;
