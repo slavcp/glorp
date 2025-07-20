@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
+use std::io;
+
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM},
@@ -168,4 +170,26 @@ pub fn kill(wanted_process_name: &str) {
             }
         }
     }
+}
+
+pub fn installer_cleanup() -> io::Result<()> {
+    let current_dir = std::env::current_dir()?;
+
+    for entry in std::fs::read_dir(&current_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            if let Some(extension) = path.extension() {
+                if extension.eq_ignore_ascii_case("msi") {
+                    println!("Found .msi file: {:?}", path);
+                    match std::fs::remove_file(&path) {
+                        Ok(_) => println!("Successfully deleted: {:?}", path),
+                        Err(e) => eprintln!("Failed to delete {:?}: {}", path, e),
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }

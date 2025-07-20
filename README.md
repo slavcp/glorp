@@ -5,7 +5,8 @@ Glorp uses unorthodox methods in attempt of fixing the issues modern chromium po
 # Why is the client getting marked as a trojan?
 
 - **The installer is not signed:** digital signatures help verify software, but in the case of such a small open source project, paying for a license is not feasible, so antiviruses will mark it as malicious.
-- **DLL Injection:** Glorp utilizes DLL injection, a technique used for running code in the context of another application's space, something that is often used for malicious purposes. I assure you that the client only uses this for the user's convenience.
+~~- **DLL Injection:** Glorp utilizes DLL injection, a technique used for running code in the context of another application's space, something that is often used for malicious purposes. I assure you that the client only uses this for the user's convenience.~~
+THIS HAS BEEN REPLACED WITH PLAIN OLD TRICKERY (dll hijacking) IN NEWER VERSIONS IN HOPES OF REMOVING DETECTIONS
 
 I strongly urge you to **review the source code** if you have any doubts.
 
@@ -14,16 +15,15 @@ I strongly urge you to **review the source code** if you have any doubts.
 - [x] **Proper** Raw input
 - [x] Increased performance
 - [x] Hook DXGI parameters in an attempt of lowering latency
-- [x] Optimized URL blocklist (only ~50 entries, and fully customizable)
-- [x] Lightweight - bundle size ~4mb
+- [x] Optimized URL blocklist (only ~50 entries, fully customizable)
 - [x] Resource swapper
 - [x] Custom script support
 - [x] Account Manager
 - [x] Queue ranked without the game open
 - [x] Find out your real ping to the servers
-- [x] Lightweight autoupdater
 - [x] External queue for ranked 
 - [x] Frame Cap
+- [x] Lightweight autoupdater
 - [x] and more...
 
 ## Potential issues

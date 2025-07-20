@@ -6,7 +6,7 @@ use windows::{
     core::*,
 };
 
-use crate::{modules::installer, utils};
+use crate::utils;
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 
 #[derive(Copy, Clone)]
@@ -216,17 +216,24 @@ pub fn create_webview2(
         let args = args + " --autoplay-policy=no-user-gesture-required";
         let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
         options.set_are_browser_extensions_enabled(false);
-        options.set_additional_browser_arguments(args.clone());
+        options.set_additional_browser_arguments(args);
         options.set_language("en-US".to_string());
         options.set_enable_tracking_prevention(false);
 
         let (tx, rx) = std::sync::mpsc::channel();
         let (etx, erx) = std::sync::mpsc::channel();
+        let mut current_exe = std::env::current_exe().unwrap();
+        current_exe.pop();
 
         let result = CreateCoreWebView2EnvironmentCompletedHandler::wait_for_async_operation(
             Box::new(move |environment_created_handler| {
                 CreateCoreWebView2EnvironmentWithOptions(
-                    PCWSTR::null(),
+                    PCWSTR(
+                        utils::create_utf_string(
+                            &(current_exe.to_str().unwrap().to_owned() + "\\WebView2"),
+                        )
+                        .as_ptr(),
+                    ),
                     PCWSTR(
                         utils::create_utf_string(
                             &(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp"),
@@ -270,9 +277,6 @@ pub fn create_webview2(
                 )
                 .unwrap_or_else(|_| {
                     utils::kill("msedgewebview2.exe");
-                    std::process::Command::new(std::env::current_exe().unwrap())
-                        .spawn()
-                        .unwrap();
                     std::process::exit(0);
                 });
                 Ok(())
@@ -280,8 +284,7 @@ pub fn create_webview2(
         );
 
         if result.is_err() {
-            installer::check_webview2();
-            return create_webview2(hwnd, args);
+            panic!("cannot create webview2 env, {:?}", result)
         };
 
         let controller = rx

@@ -17,7 +17,6 @@ mod window;
 mod modules {
     pub mod blocklist;
     pub mod flaglist;
-    pub mod inject;
     pub mod installer;
     pub mod priority;
     pub mod swapper;
@@ -41,6 +40,7 @@ fn main() {
     #[cfg(feature = "packaged")]
     {
         utils::set_panic_hook();
+        utils::installer_cleanup().ok();
     }
 
     utils::kill("glorp.exe"); //NOOOOO
@@ -59,12 +59,26 @@ fn main() {
     if !std::path::Path::new(&flaglist_path).exists() {
         std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
     }
+    let webview2_folder: std::path::PathBuf = std::env::current_dir().unwrap().join("WebView2");
 
-    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     let config = Arc::new(Mutex::new(config::Config::load()));
-    let token: *mut i64 = &mut 0i64 as *mut i64;
+    if !config.lock().unwrap().get("hardFlip").unwrap_or(true) {
+        std::fs::rename(
+            webview2_folder.join("OLD_vk_swiftshader.dll"),
+            &webview2_folder.join("vk_swiftshader.dll"),
+        )
+        .ok();
+    } else {
+        std::fs::rename(
+            webview2_folder.join("vk_swiftshader.dll"),
+            &webview2_folder.join("OLD_vk_swiftshader.dll"),
+        )
+        .ok();
+    }
 
+    let token: *mut i64 = &mut 0i64 as *mut i64;
     let mut args = modules::flaglist::load();
+    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
 
     if config.lock().unwrap().get("uncapFps").unwrap_or(true) {
         args.push_str("--disable-frame-rate-limit")
@@ -109,11 +123,6 @@ fn main() {
         main_window.webview.BrowserProcessId(&mut webview_pid).ok();
 
         println!("Webview PID: {}", webview_pid);
-        modules::inject::hook_webview2(
-            config.lock().unwrap().get("hardFlip").unwrap_or(false),
-            webview_pid,
-        );
-
         #[cfg(feature = "packaged")]
         {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {

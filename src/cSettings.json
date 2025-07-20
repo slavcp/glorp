@@ -94,14 +94,6 @@
 		"category": "Game",
 		"defaultValue": false
 	},
-	"realPing": {
-		"name": "Shows actual ping",
-		"id": "realPing",
-		"description": "Forces the game to show real ping to include the time for packets to travel back.",
-		"type":"checkbox",
-		"category":"Game",
-		"defaultValue":false
-	},
 	"showPing": {
 		"name": "Player List Ping",
 		"id": "showPing",

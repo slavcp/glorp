@@ -20,21 +20,29 @@
     <MajorUpgrade AllowDowngrades="yes" Schedule="afterInstallValidate"/>
 
     <StandardDirectory Id="LocalAppDataFolder">
-      <Directory Id="INSTALLFOLDER" Name="glorp"/>
+      <Directory Id="INSTALLFOLDER" Name="glorp">
+        <Directory Id="WEBVIEW2FOLDER" Name="WebView2"/>
+      </Directory>
     </StandardDirectory>
 
+
     <Feature Id="ProductFeature" Title="glorp" Level="1">
+      <ComponentGroupRef Id="WebView2Components" />
       <ComponentGroupRef Id="GlorpComponents" />
     </Feature>
   </Package>
 
   <Fragment>
+
+    <ComponentGroup Id="WebView2Components" Directory="WEBVIEW2FOLDER">
+      <Files Include="WebView2Runtime\**" />
+      <File Id="render.dll" Name="vk_swiftshader.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
+      <File Id="webview.dll" Name="XInput1_4.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
+    </ComponentGroup>
     <ComponentGroup Id="GlorpComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
         <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
-        <File Id="render.dll" Name="render.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
         <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
-        <File Id="webview.dll" Name="webview.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
 
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
@@ -55,8 +63,8 @@
             <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot; &quot;%1&quot;" Type="string" />
         </RegistryKey>
       </Component>
-
     </ComponentGroup>
+
         <CustomAction Id="ExecuteGlorp"
                 Impersonate="yes"
                 Return="asyncNoWait"
