@@ -20,7 +20,6 @@ document.addEventListener(
 		const baseCSS = document.createElement("style");
 		baseCSS.innerHTML = styles;
 		document.head.append(baseCSS);
-		window.localStorage.setItem("cont_shoot1Key_alt", "131");
 
 		const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
 		HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
@@ -61,14 +60,6 @@ document.addEventListener("pointerlockchange", () => {
 	else window.glorpClient.settings.setFrameCap(window.glorpClient.settings.data.menuFrameCap);
 });
 
-function bindF20() {
-	window.changeContSet();
-	window.changeCont("shoot", 1, undefined);
-	document.dispatchEvent(new KeyboardEvent("keydown", { keyCode: 131, bubbles: true }));
-	document.dispatchEvent(new KeyboardEvent("keyup", { keyCode: 131, bubbles: true }));
-	window.closWind();
-}
-
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
@@ -81,8 +72,6 @@ Object.defineProperty(window, "gameLoaded", {
 		firstLoad = false;
 		window.windows[0].toggleType({ checked: true });
 
-		// binds shoot to f20
-		setTimeout(() => bindF20(), 1400);
 
 		// append ranked and mod button to comp host ui
 		document.querySelector("#compBtnLst").innerHTML += `
@@ -104,13 +93,6 @@ Object.defineProperty(window, "gameLoaded", {
             star
         </span>
     </div>`;
-
-		// avoid not being able to shoot when importing settings
-		const originalImportSettings = window.importSettings;
-		window.importSettings = () => {
-			originalImportSettings.call();
-			bindF20();
-		};
 
 		(async () => {
 			await import("./notifications.js");
