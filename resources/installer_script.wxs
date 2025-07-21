@@ -20,7 +20,6 @@
     <MajorUpgrade AllowDowngrades="yes" Schedule="afterInstallValidate"/>
 
     <StandardDirectory Id="LocalAppDataFolder">
-<<<<<<< HEAD
       <Directory Id="INSTALLFOLDER" Name="glorp">
         <Directory Id="WEBVIEW2FOLDER" Name="WebView2"/>
       </Directory>
@@ -29,18 +28,11 @@
 
     <Feature Id="ProductFeature" Title="glorp" Level="1">
       <ComponentGroupRef Id="WebView2Components" />
-=======
-      <Directory Id="INSTALLFOLDER" Name="glorp"/>
-    </StandardDirectory>
-
-    <Feature Id="ProductFeature" Title="glorp" Level="1">
->>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
       <ComponentGroupRef Id="GlorpComponents" />
     </Feature>
   </Package>
 
   <Fragment>
-<<<<<<< HEAD
 
     <ComponentGroup Id="WebView2Components" Directory="WEBVIEW2FOLDER">
       <Files Include="WebView2Runtime\**" />
@@ -51,14 +43,6 @@
       <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
         <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
         <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
-=======
-    <ComponentGroup Id="GlorpComponents" Directory="INSTALLFOLDER">
-      <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
-        <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
-        <File Id="render.dll" Name="render.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
-        <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
-        <File Id="webview.dll" Name="webview.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
->>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
 
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
@@ -79,13 +63,8 @@
             <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot; &quot;%1&quot;" Type="string" />
         </RegistryKey>
       </Component>
-<<<<<<< HEAD
     </ComponentGroup>
 
-=======
-
-    </ComponentGroup>
->>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
         <CustomAction Id="ExecuteGlorp"
                 Impersonate="yes"
                 Return="asyncNoWait"
