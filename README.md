@@ -6,7 +6,7 @@ Glorp uses unorthodox methods in attempt of fixing the issues modern chromium po
 
 - **The installer is not signed:** digital signatures help verify software, but in the case of such a small open source project, paying for a license is not feasible, so antiviruses will mark it as malicious.
 ~~- **DLL Injection:** Glorp utilizes DLL injection, a technique used for running code in the context of another application's space, something that is often used for malicious purposes. I assure you that the client only uses this for the user's convenience.~~
-THIS HAS BEEN REPLACED WITH PLAIN OLD TRICKERY (dll hijacking) IN NEWER VERSIONS IN HOPES OF REMOVING DETECTIONS
+THIS HAS BEEN REPLACED WITH PLAIN OLD TRICKERY (dll hijacking) BUT IT WILL PROBALY STILL GET DETECTED
 
 I strongly urge you to **review the source code** if you have any doubts.
 
