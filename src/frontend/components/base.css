@@ -1,0 +1,64 @@
+@keyframes chat-moveup {
+	0% {
+		transform: translateY(375px);
+	}
+	100% {
+		transform: translateY(0px);
+	}
+}
+@keyframes death-ui-moveup {
+	0% {
+		transform: translateY(340px);
+	}
+	100% {
+		transform: translateY(0px);
+	}
+}
+
+
+.settName[title="Frame per second cap (0 = unlimited)"],
+.carousel,
+.onSpect #hpEnemyCounter,
+#settHolder div.setHed:not([id]),
+#homeStoreAd,
+#newUserGuide,
+#phonePop,
+#signupRewardsButton,
+#streamContainer,
+#editorBtnM[src$="client.png"],
+#aHider,
+#endAContainer,
+#endAHolder,
+#topRightAdHolder {
+	display: none !important;
+}
+
+.death-ui-bottom,
+#uiBase.onDeathScrn #chatHolder {
+	backdrop-filter: none;
+	animation: none;
+}
+
+#menuAccountUsername {
+	animation: none;
+	border: 0;
+}
+
+.ranked-matchmaking-status {
+	animation: none !important;
+	box-shadow: none !important;
+}
+
+#phonePop {
+	top: 0 !important;
+	bottom: 0 !important;
+}
+
+div #setHed_local,
+.glorpSettings .setHed:first-of-type {
+	margin-top: 10px;
+}
+
+.setBodH {
+	margin-top: 5px;
+}

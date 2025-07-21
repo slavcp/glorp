@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package
+    Id="glorpPackage"
+    Name="glorp"
+    Manufacturer="slav"
+    Version="0.6.0"
+    Scope="perUser"
+    UpgradeCode="80b28117-cea0-4ef1-8d6f-5884f5ae7270">
+        <util:CloseApplication
+          Target="glorp.exe"
+          CloseMessage="yes"
+          RebootPrompt="no"/>
+    <Icon Id="AppIconIco" SourceFile="resources/glorp.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="AppIconIco" />
+
+    <MediaTemplate EmbedCab="yes" />
+    <MajorUpgrade AllowDowngrades="yes" Schedule="afterInstallValidate"/>
+
+    <StandardDirectory Id="LocalAppDataFolder">
+<<<<<<< HEAD
+      <Directory Id="INSTALLFOLDER" Name="glorp">
+        <Directory Id="WEBVIEW2FOLDER" Name="WebView2"/>
+      </Directory>
+    </StandardDirectory>
+
+
+    <Feature Id="ProductFeature" Title="glorp" Level="1">
+      <ComponentGroupRef Id="WebView2Components" />
+=======
+      <Directory Id="INSTALLFOLDER" Name="glorp"/>
+    </StandardDirectory>
+
+    <Feature Id="ProductFeature" Title="glorp" Level="1">
+>>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
+      <ComponentGroupRef Id="GlorpComponents" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+<<<<<<< HEAD
+
+    <ComponentGroup Id="WebView2Components" Directory="WEBVIEW2FOLDER">
+      <Files Include="WebView2Runtime\**" />
+      <File Id="render.dll" Name="vk_swiftshader.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
+      <File Id="webview.dll" Name="XInput1_4.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
+    </ComponentGroup>
+    <ComponentGroup Id="GlorpComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
+        <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
+        <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
+=======
+    <ComponentGroup Id="GlorpComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
+        <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
+        <File Id="render.dll" Name="render.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
+        <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
+        <File Id="webview.dll" Name="webview.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
+>>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
+
+        <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFile Id="CleanInstallexe" Name="*.exe" On="uninstall" Directory="INSTALLFOLDER" />
+        <RemoveFile Id="CleanInstalldlls" Name="*.dll" On="uninstall" Directory="INSTALLFOLDER" />
+      </Component>
+
+      <Component Id="ProtocolRegistrationComponent" Guid="def3f6ef-ffff-407c-904d-b2a952fb0c2f">
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp">
+            <RegistryValue Value="URL:glorp Protocol" Type="string" />
+            <RegistryValue Name="URL Protocol" Value="" Type="string" />
+        </RegistryKey>
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp\DefaultIcon">
+            <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot;,0" Type="string" />
+        </RegistryKey>
+
+        <RegistryKey Root="HKCU" Key="Software\Classes\glorp\shell\open\command">
+            <RegistryValue Value="&quot;[INSTALLFOLDER]glorp.exe&quot; &quot;%1&quot;" Type="string" />
+        </RegistryKey>
+      </Component>
+<<<<<<< HEAD
+    </ComponentGroup>
+
+=======
+
+    </ComponentGroup>
+>>>>>>> 5d3352630e87b163064543437e50d37ab4d05c96
+        <CustomAction Id="ExecuteGlorp"
+                Impersonate="yes"
+                Return="asyncNoWait"
+                FileRef="glorp.exe"
+                ExeCommand="" />
+    <InstallExecuteSequence >
+      <Custom Action="ExecuteGlorp" After="InstallFinalize" />
+    </InstallExecuteSequence>
+  </Fragment>
+
+</Wix>

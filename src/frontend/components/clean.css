@@ -1,0 +1,46 @@
+*::-webkit-scrollbar,
+.settingsBtn[style*="width:auto;background-color:#994cd1"],
+.setSugBox2,
+.advancedSwitch,
+.menuSocialB,
+.serverHostOpH,
+.signup-rewards-container,
+#tlInfHold,
+#gameNameHolder,
+#termsInfo,
+#bubbleContainer,
+#instructions:only-child,
+#mapInfoHld,
+#krDiscountAd,
+#classPreviewCanvas,
+#menuClassSubtext,
+#settingsPreset,
+#menuClassName,
+#menuClassIcn,
+#streamContainerNew,
+#editorBtnM {
+	display: none !important;
+}
+
+.verticalSeparator,
+.verticalSeparatorInline {
+	visibility: hidden;
+}
+
+#mLevelCont {
+	background-color: transparent;
+}
+
+#uiBase.onMenu #spectButton {
+	top: 94%;
+}
+
+.headerBarRight {
+	right: -23px;
+}
+
+.headerBarLeft,
+.headerBarRight,
+#menuItemContainer {
+	background-color: transparent !important;
+}
