@@ -166,26 +166,27 @@
 		"defaultValue": true,
 		"needsRestart": true
 	},
-	"frameCap": {
-		"name": "Frame Cap",
-		"id": "frameCap",
-		"description": "like the in game one but it works (if you wanna go higher than 1k for some reason the number input isnt capped)",
+	"throttle": {
+		"name": "CPU Throttling",
+		"id": "throttle",
+		"description": "Throttle CPU, value is the multiplier (2 is 50%), ONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
 		"type": "slider",
-		"min": 0,
-		"max": 1000,
-		"step": 10,
+		"min": 1,
+		"max": 3,
+		"step": 0.01,
 		"category": "Tweaks",
-		"defaultValue": 0
+		"defaultValue": 1
 	},
-		"menuFrameCap": {
-		"name": "Menu Frame Cap",
-		"id": "menuFrameCap",
+	"inMenuThrottle": {
+		"name": "CPU Throttling in Menu",
+		"id": "inMenuThrottle",
+		"description": "Throttle CPU in menus, fixes an issue related to render FPS in menus",
 		"type": "slider",
-		"min": 0,
-		"max": 360,
-		"step": 10,
+		"min": 1,
+		"max": 3,
+		"step": 0.01,
 		"category": "Tweaks",
-		"defaultValue": 120
+		"defaultValue": 1.5
 	},
 	"webviewPriority": {
 		"name": "Webview Priority",

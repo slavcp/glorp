@@ -303,6 +303,50 @@ fn main() {
 
         let config_clone = Arc::clone(&config);
 
+        fn set_cpu_throttling_inmenu(webview: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
+            unsafe {
+                webview
+                    .CallDevToolsProtocolMethod(
+                        w!("Emulation.setCPUThrottlingRate"),
+                        PCWSTR(
+                            utils::create_utf_string(&format!(
+                                "{{\"rate\":{}}}",
+                                cfg.lock()
+                                    .unwrap()
+                                    .get::<f32>("inMenuThrottle")
+                                    .unwrap_or(2.0)
+                            ))
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
+            }
+        }
+
+        unsafe fn set_cpu_throttling_ingame(
+            webview: &ICoreWebView2,
+            cfg: &Arc<Mutex<config::Config>>,
+        ) {
+            unsafe {
+                webview
+                    .CallDevToolsProtocolMethod(
+                        w!("Emulation.setCPUThrottlingRate"),
+                        PCWSTR(
+                            utils::create_utf_string(&format!(
+                                "{{\"rate\":{}}}",
+                                cfg.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
+                            ))
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
+            }
+        }
+
+        set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
+
         main_window
             .webview
             .add_WebMessageReceived(
@@ -377,6 +421,11 @@ fn main() {
                                         LPARAM(0),
                                     )
                                     .ok();
+                                    if value {
+                                        set_cpu_throttling_ingame(&webview.unwrap(), &config_clone);
+                                    } else {
+                                        set_cpu_throttling_inmenu(&webview.unwrap(), &config_clone);
+                                    }
                                 }
                                 Some(&"close") => {
                                     PostQuitMessage(0);

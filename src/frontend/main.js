@@ -36,7 +36,6 @@ document.addEventListener(
 				document.head.append(cleanCSS);
 			});
 		}
-		if (window.glorpClient?.settings?.data) import("./modules/frameCap.js");
 
 		if (window.glorpClient?.settings?.data?.rawInput) {
 			const originalRequestPointerLock = HTMLCanvasElement.prototype.requestPointerLock;
@@ -56,8 +55,6 @@ document.addEventListener(
 document.addEventListener("pointerlockchange", () => {
 	const pointerLock = document.pointerLockElement !== null;
 	window.chrome.webview.postMessage(`pointerLock,${pointerLock}`);
-	if (pointerLock) window.glorpClient.settings.setFrameCap(window.glorpClient.settings.data.frameCap);
-	else window.glorpClient.settings.setFrameCap(window.glorpClient.settings.data.menuFrameCap);
 });
 
 Object.defineProperty(window, "gameLoaded", {

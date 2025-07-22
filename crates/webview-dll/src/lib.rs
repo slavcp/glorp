@@ -215,7 +215,9 @@ unsafe extern "system" fn wnd_proc_1(
             }
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_KEYDOWN | WM_KEYUP => {
-                if wparam.0 == VK_ESCAPE.0 as usize && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                if wparam.0 == VK_ESCAPE.0 as usize
+                    && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)
+                {
                     // glorp.exe (not the webview)
                     let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
                     SetFocus(Some(*glorp)).ok();

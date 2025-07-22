@@ -48,8 +48,8 @@ pub const DEFAULT_BLOCKLIST: &str = r#"{
         "https://user-assets.krunker.io/61815/model.obj",
         "https://user-assets.krunker.io/61820/model.obj",
         "https://user-assets.krunker.io/61821/model.obj",
-        "https://user-assets.krunker.io/61806/model.obj"
-
+        "https://user-assets.krunker.io/61806/model.obj",
+        "https://user-assets.krunker.io/61823/model.obj"
     ],
     "disabled": [
         "*://krunker.io/img/social/reddit.png*",
