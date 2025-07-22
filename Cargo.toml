@@ -1,6 +1,6 @@
 [package]
 name = "glorp"
-version = "0.7.0"
+version = "0.7.1"
 description = "krunker"
 authors = ["slav"]
 edition = "2024"
