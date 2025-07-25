@@ -1,8 +1,9 @@
 {
+	"type": "module",
 	"scripts": {
 		"esbuild": "node esbuild.config.mjs",
-		"dev": "pnpm run esbuild && cargo build --workspace && cargo run --features editor-ignore",
-		"build": "pnpm run esbuild && cargo build --workspace --release --features packaged,editor-ignore --target x86_64-pc-windows-msvc",
+		"dev": "pnpm run esbuild && cargo build --workspace && node postbuild.js debug && cargo run --features editor-ignore",
+		"build": "pnpm run esbuild && cargo build --workspace --release --features packaged,editor-ignore --target x86_64-pc-windows-msvc && node postbuild.js x86_64-pc-windows-msvc/release",
 		"package": "pnpm run build && wix build ./resources/installer_script.wxs -ext WixToolset.Util.wixext -o target/glorp-setup-x86_64.msi"
 	},
 	"devDependencies": {
