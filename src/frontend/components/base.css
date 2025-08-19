@@ -15,7 +15,7 @@
 	}
 }
 
-
+#splash,
 .carousel,
 .onSpect #hpEnemyCounter,
 #settHolder div.setHed:not([id]),
@@ -24,7 +24,6 @@
 #phonePop,
 #signupRewardsButton,
 #streamContainer,
-#editorBtnM[src$="client.png"],
 #aHider,
 #endAContainer,
 #endAHolder,

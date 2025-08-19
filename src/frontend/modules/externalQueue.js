@@ -8,14 +8,17 @@ externalQueue.style = `background-color: #5ce05a;
     font-family: 'Material Icons Outlined';
     cursor: pointer;
     font-size: 20px;
-    text-shadow: 2px 2px 0px black !important;`;
+    text-shadow: 2px 2px 0px black !important;
+	margin-left: 2px;`;
 
 externalQueue.onclick = openExtQueue;
 
 const origRanked = window.openRankedMenu;
 window.openRankedMenu = () => {
 	origRanked.call();
-	document.querySelector(".footer-controls").prepend(externalQueue);
+	const footer = document.querySelector(".footer-controls");
+	const lastChild = footer.lastElementChild;
+	footer.insertBefore(externalQueue, lastChild);
 };
 
 function openExtQueue() {
@@ -47,8 +50,9 @@ function openExtQueue() {
 	let token = localStorage.getItem("__FRVR_auth_access_token");
 	token = token.replace(/"/g, "");
 	token = token.replace("/", "");
-
+	const allRegions = localStorage.getItem("s_rankedAllRegions") === "true";
 	queueWindow.info = {
+		allRegions: allRegions,
 		token: token,
 		region: region,
 	};
@@ -56,17 +60,14 @@ function openExtQueue() {
 	import("../components/queue/index.html").then((html) => {
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(html.default, "text/html");
-		for (const child of doc.body.children) {
-			queueWindow.document.body.appendChild(child.cloneNode(true));
-		}
+		for (const child of doc.body.children) queueWindow.document.body.appendChild(child.cloneNode(true));
+
 		for (const child of doc.head.children) {
 			if (child.tagName === "SCRIPT") {
 				const script = document.createElement("script");
 				script.textContent = child.textContent;
 				queueWindow.document.head.appendChild(script);
-			} else {
-				queueWindow.document.head.appendChild(child.cloneNode(true));
-			}
+			} else queueWindow.document.head.appendChild(child.cloneNode(true));
 		}
 	});
 }

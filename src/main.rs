@@ -235,10 +235,6 @@ fn main() {
             "Chrome_RenderWidgetHostHWND",
         ));
 
-        if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
-            PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
-        }
-
         if config.lock().unwrap().get("realPing").unwrap_or(false) {
             main_window
                 .webview
@@ -269,7 +265,7 @@ fn main() {
                                 .next()
                                 .unwrap()
                                 .to_string();
-                            let resolved_ips = dns_lookup::lookup_host(&host).unwrap_or_default();
+                            let resolved_ips = dns_lookup::lookup_host(&host)?;
                             if let Some(ip) = resolved_ips.into_iter().next() {
                                 *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
                             }
@@ -523,6 +519,10 @@ fn main() {
                 token,
             )
             .ok();
+
+        if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
+            PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
+        }
 
         let mut msg: MSG = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).into() {
