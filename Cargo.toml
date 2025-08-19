@@ -54,6 +54,8 @@ walkdir = "2.5.*"
 discord-rich-presence = "0.2.*"
 ping-rs = "0.1.*"
 dns-lookup = "2.1.*"
+slab = "0.4.11"
+
 
 [build-dependencies]
 embed-resource = "3.0.*"
