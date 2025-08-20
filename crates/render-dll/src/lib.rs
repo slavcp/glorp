@@ -45,7 +45,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
         .unwrap();
         let mut device: Option<ID3D11Device> = None;
 
-        if let Err(e) = D3D11CreateDevice(
+        D3D11CreateDevice(
             None,
             D3D_DRIVER_TYPE_HARDWARE,
             HMODULE::default(),
@@ -55,9 +55,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
             Some(&mut device),
             None,
             None,
-        ) {
-            debug_print(format!("d3d11 create device failed: {:?}", e));
-        }
+        ).ok();
 
         let device = device.ok_or_else(|| {
             debug_print("D3D11 device creation failed");
@@ -164,7 +162,6 @@ fn attach() {
         //     panic!("hh")
         // });
 
-        debug_print(format!("factory: {:?}", factory));
 
         MinHook::enable_all_hooks().unwrap();
         ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<
@@ -217,8 +214,6 @@ unsafe extern "system" fn create_swapchain_hk(
         } else {
             debug_print("Failed to create swap chain");
         }
-        //  HRESULT(0) is success
-        debug_print(format!("result: {:?}", result));
         result
     }
 }

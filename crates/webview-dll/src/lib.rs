@@ -58,11 +58,6 @@ static LOCK_STATUS: AtomicBool = AtomicBool::new(false);
 static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
 static HOOK_HANDLE: AtomicPtr<HWINEVENTHOOK> = AtomicPtr::new(std::ptr::null_mut());
 
-fn debug_print<T: AsRef<str>>(msg: T) {
-    let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
-}
-
 struct ChromeWindows {
     chrome_window: HWND,
     chrome_renderwidget: HWND,
@@ -113,7 +108,7 @@ impl ChromeWindows {
                 Some(find_child_window),
                 LPARAM(&mut data as *mut (HWND, &str) as _),
             ) {
-                OutputDebugStringW(w!("EnumChildWindowsFailed\0"));
+                OutputDebugStringW(w!("Enum Child Windows Failed\0"));
             }
 
             data.0
@@ -284,10 +279,8 @@ unsafe extern "system" fn wnd_proc_widget(
     lparam: LPARAM,
 ) -> LRESULT {
     unsafe {
-        debug_print(format!("{}", message));
         match message {
             WM_APP => {
-                debug_print("wm_app");
                 SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
                 LRESULT(1)
             }
