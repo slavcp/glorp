@@ -110,23 +110,24 @@ Object.defineProperty(window, "gameLoaded", {
 			if (window.glorpClient?.settings.data?.realPing) await import("./modules/realPing.js");
 
 			if (window.glorpClient?.settings.data?.autoSpec) {
-				const trySetSpect = async () => {
+				const trySetSpect = () => {
 					const activity = window.getGameActivity();
 					if (activity.map === null) {
-						await new Promise((resolve) => setTimeout(resolve, 100));
-						return trySetSpect();
+						setTimeout(trySetSpect, 100);
+						return;
 					}
 					if (!activity.custom) window.setSpect(true);
 				};
-				await trySetSpect();
+				trySetSpect();
 			}
 
 			if (window.glorpClient?.settings.data?.discordRPC) {
-				window.chrome.webview.addEventListener("message", async (event) => {
+				window.chrome.webview.addEventListener("message", (event) => {
 					if (event.data !== "game-updated") return;
-					await new Promise((resolve) => setTimeout(resolve, 2000));
+					setTimeout(() => {
 					const gameStatus = window.getGameActivity();
 					window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
+					}, 2000);
 				});
 			}
 

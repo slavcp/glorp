@@ -55,7 +55,8 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
             Some(&mut device),
             None,
             None,
-        ).ok();
+        )
+        .ok();
 
         let device = device.ok_or_else(|| {
             debug_print("D3D11 device creation failed");
@@ -161,7 +162,6 @@ fn attach() {
         //     debug_print(format!("d3d11 hook failed: {:?}", e));
         //     panic!("hh")
         // });
-
 
         MinHook::enable_all_hooks().unwrap();
         ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<
