@@ -164,7 +164,7 @@ fn create_window(start_mode: &str) -> (HWND, WindowState) {
                 height = screen_height;
                 fullscreen_state = true;
             }
-            "Maximized" => {
+            "Fullscreen" => {
                 window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MAXIMIZE;
                 x = 0;
                 y = 0;

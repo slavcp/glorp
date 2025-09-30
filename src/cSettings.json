@@ -5,7 +5,7 @@
 		"type": "select",
 		"category": "Main",
 		"defaultValue": "Borderless Fullscreen",
-		"options": ["Borderless Fullscreen", "Normal", "Maximized"]
+		"options": ["Borderless Fullscreen", "Windowed", "Fullscreen"]
 	},
 	"uncapFps": {
 		"name": "Uncap FPS",
