@@ -36,6 +36,17 @@ static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<std::net::IpAddr>>> = Lazy::new(|| {
 static PING: Lazy<Arc<Mutex<u32>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
 
 fn main() {
+    let args_vec: Vec<String> = std::env::args().collect();
+    let mut glorp_url_startup: Option<String> = None;
+    for arg in &args_vec {
+        if arg.starts_with("glorp://") {
+            glorp_url_startup = Some(arg.clone());
+            break;
+        }
+    }
+
+    let glorp_url_arc = Arc::new(Mutex::new(glorp_url_startup));
+
     #[cfg(feature = "packaged")]
     {
         utils::set_panic_hook();
@@ -120,8 +131,8 @@ fn main() {
 
         let mut webview_pid: u32 = 0;
         main_window.webview.BrowserProcessId(&mut webview_pid).ok();
-
         println!("Webview PID: {}", webview_pid);
+
         #[cfg(feature = "packaged")]
         {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
@@ -343,6 +354,8 @@ fn main() {
 
         set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
 
+        let glorp_url_clone = Arc::clone(&glorp_url_arc);
+
         main_window
             .webview
             .add_WebMessageReceived(
@@ -360,6 +373,15 @@ fn main() {
                             let parts: Vec<&str> =
                                 message_string.split(',').map(|s| s.trim()).collect();
                             match parts.first() {
+                                // shoutout egypt
+                                Some(&"glorp-client-ready") => {
+                                    if let Some(url) = glorp_url_clone.lock().unwrap().take() {
+                                        let message_to_send = format!("\"glorp-url,{}\"", url);
+                                        webview.unwrap().PostWebMessageAsJson(PCWSTR(
+                                            utils::create_utf_string(&message_to_send).as_ptr(),
+                                        )).ok();
+                                    }
+                                }
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
                                     let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
@@ -468,6 +490,8 @@ fn main() {
             )
             .ok();
 
+        let mut main_window_for_keys = main_window.clone();
+
         main_window
             .controller
             .clone()
@@ -486,7 +510,7 @@ fn main() {
                         }
                         match VIRTUAL_KEY(pressed_key as u16) {
                             VK_F4 | VK_F6 => {
-                                main_window.webview.Navigate(w!("https://krunker.io")).ok();
+                                main_window_for_keys.webview.Navigate(w!("https://krunker.io")).ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -496,7 +520,7 @@ fn main() {
                                 .ok();
                             }
                             VK_F5 => {
-                                main_window.webview.Reload().ok();
+                                main_window_for_keys.webview.Reload().ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -506,10 +530,10 @@ fn main() {
                                 .ok();
                             }
                             VK_F11 => {
-                                main_window.toggle_fullscreen();
+                                main_window_for_keys.toggle_fullscreen();
                             }
                             VK_F12 => {
-                                main_window.webview.OpenDevToolsWindow().ok();
+                                main_window_for_keys.webview.OpenDevToolsWindow().ok();
                             }
                             _ => {}
                         }
