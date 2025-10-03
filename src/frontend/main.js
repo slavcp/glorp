@@ -89,62 +89,61 @@ Object.defineProperty(window, "gameLoaded", {
         </span>
     </div>`;
 
-		(async () => {
-			await import("./notifications.js");
-			// trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
-			const originalExportSettings = window.exportSettings;
-			window.exportSettings = async () => {
-				window.glorpClient.showNotification("Settings exported to Downloads!", false, 3);
-				return originalExportSettings();
+		import("./notifications.js");
+		// trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
+		const originalExportSettings = window.exportSettings;
+		window.exportSettings = () => {
+			window.glorpClient.showNotification("Settings exported to Downloads!", false, 3);
+			return originalExportSettings();
+		};
+
+		import("./settings.js");
+		import("./modules/changelog.js");
+		import("./modules/externalQueue.js");
+		if (window.glorpClient?.settings.data?.hideBundles) window.bundlePopup = () => null;
+		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
+		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
+		if (window.glorpClient?.settings.data?.showPing) import("./modules/showPing.js");
+		if (window.glorpClient?.settings.data?.realPing) import("./modules/realPing.js");
+		setTimeout(() => {
+			if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs)
+				import("./modules/args.js");
+		}, 2000);
+		if (window.glorpClient?.settings.data?.autoSpec) {
+			const trySetSpect = () => {
+				const activity = window.getGameActivity();
+				if (activity.map === null) {
+					setTimeout(trySetSpect, 100);
+					return;
+				}
+				if (!activity.custom) window.setSpect(true);
 			};
+			trySetSpect();
+		}
 
-			await import("./settings.js");
-			await import("./modules/changelog.js");
-			await import("./modules/externalQueue.js");
-			if (window.glorpClient?.settings.data?.hideBundles) window.bundlePopup = () => null;
-			if (window.glorpClient?.settings.data?.hpEnemyCounter) await import("./modules/hpEnemyCounter.js");
-			if (window.glorpClient?.settings.data?.accountManager) await import("./modules/accountManager.js");
-			if (window.glorpClient?.settings.data?.showPing) await import("./modules/showPing.js");
-			if (window.glorpClient?.settings.data?.realPing) await import("./modules/realPing.js");
-			setTimeout(() => {
-			   if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs) import("./modules/args.js");
-			}, 2000);
-			if (window.glorpClient?.settings.data?.autoSpec) {
-				const trySetSpect = () => {
-					const activity = window.getGameActivity();
-					if (activity.map === null) {
-						setTimeout(trySetSpect, 100);
-						return;
-					}
-					if (!activity.custom) window.setSpect(true);
-				};
-				trySetSpect();
-			}
-
-			if (window.glorpClient?.settings.data?.discordRPC) {
-				window.chrome.webview.addEventListener("message", (event) => {
-					if (event.data !== "game-updated") return;
-					setTimeout(() => {
+		if (window.glorpClient?.settings.data?.discordRPC) {
+			window.chrome.webview.addEventListener("message", (event) => {
+				if (event.data !== "game-updated") return;
+				setTimeout(() => {
 					const gameStatus = window.getGameActivity();
 					window.chrome.webview.postMessage(`rpcUpdate,${gameStatus.mode},${gameStatus.map}`);
-					}, 2000);
-				});
-			}
+				}, 2000);
+			});
+		}
 
-			if (window.glorpClient?.settings.data?.textSelect) {
-				const textSelectCSS = document.createElement("style");
-				textSelectCSS.id = "textSelectCSS";
-				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
-				document.head.append(textSelectCSS);
-			}
+		if (window.glorpClient?.settings.data?.textSelect) {
+			const textSelectCSS = document.createElement("style");
+			textSelectCSS.id = "textSelectCSS";
+			textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+			document.head.append(textSelectCSS);
+		}
 
-			if (window.glorpClient?.settings.data?.menuTimer) {
-				const css = await import("./components/menuTimer.css");
-				const menuTimerCSS = document.createElement("style");
-				menuTimerCSS.id = "menuTimerCSS";
-				menuTimerCSS.innerHTML = css.default;
-				document.head.append(menuTimerCSS);
-			}
-		})();
+		if (window.glorpClient?.settings.data?.menuTimer) {
+			const css = import("./components/menuTimer.css");
+			const menuTimerCSS = document.createElement("style");
+			menuTimerCSS.id = "menuTimerCSS";
+			menuTimerCSS.innerHTML = css.default;
+			document.head.append(menuTimerCSS);
+		}
 	},
 });

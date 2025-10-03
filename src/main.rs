@@ -3,7 +3,10 @@ use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
-use std::{sync::{Arc, Mutex}, net::{IpAddr, Ipv4Addr}};
+use std::{
+    net::{IpAddr, Ipv4Addr},
+    sync::{Arc, Mutex},
+};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
@@ -25,15 +28,11 @@ mod modules {
     pub mod userscripts;
 }
 
-static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(std::env::args().skip(1).collect()))
-});
+static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(std::env::args().skip(1).collect())));
 
-static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(
-        127, 0, 0, 1,
-    ))))
-});
+static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> =
+    Lazy::new(|| Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))));
 
 static PING: Lazy<Arc<Mutex<u32>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
 
@@ -400,7 +399,9 @@ fn main() {
                                     if !LAUNCH_ARGS.lock().unwrap().is_empty() {
                                         info_map.insert(
                                             "launchArgs".to_string(),
-                                            serde_json::Value::String(LAUNCH_ARGS.lock().unwrap().join(" ")),
+                                            serde_json::Value::String(
+                                                LAUNCH_ARGS.lock().unwrap().join(" "),
+                                            ),
                                         );
                                     }
 

@@ -1,4 +1,3 @@
-
 class RealPing {
 	constructor() {
 		this.ingamePing = null;
