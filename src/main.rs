@@ -2,7 +2,7 @@
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, net::{IpAddr, Ipv4Addr}};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
@@ -24,11 +24,12 @@ mod modules {
     pub mod userscripts;
 }
 
-// > memory safe langauges
-// > unsafe
+static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(std::env::args().skip(1).collect()))
+});
 
-static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<std::net::IpAddr>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(
+static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(
         127, 0, 0, 1,
     ))))
 });
@@ -36,17 +37,7 @@ static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<std::net::IpAddr>>> = Lazy::new(|| {
 static PING: Lazy<Arc<Mutex<u32>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
 
 fn main() {
-    let args_vec: Vec<String> = std::env::args().collect();
-    let mut glorp_url_startup: Option<String> = None;
-    for arg in &args_vec {
-        if arg.starts_with("glorp://") {
-            glorp_url_startup = Some(arg.clone());
-            break;
-        }
-    }
-
-    let glorp_url_arc = Arc::new(Mutex::new(glorp_url_startup));
-
+    
     #[cfg(feature = "packaged")]
     {
         utils::set_panic_hook();
@@ -354,8 +345,6 @@ fn main() {
 
         set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
 
-        let glorp_url_clone = Arc::clone(&glorp_url_arc);
-
         main_window
             .webview
             .add_WebMessageReceived(
@@ -371,17 +360,8 @@ fn main() {
                             let message_string = message.as_ref().unwrap().to_string().unwrap();
 
                             let parts: Vec<&str> =
-                                message_string.split(',').map(|s| s.trim()).collect();
+                                message_string.split(", ").map(|s| s.trim()).collect();
                             match parts.first() {
-                                // shoutout egypt
-                                Some(&"glorp-client-ready") => {
-                                    if let Some(url) = glorp_url_clone.lock().unwrap().take() {
-                                        let message_to_send = format!("\"glorp-url,{}\"", url);
-                                        webview.unwrap().PostWebMessageAsJson(PCWSTR(
-                                            utils::create_utf_string(&message_to_send).as_ptr(),
-                                        )).ok();
-                                    }
-                                }
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
                                     let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
@@ -402,31 +382,28 @@ fn main() {
                                 }
                                 Some(&"getInfo") => {
                                     let version = env!("CARGO_PKG_VERSION");
-                                    let config = config_clone.lock().unwrap();
-                                    let mut config_map = serde_json::Map::new();
-                                    let args_str =
-                                        std::env::args().skip(1).collect::<Vec<String>>().join(" ");
-                                    if !args_str.is_empty() {
-                                        config_map.insert(
-                                            "launchArgs".to_string(),
-                                            serde_json::Value::String(args_str),
-                                        );
-                                    }
-                                    config_map.insert(
+                                    let mut info_map = serde_json::Map::new();
+                                    info_map.insert(
                                         "settings".to_string(),
-                                        serde_json::json!(&*config),
+                                        serde_json::json!(&*config_clone),
                                     );
-                                    config_map.insert(
+                                    info_map.insert(
                                         "version".to_string(),
                                         serde_json::Value::String(version.to_string()),
                                     );
+                                    if !LAUNCH_ARGS.lock().unwrap().is_empty() {
+                                        info_map.insert(
+                                            "launchArgs".to_string(),
+                                            serde_json::Value::String(LAUNCH_ARGS.lock().unwrap().join(" ")),
+                                        );
+                                    }
 
-                                    let config_json =
-                                        serde_json::to_string_pretty(&config_map).unwrap();
+                                    let info_json =
+                                        serde_json::to_string_pretty(&info_map).unwrap();
                                     webview
                                         .unwrap()
                                         .PostWebMessageAsJson(PCWSTR(
-                                            utils::create_utf_string(&config_json).as_ptr(),
+                                            utils::create_utf_string(&info_json).as_ptr(),
                                         ))
                                         .ok();
                                 }
@@ -490,8 +467,6 @@ fn main() {
             )
             .ok();
 
-        let mut main_window_for_keys = main_window.clone();
-
         main_window
             .controller
             .clone()
@@ -510,7 +485,7 @@ fn main() {
                         }
                         match VIRTUAL_KEY(pressed_key as u16) {
                             VK_F4 | VK_F6 => {
-                                main_window_for_keys.webview.Navigate(w!("https://krunker.io")).ok();
+                                main_window.webview.Navigate(w!("https://krunker.io")).ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -520,7 +495,7 @@ fn main() {
                                 .ok();
                             }
                             VK_F5 => {
-                                main_window_for_keys.webview.Reload().ok();
+                                main_window.webview.Reload().ok();
                                 PostMessageW(
                                     widget_wnd,
                                     WM_USER,
@@ -530,10 +505,10 @@ fn main() {
                                 .ok();
                             }
                             VK_F11 => {
-                                main_window_for_keys.toggle_fullscreen();
+                                main_window.toggle_fullscreen();
                             }
                             VK_F12 => {
-                                main_window_for_keys.webview.OpenDevToolsWindow().ok();
+                                main_window.webview.OpenDevToolsWindow().ok();
                             }
                             _ => {}
                         }

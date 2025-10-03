@@ -1,74 +1,6 @@
 import styles from "./components/base.css";
 
-const waitForElement = (selector) => {
-  return new Promise(resolve => {
-    if (document.querySelector(selector)) {
-      return resolve(document.querySelector(selector));
-    }
-    const observer = new MutationObserver(() => {
-      if (document.querySelector(selector)) {
-        resolve(document.querySelector(selector));
-        observer.disconnect();
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
-};
-
-window.automateCompHost = async function(params) {
-    try {
-        const hostBtn = await waitForElement('#menuBtnHost');
-        hostBtn.click();
-        const compBtn = await waitForElement('.serverHostOp[onclick*="openHostWindow(false, 1)"]');
-        compBtn.click();
-        const mapCheckbox = await waitForElement(`#${params.mapId}`);
-        if (!mapCheckbox.checked) {
-            mapCheckbox.click();
-        }
-        const advancedTab = await waitForElement('#hstTab2');
-        advancedTab.click();
-        const team1Input = await waitForElement('#customSnameTeam1');
-        team1Input.value = params.team1Name;
-        const team2Input = await waitForElement('#customSnameTeam2');
-        team2Input.value = params.team2Name;
-        const teamSizeSelect = await waitForElement('#customStmSize');
-        teamSizeSelect.value = params.teamSize;
-        const startGameBtn = await waitForElement('#startServBtn');
-        startGameBtn.click();
-    } catch (error) {
-        console.error("glorp copm host failed: ", error);
-    }
-}
-
-window.chrome.webview.addEventListener("message", (event) => {
-    const data = event.data;
-    if (typeof data === 'string' && data.startsWith('glorp-url,')) {
-        const urlString = data.substring('glorp-url,'.length);
-        try {
-            const url = new URL(urlString);
-            const params = Object.fromEntries(url.searchParams.entries());
-            if (params.action === 'host-comp') {
-                const checkGameLoaded = setInterval(() => {
-                    if (window.hasOwnProperty('windows') && window.windows.length > 0) {
-                        clearInterval(checkGameLoaded);
-                        setTimeout(() => {
-                            window.automateCompHost(params);
-                        }, 4000);
-                    }
-                }, 100);
-            }
-        } catch(e) {
-            console.error("glorp comp host error : ", e);
-        }
-    }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    window.chrome.webview.postMessage('glorp-client-ready');
-}, { once: true });
-
-
-let firstLoad = true;
+let initialLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 window.originalConsole = { ...window.console };
@@ -122,19 +54,18 @@ document.addEventListener(
 
 document.addEventListener("pointerlockchange", () => {
 	const pointerLock = document.pointerLockElement !== null;
-	window.chrome.webview.postMessage(`pointerLock,${pointerLock}`);
+	window.chrome.webview.postMessage(`pointerLock, ${pointerLock}`);
 });
 
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
 		window.chrome.webview.postMessage("game-updated");
-		if (!firstLoad) return;
-		const justLaunched = sessionStorage.getItem("justLaunched");
-		if (justLaunched === null) sessionStorage.setItem("justLaunched", true);
+		if (!initialLoad) return;
+		if (sessionStorage.getItem("justLaunched") === null) sessionStorage.setItem("justLaunched", true);
 		else sessionStorage.setItem("justLaunched", false);
 
-		firstLoad = false;
+		initialLoad = false;
 		window.windows[0].toggleType({ checked: true });
 
 		// append ranked and mod button to comp host ui
@@ -175,7 +106,9 @@ Object.defineProperty(window, "gameLoaded", {
 			if (window.glorpClient?.settings.data?.accountManager) await import("./modules/accountManager.js");
 			if (window.glorpClient?.settings.data?.showPing) await import("./modules/showPing.js");
 			if (window.glorpClient?.settings.data?.realPing) await import("./modules/realPing.js");
-
+			setTimeout(() => {
+			   if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs) import("./modules/args.js");
+			}, 2000);
 			if (window.glorpClient?.settings.data?.autoSpec) {
 				const trySetSpect = () => {
 					const activity = window.getGameActivity();
