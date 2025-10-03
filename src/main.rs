@@ -2,6 +2,7 @@
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
@@ -165,7 +166,7 @@ fn main() {
             .ok();
 
         let mut blocklist: Vec<Regex> = Vec::new();
-        let mut swaps: Vec<(Regex, IStream)> = Vec::new();
+        let mut swaps: HashMap<String, IStream> = HashMap::new();
 
         if config.lock().unwrap().get("blocklist").unwrap_or(true) {
             blocklist = modules::blocklist::load(&main_window.webview)
@@ -195,33 +196,39 @@ fn main() {
                         let mut uri_string = utils::create_utf_string("");
                         let uri = uri_string.as_mut_ptr() as *mut PWSTR;
                         request.Uri(uri)?;
-                        let uri_string = uri.as_ref().unwrap().to_string().unwrap();
+                        let uri = uri.as_ref().unwrap().to_string()?;
+                        let filename: &str = uri
+                            .split("krunker.io/")
+                            .nth(1)
+                            .and_then(|s| s.split('?').next())
+                            .unwrap_or("");
+
+                        if filename.contains("game-info") || uri.contains("lobby-ranked") {
+                            webview
+                                .unwrap()
+                                .PostWebMessageAsJson(w!("\"game-updated\""))
+                                .ok();
+                            return Ok(());
+                        }
                         for regex in &blocklist {
-                            if regex.is_match(&uri_string) {
+                            if regex.is_match(&uri) {
                                 request.SetUri(PCWSTR::null())?;
                                 return Ok(());
                             }
                         }
+                        let stream = swaps.get(filename);
+                        println!("{}", filename);
+                        println!("{:?}", swaps.keys().collect::<Vec<_>>());
+                        let response = env.CreateWebResourceResponse(
+                            stream,
+                            200,
+                            w!("OK"),
+                            w!("Access-Control-Allow-Origin: *"),
+                            )?;
+                        args.SetResponse(Some(&response))?;
 
-                        for (pattern, stream) in &swaps {
-                            if pattern.is_match(&uri_string) {
-                                let response = env.CreateWebResourceResponse(
-                                    stream,
-                                    200,
-                                    w!("OK"),
-                                    w!("Access-Control-Allow-Origin: *"),
-                                )?;
-                                args.SetResponse(Some(&response))?;
+                        return Ok(());
 
-                                return Ok(());
-                            }
-                        }
-                        if uri_string.contains("matchmaker.krunker.io/game-info?game") || uri_string.contains("lobby-ranked") {
-                            webview
-                                .unwrap()
-                                .PostWebMessageAsJson(w!("\"game-updated\""))
-                                .unwrap();
-                        }
                     }
 
                     Ok(())

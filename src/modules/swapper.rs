@@ -1,5 +1,5 @@
-use regex::Regex;
-use walkdir::WalkDir;
+use std::collections::HashMap;
+use std::path::PathBuf;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::{
     Win32::{
@@ -11,17 +11,25 @@ use windows::{
 
 use crate::utils;
 
-pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
-    let swap_dir = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper";
-    std::fs::create_dir_all(&swap_dir).unwrap_or_default();
+fn recurse_swap(
+    root_dir: PathBuf,
+    swap_dir: PathBuf,
+    window: &ICoreWebView2_22,
+) -> Option<HashMap<String, IStream>> {
+    let mut swaps = HashMap::new();
 
-    let mut swaps = Vec::new();
-
-    for entry in WalkDir::new(&swap_dir).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() {
+    for entry in std::fs::read_dir(&swap_dir).ok()? {
+        let entry = entry.ok()?;
+        let path = entry.path();
+        let file_type = entry.file_type().ok()?;
+        if file_type.is_dir() {
+            if let Some(sub_swaps) = recurse_swap(root_dir.clone(), path, window) {
+                swaps.extend(sub_swaps);
+            }
+        } else if file_type.is_file() {
             let relative_path = entry
                 .path()
-                .strip_prefix(&swap_dir)
+                .strip_prefix(&root_dir)
                 .unwrap()
                 .to_str()
                 .unwrap()
@@ -33,7 +41,7 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
                 );
 
                 for url_part in [&url.0, &url.1] {
-                    if let Err(e) = main_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
+                    if let Err(e) = window.AddWebResourceRequestedFilterWithRequestSourceKinds(
                         PCWSTR(utils::create_utf_string(url_part).as_ptr()),
                         COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
                         COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
@@ -43,10 +51,7 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
                 }
             }
             unsafe {
-                let regex = format!(r#"^.*://(?:[^/]+\.)*krunker.io/{}.*$"#, relative_path);
-                let regex = Regex::new(&regex).unwrap();
-                let file_content =
-                    std::fs::read(entry.path().display().to_string().replace("\\", "/")).unwrap();
+                let file_content = std::fs::read(entry.path()).unwrap();
                 let stream = CreateStreamOnHGlobal(HGLOBAL::default(), true).unwrap();
                 stream
                     .Write(
@@ -56,9 +61,17 @@ pub fn load(main_window: &ICoreWebView2_22) -> Vec<(Regex, IStream)> {
                     )
                     .unwrap();
                 stream.Seek(0, STREAM_SEEK_SET, None).unwrap();
-                swaps.push((regex, stream));
+                swaps.insert(relative_path, stream);
             }
         }
     }
-    swaps
+    Some(swaps)
+}
+
+pub fn load(window: &ICoreWebView2_22) -> HashMap<String, IStream> {
+    let swap_dir =
+        PathBuf::from(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper");
+    std::fs::create_dir_all(&swap_dir).unwrap_or_default();
+    let swaps = recurse_swap(swap_dir.clone(), swap_dir, window);
+    swaps.unwrap()
 }
