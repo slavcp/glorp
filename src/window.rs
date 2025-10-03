@@ -1,9 +1,9 @@
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
+    core::*,
     Win32::{
         Foundation::*, Graphics::Gdi::*, System::LibraryLoader::*, UI::WindowsAndMessaging::*,
     },
-    core::*,
 };
 
 use crate::utils;
@@ -29,6 +29,7 @@ impl Default for WindowState {
     }
 }
 
+#[derive(Clone)]
 pub struct Window {
     pub hwnd: HWND,
     pub controller: ICoreWebView2Controller4,

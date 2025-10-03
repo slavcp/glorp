@@ -3,7 +3,7 @@ use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, net::{IpAddr, Ipv4Addr}};
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
@@ -25,11 +25,12 @@ mod modules {
     pub mod userscripts;
 }
 
-// > memory safe langauges
-// > unsafe
+static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(std::env::args().skip(1).collect()))
+});
 
-static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<std::net::IpAddr>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(std::net::IpAddr::V4(std::net::Ipv4Addr::new(
+static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(
         127, 0, 0, 1,
     ))))
 });
@@ -365,7 +366,7 @@ fn main() {
                             let message_string = message.as_ref().unwrap().to_string().unwrap();
 
                             let parts: Vec<&str> =
-                                message_string.split(',').map(|s| s.trim()).collect();
+                                message_string.split(", ").map(|s| s.trim()).collect();
                             match parts.first() {
                                 Some(&"setConfig") => {
                                     let setting = parts[1];
@@ -387,31 +388,28 @@ fn main() {
                                 }
                                 Some(&"getInfo") => {
                                     let version = env!("CARGO_PKG_VERSION");
-                                    let config = config_clone.lock().unwrap();
-                                    let mut config_map = serde_json::Map::new();
-                                    let args_str =
-                                        std::env::args().skip(1).collect::<Vec<String>>().join(" ");
-                                    if !args_str.is_empty() {
-                                        config_map.insert(
-                                            "launchArgs".to_string(),
-                                            serde_json::Value::String(args_str),
-                                        );
-                                    }
-                                    config_map.insert(
+                                    let mut info_map = serde_json::Map::new();
+                                    info_map.insert(
                                         "settings".to_string(),
-                                        serde_json::json!(&*config),
+                                        serde_json::json!(&*config_clone),
                                     );
-                                    config_map.insert(
+                                    info_map.insert(
                                         "version".to_string(),
                                         serde_json::Value::String(version.to_string()),
                                     );
+                                    if !LAUNCH_ARGS.lock().unwrap().is_empty() {
+                                        info_map.insert(
+                                            "launchArgs".to_string(),
+                                            serde_json::Value::String(LAUNCH_ARGS.lock().unwrap().join(" ")),
+                                        );
+                                    }
 
-                                    let config_json =
-                                        serde_json::to_string_pretty(&config_map).unwrap();
+                                    let info_json =
+                                        serde_json::to_string_pretty(&info_map).unwrap();
                                     webview
                                         .unwrap()
                                         .PostWebMessageAsJson(PCWSTR(
-                                            utils::create_utf_string(&config_json).as_ptr(),
+                                            utils::create_utf_string(&info_json).as_ptr(),
                                         ))
                                         .ok();
                                 }

@@ -1,6 +1,6 @@
 import styles from "./components/base.css";
 
-let firstLoad = true;
+let initialLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 window.originalConsole = { ...window.console };
@@ -54,21 +54,19 @@ document.addEventListener(
 
 document.addEventListener("pointerlockchange", () => {
 	const pointerLock = document.pointerLockElement !== null;
-	window.chrome.webview.postMessage(`pointerLock,${pointerLock}`);
+	window.chrome.webview.postMessage(`pointerLock, ${pointerLock}`);
 });
 
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
 		window.chrome.webview.postMessage("game-updated");
-		if (!firstLoad) return;
-		const justLaunched = sessionStorage.getItem("justLaunched");
-		if (justLaunched === null) sessionStorage.setItem("justLaunched", true);
+		if (!initialLoad) return;
+		if (sessionStorage.getItem("justLaunched") === null) sessionStorage.setItem("justLaunched", true);
 		else sessionStorage.setItem("justLaunched", false);
 
-		firstLoad = false;
+		initialLoad = false;
 		window.windows[0].toggleType({ checked: true });
-
 
 		// append ranked and mod button to comp host ui
 		document.querySelector("#compBtnLst").innerHTML += `
@@ -108,7 +106,9 @@ Object.defineProperty(window, "gameLoaded", {
 			if (window.glorpClient?.settings.data?.accountManager) await import("./modules/accountManager.js");
 			if (window.glorpClient?.settings.data?.showPing) await import("./modules/showPing.js");
 			if (window.glorpClient?.settings.data?.realPing) await import("./modules/realPing.js");
-
+			setTimeout(() => {
+			   if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs) import("./modules/args.js");
+			}, 2000);
 			if (window.glorpClient?.settings.data?.autoSpec) {
 				const trySetSpect = () => {
 					const activity = window.getGameActivity();
