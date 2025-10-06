@@ -53,7 +53,7 @@ class RealPing {
 			this.applyPingDisplay(this.menuPing);
 			this.interval = setInterval(() => {
 				window.chrome.webview.postMessage("ping");
-			}, 3000);
+			}, 3200);
 
 			this.listener = window.chrome.webview.addEventListener("message", (event) => {
 				if (!event.data.pingInfo) return;

@@ -28,11 +28,18 @@ const automateCompHost = async (params) => {
 	teamSizeSelect.value = params.teamSize;
 	window.createPrivateRoom();
 };
-const args = window.glorpClient.launchArgs.split(" ");
 
-for (const arg of args) {
-	if (arg.includes("action=host-comp")) {
-		const url = new URL(arg);
-		automateCompHost(Object.fromEntries(url.searchParams.entries()));
+window.glorpClient.parseArgs = (args) => {
+	args = args.split(" ");
+	for (const arg of args) {
+		if (arg.includes("action=host-comp")) {
+			const url = new URL(arg);
+			automateCompHost(Object.fromEntries(url.searchParams.entries()));
+		}
 	}
-}
+};
+
+window.chrome.webview.addEventListener("message", (event) => {
+	if (!event.data.args) return;
+	window.glorpClient.parseArgs(event.data.args);
+});

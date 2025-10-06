@@ -3,7 +3,7 @@ use crate::utils::create_utf_string;
 use std::{env, fs, io, io::*, process};
 use windows::{
     Win32::Foundation::*,
-    Win32::System::Threading::CreateMutexW,
+    Win32::System::{DataExchange::COPYDATASTRUCT, Threading::CreateMutexW},
     Win32::UI::{Shell::ShellExecuteW, WindowsAndMessaging::*},
     core::*,
 };
@@ -186,13 +186,34 @@ pub fn set_panic_hook() {
 
 pub fn register_instance() {
     unsafe {
-        let mutex = CreateMutexW(
+        CreateMutexW(
             None,
             false,
             PCWSTR(create_utf_string(INSTANCE_MUTEX_NAME).as_ptr()),
-        );
-        if mutex.is_ok() && GetLastError() == ERROR_ALREADY_EXISTS {
+        )
+        .ok();
+        if GetLastError() == ERROR_ALREADY_EXISTS {
             eprintln!("Instance already running");
+            let data = env::args().skip(1).collect::<Vec<String>>().join(" ");
+            if data.is_empty() {
+                std::process::exit(0);
+            }
+            let data_bytes = data.as_bytes();
+            let copy_data = COPYDATASTRUCT {
+                dwData: 0,
+                cbData: data_bytes.len() as u32,
+                lpData: data_bytes.as_ptr() as *mut std::ffi::c_void,
+            };
+            println!(
+                "{:?}",
+                FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap()
+            );
+            SendMessageW(
+                FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
+                WM_COPYDATA,
+                Some(WPARAM(0)),
+                Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
+            );
             std::process::exit(0);
         }
     }

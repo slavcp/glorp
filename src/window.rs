@@ -1,7 +1,10 @@
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
     Win32::{
-        Foundation::*, Graphics::Gdi::*, System::LibraryLoader::*, UI::WindowsAndMessaging::*,
+        Foundation::*,
+        Graphics::Gdi::*,
+        System::{DataExchange::COPYDATASTRUCT, LibraryLoader::*},
+        UI::WindowsAndMessaging::*,
     },
     core::*,
 };
@@ -426,6 +429,32 @@ unsafe extern "system" fn wnd_proc_main(
                     bottom: utils::HIWORD(lparam.0 as usize) as i32,
                 };
                 window.controller.SetBounds(bounds).ok();
+            }
+            WM_COPYDATA => {
+                let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
+                let cds = &*cds_ptr;
+                let data: &[u8] =
+                    std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
+
+                let string = match String::from_utf8(data.to_vec()) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        eprintln!("Error decoding data from sender.");
+                        return LRESULT(0);
+                    }
+                };
+                window
+                    .webview
+                    .ExecuteScript(
+                        PCWSTR(
+                            utils::create_utf_string(
+                                format!("window.glorpClient.parseArgs('{}')", string).as_str(),
+                            )
+                            .as_ptr(),
+                        ),
+                        None,
+                    )
+                    .ok();
             }
             _ => (),
         }

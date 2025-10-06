@@ -174,17 +174,14 @@ fn main() {
             swaps = modules::swapper::load(&main_window.webview)
         };
 
-        {
-            let url = "*://matchmaker.krunker.io/game-info*";
-            main_window
-                .webview
-                .AddWebResourceRequestedFilterWithRequestSourceKinds(
-                    PCWSTR(utils::create_utf_string(url).as_ptr()),
-                    COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-                    COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
-                )
-                .ok();
-        }
+        main_window
+            .webview
+            .AddWebResourceRequestedFilterWithRequestSourceKinds(
+                PCWSTR(utils::create_utf_string("*://matchmaker.krunker.io/game-info*").as_ptr()),
+                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+                COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
+            )
+            .ok();
 
         main_window.webview.add_WebResourceRequested(
             &WebResourceRequestedEventHandler::create(Box::new(
@@ -205,29 +202,31 @@ fn main() {
                         if filename.contains("game-info") || uri.contains("lobby-ranked") {
                             webview
                                 .unwrap()
-                                .PostWebMessageAsJson(w!("\"game-updated\""))
+                                .PostWebMessageAsString(w!("game-updated"))
                                 .ok();
                             return Ok(());
                         }
+                        
+                        let stream = swaps.get(filename);
+                        if let Some(stream) = stream {
+                            let response = env.CreateWebResourceResponse(
+                                stream,
+                                200,
+                                w!("OK"),
+                                w!("Access-Control-Allow-Origin: *"),
+                                )?;
+                            args.SetResponse(Some(&response))?;
+
+                            return Ok(());
+                        }
+                        
                         for regex in &blocklist {
                             if regex.is_match(&uri) {
                                 request.SetUri(PCWSTR::null())?;
                                 return Ok(());
                             }
                         }
-                        let stream = swaps.get(filename);
-                        let response = env.CreateWebResourceResponse(
-                            stream,
-                            200,
-                            w!("OK"),
-                            w!("Access-Control-Allow-Origin: *"),
-                            )?;
-                        args.SetResponse(Some(&response))?;
-
-                        return Ok(());
-
                     }
-
                     Ok(())
                 },
             )),
@@ -296,7 +295,7 @@ fn main() {
                     if let Ok(reply) = result {
                         PING.store(reply.rtt, Ordering::Relaxed);
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(2500));
+                    std::thread::sleep(std::time::Duration::from_millis(3000));
                 }
             });
         }
@@ -352,117 +351,113 @@ fn main() {
             .add_WebMessageReceived(
                 &WebMessageReceivedEventHandler::create(Box::new(
                     move |webview, args: Option<ICoreWebView2WebMessageReceivedEventArgs>| {
-                        if let Some(args) = args {
-                            let mut message_vec = utils::create_utf_string("");
-                            let message = message_vec.as_mut_ptr() as *mut PWSTR;
-                            if let Err(e) = args.TryGetWebMessageAsString(message) {
-                                eprintln!("Failed to get web message as string: {}", e);
-                            }
+                        let webview = webview.unwrap();
+                        let args = args.unwrap();
+                        let mut message_vec = utils::create_utf_string("");
+                        let message = message_vec.as_mut_ptr() as *mut PWSTR;
+                        args.TryGetWebMessageAsString(message).ok();
 
-                            let message_string = message.as_ref().unwrap().to_string().unwrap();
+                        let message_string = message.as_ref().unwrap().to_string().unwrap();
 
-                            let parts: Vec<&str> =
-                                message_string.split(", ").map(|s| s.trim()).collect();
-                            match parts.first() {
-                                Some(&"setConfig") => {
-                                    let setting = parts[1];
-                                    let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
-                                        serde_json::Value::Bool(bool_val)
-                                    } else if let Ok(int_val) = parts[2].parse::<i64>() {
-                                        serde_json::Value::Number(serde_json::Number::from(int_val))
-                                    } else if let Ok(float_val) = parts[2].parse::<f64>() {
-                                        serde_json::Value::Number(
-                                            serde_json::Number::from_f64(
-                                                (float_val * 100.0).round() / 100.0,
-                                            )
-                                            .unwrap(),
+                        let parts: Vec<&str> =
+                            message_string.split(", ").map(|s| s.trim()).collect();
+                        match parts.first() {
+                            Some(&"set-config") => {
+                                let setting = parts[1];
+                                let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
+                                    serde_json::Value::Bool(bool_val)
+                                } else if let Ok(int_val) = parts[2].parse::<i64>() {
+                                    serde_json::Value::Number(serde_json::Number::from(int_val))
+                                } else if let Ok(float_val) = parts[2].parse::<f64>() {
+                                    serde_json::Value::Number(
+                                        serde_json::Number::from_f64(
+                                            (float_val * 100.0).round() / 100.0,
                                         )
-                                    } else {
-                                        serde_json::Value::String(parts[2].to_string())
-                                    };
-                                    config_clone.lock().unwrap().set(setting, value);
-                                }
-                                Some(&"getInfo") => {
-                                    let version = env!("CARGO_PKG_VERSION");
-                                    let mut info_map = serde_json::Map::new();
-                                    info_map.insert(
-                                        "settings".to_string(),
-                                        serde_json::json!(&*config_clone),
-                                    );
-                                    info_map.insert(
-                                        "version".to_string(),
-                                        serde_json::Value::String(version.to_string()),
-                                    );
-                                    if !LAUNCH_ARGS.lock().unwrap().is_empty() {
-                                        info_map.insert(
-                                            "launchArgs".to_string(),
-                                            serde_json::Value::String(
-                                                LAUNCH_ARGS.lock().unwrap().join(" "),
-                                            ),
-                                        );
-                                    }
-
-                                    let info_json =
-                                        serde_json::to_string_pretty(&info_map).unwrap();
-                                    webview
-                                        .unwrap()
-                                        .PostWebMessageAsJson(PCWSTR(
-                                            utils::create_utf_string(&info_json).as_ptr(),
-                                        ))
-                                        .ok();
-                                }
-                                Some(&"pointerLock") => {
-                                    let value = parts[1].parse::<bool>().unwrap_or(false);
-                                    PostMessageW(
-                                        widget_wnd,
-                                        WM_USER,
-                                        WPARAM(value as usize),
-                                        LPARAM(0),
+                                        .unwrap(),
                                     )
-                                    .ok();
-                                    if value {
-                                        set_cpu_throttling_ingame(&webview.unwrap(), &config_clone);
-                                    } else {
-                                        set_cpu_throttling_inmenu(&webview.unwrap(), &config_clone);
-                                    }
-                                }
-                                Some(&"close") => {
-                                    PostQuitMessage(0);
-                                }
-                                Some(&"open") => {
-                                    std::process::Command::new("cmd")
-                                        .args(["/C", "start", "", parts[1]])
-                                        .spawn()
-                                        .ok();
-                                }
-                                Some(&"rpcUpdate") => {
-                                    let state = format!("{} on {}", parts[1], parts[2]);
-                                    if let Some(client) = &mut *discord_client.lock().unwrap() {
-                                        let activity = activity::Activity::new()
-                                            .details("Krunker")
-                                            .state(&state)
-                                            .assets(activity::Assets::new());
-
-                                        if let Err(e) = client.set_activity(activity) {
-                                            eprintln!("Failed to set rpc activity: {}", e);
-                                        }
-                                    }
-                                }
-                                Some(&"ping") => {
-                                    webview
-                                        .unwrap()
-                                        .PostWebMessageAsJson(PCWSTR(
-                                            utils::create_utf_string(&format!(
-                                                "{{\"pingInfo\":{}}}",
-                                                &PING.load(Ordering::Relaxed)
-                                            ))
-                                            .as_ptr(),
-                                        ))
-                                        .ok();
-                                }
-                                _ => {}
+                                } else {
+                                    serde_json::Value::String(parts[2].to_string())
+                                };
+                                config_clone.lock().unwrap().set(setting, value);
                             }
+                            Some(&"get-info") => {
+                                let version = env!("CARGO_PKG_VERSION");
+                                let mut info_map = serde_json::Map::new();
+                                info_map.insert(
+                                    "settings".to_string(),
+                                    serde_json::json!(&*config_clone),
+                                );
+                                info_map.insert(
+                                    "version".to_string(),
+                                    serde_json::Value::String(version.to_string()),
+                                );
+                                if !LAUNCH_ARGS.lock().unwrap().is_empty() {
+                                    info_map.insert(
+                                        "launchArgs".to_string(),
+                                        serde_json::Value::String(
+                                            LAUNCH_ARGS.lock().unwrap().join(" "),
+                                        ),
+                                    );
+                                }
+
+                                let info_json = serde_json::to_string_pretty(&info_map).unwrap();
+                                webview
+                                    .PostWebMessageAsJson(PCWSTR(
+                                        utils::create_utf_string(&info_json).as_ptr(),
+                                    ))
+                                    .ok();
+                            }
+                            Some(&"pointer-lock") => {
+                                let value = parts[1].parse::<bool>().unwrap_or(false);
+                                PostMessageW(
+                                    widget_wnd,
+                                    WM_USER,
+                                    WPARAM(value as usize),
+                                    LPARAM(0),
+                                )
+                                .ok();
+                                if value {
+                                    set_cpu_throttling_ingame(&webview, &config_clone);
+                                } else {
+                                    set_cpu_throttling_inmenu(&webview, &config_clone);
+                                }
+                            }
+                            Some(&"close") => {
+                                PostQuitMessage(0);
+                            }
+                            Some(&"open") => {
+                                std::process::Command::new("cmd")
+                                    .args(["/C", "start", "", parts[1]])
+                                    .spawn()
+                                    .ok();
+                            }
+                            Some(&"rpc-update") => {
+                                let state = format!("{} on {}", parts[1], parts[2]);
+                                if let Some(client) = &mut *discord_client.lock().unwrap() {
+                                    let activity = activity::Activity::new()
+                                        .details("Krunker")
+                                        .state(&state)
+                                        .assets(activity::Assets::new());
+
+                                    if let Err(e) = client.set_activity(activity) {
+                                        eprintln!("Failed to set rpc activity: {}", e);
+                                    }
+                                }
+                            }
+                            Some(&"ping") => {
+                                webview
+                                    .PostWebMessageAsJson(PCWSTR(
+                                        utils::create_utf_string(&format!(
+                                            "{{\"pingInfo\":{}}}",
+                                            &PING.load(Ordering::Relaxed)
+                                        ))
+                                        .as_ptr(),
+                                    ))
+                                    .ok();
+                            }
+                            _ => {}
                         }
+
                         Ok(())
                     },
                 )),

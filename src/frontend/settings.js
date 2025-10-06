@@ -82,7 +82,7 @@ window.glorpClient.settings.changeSetting = (id, value, slider) => {
 	}
 
 	window.glorpClient.settings.data[id] = value;
-	window.chrome.webview.postMessage(`setConfig,${id},${value}`);
+	window.chrome.webview.postMessage(`set-config, ${id}, ${value}`);
 };
 
 class SettingsManager {
