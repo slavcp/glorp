@@ -112,7 +112,7 @@ Object.defineProperty(window, "gameLoaded", {
 				if (event.data !== "game-updated") return;
 				setTimeout(() => {
 					const gameStatus = window.getGameActivity();
-					window.chrome.webview.postMessage(`rpc-update, ${gameStatus.mode},${gameStatus.map}`);
+					window.chrome.webview.postMessage(`rpc-update, ${gameStatus.mode}, ${gameStatus.map}`);
 				}, 2000);
 			});
 		}
