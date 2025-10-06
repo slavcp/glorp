@@ -1,15 +1,11 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
-use std::io;
 
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM},
         System::{Diagnostics::ToolHelp::*, Threading::*},
-        UI::{
-            Shell::ShellExecuteW,
-            WindowsAndMessaging::{MB_ICONERROR, *},
-        },
+        UI::WindowsAndMessaging::*,
     },
     core::*,
 };
@@ -61,67 +57,6 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
     }
 }
 
-pub fn set_panic_hook() {
-    std::panic::set_hook(Box::new(|panic_info| {
-        let exe_path =
-            std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("unknown_path"));
-        let log_dir = exe_path
-            .parent()
-            .unwrap_or_else(|| std::path::Path::new("./"));
-        let log_file_path = log_dir.join("crash_log.txt");
-
-        let crash_message = format!(
-            "Location: {}\n\
-            Message: {}\n\
-            \nStack Trace:\n{}\n",
-            {
-                let loc_string = panic_info
-                    .location()
-                    .map(|loc| loc.to_string())
-                    .unwrap_or_else(|| "Unknown".to_string());
-                loc_string.to_string()
-            },
-            panic_info
-                .payload()
-                .downcast_ref::<String>()
-                .map(|s| s.as_str())
-                .or_else(|| panic_info.payload().downcast_ref::<&str>().copied())
-                .unwrap_or("<unknown>"),
-            std::backtrace::Backtrace::force_capture()
-        );
-
-        std::fs::write(&log_file_path, &crash_message).ok();
-
-        unsafe {
-            let result = MessageBoxW(
-                None,
-                PCWSTR(
-                    create_utf_string(&format!(
-                        "A crash report has been saved to:\n\
-                     {}\n\n\
-                     Click Yes to open the log.",
-                        log_file_path.display()
-                    ))
-                    .as_ptr(),
-                ),
-                PCWSTR(create_utf_string("Application Error").as_ptr()),
-                MB_YESNO | MB_ICONERROR,
-            );
-
-            if result == IDYES {
-                ShellExecuteW(
-                    None,
-                    PCWSTR(create_utf_string("open").as_ptr()),
-                    PCWSTR(create_utf_string(&log_file_path.to_string_lossy()).as_ptr()),
-                    PCWSTR::null(),
-                    PCWSTR::null(),
-                    SW_SHOW,
-                );
-            }
-        }
-    }));
-}
-
 pub fn kill(wanted_process_name: &str) {
     unsafe {
         let current_pid = GetCurrentProcessId();
@@ -148,22 +83,4 @@ pub fn kill(wanted_process_name: &str) {
             }
         }
     }
-}
-
-pub fn installer_cleanup() -> io::Result<()> {
-    let current_dir = std::env::current_dir()?;
-
-    for entry in std::fs::read_dir(&current_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_file() {
-            if let Some(extension) = path.extension() {
-                if extension.eq_ignore_ascii_case("msi") {
-                    std::fs::remove_file(&path).ok();
-                }
-            }
-        }
-    }
-    Ok(())
 }

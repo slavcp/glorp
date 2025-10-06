@@ -5,7 +5,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::{
     net::{IpAddr, Ipv4Addr},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, atomic::*},
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
@@ -22,7 +22,7 @@ mod window;
 mod modules {
     pub mod blocklist;
     pub mod flaglist;
-    pub mod installer;
+    pub mod lifecycle;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
@@ -34,16 +34,15 @@ static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> =
 static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> =
     Lazy::new(|| Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))));
 
-static PING: Lazy<Arc<Mutex<u32>>> = Lazy::new(|| Arc::new(Mutex::new(0)));
+static PING: Lazy<AtomicU32> = Lazy::new(|| AtomicU32::new(0));
 
 fn main() {
     #[cfg(feature = "packaged")]
     {
-        utils::set_panic_hook();
-        utils::installer_cleanup().ok();
+        modules::lifecycle::set_panic_hook();
+        modules::lifecycle::installer_cleanup().ok();
     }
-
-    utils::kill("glorp.exe"); //NOOOOO
+    modules::lifecycle::register_instance();
 
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
     let swap_dir = String::from(&client_dir) + "\\swapper";
@@ -126,7 +125,7 @@ fn main() {
         #[cfg(feature = "packaged")]
         {
             if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-                modules::installer::check_update();
+                modules::lifecycle::check_update();
             }
         }
 
@@ -217,8 +216,6 @@ fn main() {
                             }
                         }
                         let stream = swaps.get(filename);
-                        println!("{}", filename);
-                        println!("{:?}", swaps.keys().collect::<Vec<_>>());
                         let response = env.CreateWebResourceResponse(
                             stream,
                             200,
@@ -297,7 +294,7 @@ fn main() {
                         }),
                     );
                     if let Ok(reply) = result {
-                        *PING.lock().unwrap() = reply.rtt;
+                        PING.store(reply.rtt, Ordering::Relaxed);
                     }
                     std::thread::sleep(std::time::Duration::from_millis(2500));
                 }
@@ -452,13 +449,12 @@ fn main() {
                                     }
                                 }
                                 Some(&"ping") => {
-                                    let webview = webview.unwrap();
-                                    let ping = PING.lock().unwrap();
                                     webview
+                                        .unwrap()
                                         .PostWebMessageAsJson(PCWSTR(
                                             utils::create_utf_string(&format!(
                                                 "{{\"pingInfo\":{}}}",
-                                                &ping
+                                                &PING.load(Ordering::Relaxed)
                                             ))
                                             .as_ptr(),
                                         ))
