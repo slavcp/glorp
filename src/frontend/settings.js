@@ -21,7 +21,7 @@ window.glorpClient.settings.changeSetting = (id, value, slider) => {
 
 		debounceTimers[id] = setTimeout(() => {
 			window.glorpClient.settings.data[id] = value;
-			window.chrome.webview.postMessage(`setConfig,${id},${value}`);
+			window.chrome.webview.postMessage(`set-config, ${id}, ${value}`);
 
 			delete debounceTimers[id];
 		}, 500);
