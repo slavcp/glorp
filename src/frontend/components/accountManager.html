@@ -1,113 +1,113 @@
 <style>
-  #accountMenu {
-    color: white;
-    font-family: "Consolas" !important;
-    background-color: transparent;
-    position: absolute;
-    z-index: 999999;
-    left: calc(50% - 468px);
-    top: calc(50% - 280px);
-    height: 480px;
-    width: 936px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+    #accountMenu {
+        color: white;
+        font-family: "Consolas" !important;
+        background-color: transparent;
+        position: absolute;
+        z-index: 999999;
+        left: calc(50% - 468px);
+        top: calc(50% - 280px);
+        height: 480px;
+        width: 936px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-  #windowHolder {
-    z-index: 999998;
-    position: absolute;
-    font-family: "Consolas" !important;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 75%;
-    background-color: #000000;
-  }
+    #windowHolder {
+        z-index: 999998;
+        position: absolute;
+        font-family: "Consolas" !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 75%;
+        background-color: #000000;
+    }
 
-  #accountContainer,
-  #accountCreator {
-    display: flex;
-    font-family: "Consolas" !important;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-  }
+    #accountContainer,
+    #accountCreator {
+        display: flex;
+        font-family: "Consolas" !important;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+    }
 
-  #accountContainer {
-    height: 300px;
-  }
+    #accountContainer {
+        height: 300px;
+    }
 
-  #accountCreator {
-    width: 300px;
-  }
+    #accountCreator {
+        width: 300px;
+    }
 
-  .accountHolder {
-    padding: 20px;
-    user-select: none;
-    font-family: "Consolas" !important;
-    height: 40px;
-    font-size: 2rem;
-    margin: 20px;
-    transition: 100ms;
-  }
+    .accountHolder {
+        padding: 20px;
+        user-select: none;
+        font-family: "Consolas" !important;
+        height: 40px;
+        font-size: 2rem;
+        margin: 20px;
+        transition: 100ms;
+    }
 
-  .accountHolder:hover {
-    transform: scale(1.4);
-  }
+    .accountHolder:hover {
+        transform: scale(1.4);
+    }
 
-  #createAccountButton,
-  #newAccountButton {
-    width: 150px;
-    position: absolute;
-    left: calc(50% - 104px);
-    font-family: "Consolas" !important;
-    color: white;
-    bottom: 0px;
-  }
+    #createAccountButton,
+    #newAccountButton {
+        width: 150px;
+        position: absolute;
+        left: calc(50% - 104px);
+        font-family: "Consolas" !important;
+        color: white;
+        bottom: 0px;
+    }
 
-  .hidden {
-    display: none !important;
-  }
+    .hidden {
+        display: none !important;
+    }
 
-  #username,
-  #password {
-    font-family: "Consolas";
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    padding-left: 10px;
-    font-size: 22px;
-    border: none;
-    border-radius: 5px;
-    margin-top: 20px;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-    outline: none;
-  }
-  #color-picker {
-    border: 2px solid white !important;
-    border-radius: 0;
-    height: 50px;
-    appearance: none;
-    background-color: transparent;
-    padding: 0;
-  }
+    #username,
+    #password {
+        font-family: "Consolas";
+        width: 100%;
+        padding: 10px;
+        text-align: center;
+        padding-left: 10px;
+        font-size: 22px;
+        border: none;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        outline: none;
+    }
+    #color-picker {
+        border: 2px solid white !important;
+        border-radius: 0;
+        height: 50px;
+        appearance: none;
+        background-color: transparent;
+        padding: 0;
+    }
 </style>
 <div id="windowHolder"></div>
 <div id="accountMenu">
-  <div id="accountContainerTab">
-    <div id="accountContainer"></div>
-    <div class="button small" id="newAccountButton">Add entry</div>
-  </div>
-  <div id="accountCreatorTab" class="hidden">
-    <div id="accountCreator">
-      <input id="color-picker" type="color" value="#ff0000" />
-      <input id="username" placeholder="Username" />
-      <input id="password" type="password" placeholder="Password" />
+    <div id="accountContainerTab">
+        <div id="accountContainer"></div>
+        <div class="button small" id="newAccountButton">Add entry</div>
     </div>
-    <div class="button small" id="createAccountButton">Add account</div>
-  </div>
+    <div id="accountCreatorTab" class="hidden">
+        <div id="accountCreator">
+            <input id="color-picker" type="color" value="#ff0000" />
+            <input id="username" placeholder="Username" />
+            <input id="password" type="password" placeholder="Password" />
+        </div>
+        <div class="button small" id="createAccountButton">Add account</div>
+    </div>
 </div>

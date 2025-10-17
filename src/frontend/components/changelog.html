@@ -1,152 +1,152 @@
 <style>
-#changelogPopup {
-	position: relative;
-	margin: 0 auto;
-	background: #1e1e1e;
-	color: #fff;
-	padding: 2.5em 2.5em 1.5em 2.5em;
-	border-radius: 14px;
-	z-index: 9999;
-	min-width: 340px;
-	width: auto;
-	max-width: 80vw;
-	max-height: 60vh;
-	box-shadow: 0 8px 48px #000c;
-	font-family: Consolas, monospace;
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	position: relative;
-}
+    #changelogPopup {
+        position: relative;
+        margin: 0 auto;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 2.5em 2.5em 1.5em 2.5em;
+        border-radius: 14px;
+        z-index: 9999;
+        min-width: 340px;
+        width: auto;
+        max-width: 80vw;
+        max-height: 60vh;
+        box-shadow: 0 8px 48px #000c;
+        font-family: Consolas, monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: relative;
+    }
 
-#changelogTitle {
-	font-size: 2em;
-	font-weight: bold;
-	color: #ffb347;
-	margin: 0 0 0.5em 0;
-	text-align: left;
-	letter-spacing: 1px;
-}
+    #changelogTitle {
+        font-size: 2em;
+        font-weight: bold;
+        color: #ffb347;
+        margin: 0 0 0.5em 0;
+        text-align: left;
+        letter-spacing: 1px;
+    }
 
-#changelogContentWrapper {
-	flex: 1 1 auto;
-	overflow-y: auto;
-	margin-bottom: 1.5em;
-	min-height: 2em;
-	width: 100%;
-	padding-right: 0.5em;
-}
+    #changelogContentWrapper {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        margin-bottom: 1.5em;
+        min-height: 2em;
+        width: 100%;
+        padding-right: 0.5em;
+    }
 
-#changelogContent {
-	width: 100%;
-	font-size: 1.1em;
-	line-height: 1.7;
-	word-break: break-word;
-}
+    #changelogContent {
+        width: 100%;
+        font-size: 1.1em;
+        line-height: 1.7;
+        word-break: break-word;
+    }
 
-#changelogContent ul,
-#changelogContent ol {
-	margin: 0.5em 0 0.5em 1.5em;
-	padding-left: 1.2em;
-}
+    #changelogContent ul,
+    #changelogContent ol {
+        margin: 0.5em 0 0.5em 1.5em;
+        padding-left: 1.2em;
+    }
 
-#changelogContent li {
-	margin-bottom: 0.15em;
-	list-style: disc outside;
-	padding-left: 0.2em;
-}
+    #changelogContent li {
+        margin-bottom: 0.15em;
+        list-style: disc outside;
+        padding-left: 0.2em;
+    }
 
-#changelogContent pre,
-#changelogContent code {
-	background: #181818;
-	color: #ffecb3;
-	border-radius: 4px;
-	padding: 0.2em 0.5em;
-	font-family: "Fira Mono", "Consolas", monospace;
-	font-size: 1em;
-}
+    #changelogContent pre,
+    #changelogContent code {
+        background: #181818;
+        color: #ffecb3;
+        border-radius: 4px;
+        padding: 0.2em 0.5em;
+        font-family: "Fira Mono", "Consolas", monospace;
+        font-size: 1em;
+    }
 
-#changelogContent pre {
-	display: block;
-	padding: 1em;
-	margin: 1em 0;
-	overflow-x: auto;
-}
+    #changelogContent pre {
+        display: block;
+        padding: 1em;
+        margin: 1em 0;
+        overflow-x: auto;
+    }
 
-#changelogContent a {
-	color: #4fc3f7;
-	text-decoration: underline;
-}
+    #changelogContent a {
+        color: #4fc3f7;
+        text-decoration: underline;
+    }
 
-#changelogContent blockquote {
-	border-left: 4px solid #ffb347;
-	background: #292929;
-	margin: 1em 0;
-	padding: 0.5em 1em;
-	color: #ccc;
-}
+    #changelogContent blockquote {
+        border-left: 4px solid #ffb347;
+        background: #292929;
+        margin: 1em 0;
+        padding: 0.5em 1em;
+        color: #ccc;
+    }
 
-#closeChangelog:hover {
-	background: #333;
-	color: #ffb347;
-}
+    #closeChangelog:hover {
+        background: #333;
+        color: #ffb347;
+    }
 
-#changelogContentWrapper::-webkit-scrollbar {
-	width: 10px;
-	background: #222;
-}
+    #changelogContentWrapper::-webkit-scrollbar {
+        width: 10px;
+        background: #222;
+    }
 
-#changelogContentWrapper::-webkit-scrollbar-thumb {
-	background: #444;
-	border-radius: 6px;
-	border: 2px solid #222;
-}
+    #changelogContentWrapper::-webkit-scrollbar-thumb {
+        background: #444;
+        border-radius: 6px;
+        border: 2px solid #222;
+    }
 
-#changelogContentWrapper::-webkit-scrollbar-thumb:hover {
-	background: #666;
-}
+    #changelogContentWrapper::-webkit-scrollbar-thumb:hover {
+        background: #666;
+    }
 
-#changelogContentWrapper::-webkit-scrollbar-corner {
-	background: #222;
-}
+    #changelogContentWrapper::-webkit-scrollbar-corner {
+        background: #222;
+    }
 
-#changelogContentWrapper {
-	scrollbar-width: thin;
-	scrollbar-color: #444 #222;
-}
+    #changelogContentWrapper {
+        scrollbar-width: thin;
+        scrollbar-color: #444 #222;
+    }
 
-#changelogContent table {
-	width: 100%;
-	border-collapse: separate;
-	border-spacing: 0;
-	margin: 1.5em 0;
-	background: #232323;
-	border-radius: 8px;
-	overflow: hidden;
-}
+    #changelogContent table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 1.5em 0;
+        background: #232323;
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
-#changelogContent th,
-#changelogContent td {
-	padding: 0.7em 1.2em;
-	text-align: left;
-	border-bottom: 1px solid #333;
-	font-size: 1em;
-}
+    #changelogContent th,
+    #changelogContent td {
+        padding: 0.7em 1.2em;
+        text-align: left;
+        border-bottom: 1px solid #333;
+        font-size: 1em;
+    }
 
-#changelogContent th {
-	background: #292929;
-	color: #ffb347;
-	font-weight: bold;
-	border-bottom: 2px solid #444;
-}
+    #changelogContent th {
+        background: #292929;
+        color: #ffb347;
+        font-weight: bold;
+        border-bottom: 2px solid #444;
+    }
 
-#changelogContent tr:last-child td {
-	border-bottom: none;
-}
+    #changelogContent tr:last-child td {
+        border-bottom: none;
+    }
 
-#changelogContent tr:hover td {
-	background: #282828;
-}
+    #changelogContent tr:hover td {
+        background: #282828;
+    }
 </style>
 <div id="changelogPopup">
     <h2 id="changelogTitle">What's New</h2>

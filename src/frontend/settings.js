@@ -120,9 +120,9 @@ class SettingsManager {
 					}`;
 			// biome-ignore format: see above
 			case "slider":
-				return `<input type="number" class="sliderVal" id="slid_input_${option.id}" min="${option.min}" value="${value || option.min}" 
+				return `<input type="number" class="sliderVal" id="slid_input_${option.id}" min="${option.min}" value="${value || option.min}"
                 step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)' style="margin-right:0px;border-width:0px">
-                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}" 
+                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}"
 				step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
 			// biome-ignore format: see above
 			case "select":
@@ -165,7 +165,7 @@ class SettingsManager {
 
 			tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""}>
                 ${setting.name}
-                ${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""} 
+                ${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""}
                 ${setting.html}</div>`;
 		}
 

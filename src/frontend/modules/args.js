@@ -13,7 +13,6 @@ const waitForElement = (selector) => {
 };
 
 const automateCompHost = async (params) => {
-
 	window.openHostWindow(false, 1);
 	window.originalConsole.log(`Test ${params.mapId}`);
 
@@ -24,16 +23,16 @@ const automateCompHost = async (params) => {
 	mapCheckbox = document.querySelector(`#${params.mapId}`);
 
 	if (!mapCheckbox) {
-		const allMapNameElements = document.querySelectorAll('.hostMap .hostMapName');
+		const allMapNameElements = document.querySelectorAll(".hostMap .hostMapName");
 		const targetNameElement = Array.from(allMapNameElements).find(
-			(el) => el.innerText.trim().toLowerCase() === params.mapId.toLowerCase()
+			(el) => el.innerText.trim().toLowerCase() === params.mapId.toLowerCase(),
 		);
 		if (targetNameElement) {
 			mapCheckbox = targetNameElement.parentElement.querySelector('input[type="checkbox"]');
 		}
 	}
 
-	if (!mapCheckbox) return
+	if (!mapCheckbox) return;
 
 	if (!mapCheckbox.checked) {
 		mapCheckbox.click();
@@ -57,13 +56,13 @@ const automateCompHost = async (params) => {
 	const finalTeamSize = teamSizeMap[params.teamSize] || params.teamSize;
 	teamSizeSelect.value = finalTeamSize;
 	if (params.webhook) {
-    try {
-        const webhookInput = await waitForElement("#customSwebhook")
-        webhookInput.value = decodeURIComponent(params.webhook);
-    } catch {
-      /* */
-    }
-}
+		try {
+			const webhookInput = await waitForElement("#customSwebhook");
+			webhookInput.value = decodeURIComponent(params.webhook);
+		} catch {
+			/* */
+		}
+	}
 	window.createPrivateRoom();
 };
 
