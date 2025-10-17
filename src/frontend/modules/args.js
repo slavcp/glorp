@@ -56,7 +56,14 @@ const automateCompHost = async (params) => {
 
 	const finalTeamSize = teamSizeMap[params.teamSize] || params.teamSize;
 	teamSizeSelect.value = finalTeamSize;
-
+	if (params.webhook) {
+    try {
+        const webhookInput = await waitForElement("#customSwebhook")
+        webhookInput.value = decodeURIComponent(params.webhook);
+    } catch {
+      /* */
+    }
+}
 	window.createPrivateRoom();
 };
 
