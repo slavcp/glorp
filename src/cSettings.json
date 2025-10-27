@@ -22,7 +22,7 @@
 		"category": "Main",
 		"defaultValue": true,
 		"button": "Open folder",
-		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/swapper')",
+		"buttonAction": "window.chrome.webview.postMessage('open, %USERPROFILE%/Documents/glorp/swapper')",
 		"needsRestart": true
 	},
 	"blocklist": {
@@ -33,7 +33,7 @@
 		"category": "Main",
 		"defaultValue": true,
 		"button": "Open file",
-		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/blocklist.json')",
+		"buttonAction": "window.chrome.webview.postMessage('open, %USERPROFILE%/Documents/glorp/blocklist.json')",
 		"needsRestart": true
 	},
 	"userscripts": {
@@ -44,7 +44,7 @@
 		"category": "Main",
 		"defaultValue": false,
 		"button": "Open folder",
-		"buttonAction": "window.chrome.webview.postMessage('open,%USERPROFILE%/Documents/glorp/scripts')",
+		"buttonAction": "window.chrome.webview.postMessage('open, %USERPROFILE%/Documents/glorp/scripts')",
 		"needsRestart": true
 	},
 	"checkUpdates": {
