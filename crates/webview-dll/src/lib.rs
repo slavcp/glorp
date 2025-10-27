@@ -11,6 +11,11 @@ use windows::Win32::{
 };
 use windows::core::*;
 
+fn _debug_print<T: AsRef<str>>(msg: T) {
+    let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
+    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
+}
+
 static SPACE_DOWN: INPUT = INPUT {
     r#type: INPUT_KEYBOARD,
     Anonymous: INPUT_0 {
@@ -42,9 +47,19 @@ static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
     std::thread::spawn(move || {
         while rx.recv().is_ok() {
             unsafe {
-                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
-                Sleep(5);
-                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
+                SendInput(
+                    &[
+                        SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN,
+                    ],
+                    std::mem::size_of::<INPUT>() as i32,
+                );
+                Sleep(1);
+                SendInput(
+                    &[
+                        SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP,
+                    ],
+                    std::mem::size_of::<INPUT>() as i32,
+                );
             }
         }
     });
@@ -217,13 +232,7 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
             ),
             WM_MOUSEMOVE => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    return CallWindowProcW(
-                        PREV_WNDPROC_1,
-                        window,
-                        message,
-                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                        lparam,
-                    );
+                    return LRESULT(1);
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -257,18 +266,21 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
 unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         match message {
-            WM_APP => {
-                SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
-                LRESULT(1)
-            }
             WM_USER => {
-                LOCK_STATUS.store(wparam.0 != 0, std::sync::atomic::Ordering::Relaxed);
+                // 1 = change proc to wnd_proc_widget_rampboost
+                // 2 or 0 = pointer lock status
+                if wparam.0 == 1 {
+                    SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
+                } else {
+                    LOCK_STATUS.store(wparam.0 == 2, std::sync::atomic::Ordering::Relaxed);
+                }
                 LRESULT(1)
             }
             WM_MOUSEWHEEL => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
-                    // send the message to the glorp window, from where it gets sent as a js event, best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
+                    // send the message to the glorp window, from where it gets sent as a js event
+                    // best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
                     PostMessageW(Some(*glorp), message, wparam, lparam).ok();
                     return LRESULT(1);
                 }
@@ -296,7 +308,7 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
                 CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
             }
             WM_USER => {
-                LOCK_STATUS.store(wparam.0 != 0, std::sync::atomic::Ordering::Relaxed);
+                LOCK_STATUS.store(wparam.0 == 2, std::sync::atomic::Ordering::Relaxed);
                 LRESULT(1)
             }
             _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam),

@@ -334,21 +334,20 @@ fn main() {
                             }
                             Some(&"pointer-lock") => {
                                 let value = parts[1].parse::<bool>().unwrap_or(false);
-                                PostMessageW(main_window.widget_wnd, WM_USER, WPARAM(value as usize), LPARAM(0)).ok();
+                                // WM_USER with wparam = 0 (unlocked) or 2 (locked)
+                                PostMessageW(
+                                    main_window.widget_wnd,
+                                    WM_USER,
+                                    WPARAM(if value { 2 } else { 0 }),
+                                    LPARAM(0),
+                                )
+                                .ok();
                                 if value {
                                     utils::set_cpu_throttling(
                                         &webview,
                                         config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0),
                                     );
-                                    println!(
-                                        "set to {}",
-                                        config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
-                                    );
                                 } else {
-                                    println!(
-                                        "set to {}",
-                                        config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0)
-                                    );
                                     utils::set_cpu_throttling(
                                         &webview,
                                         config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0),
@@ -399,7 +398,19 @@ fn main() {
             .ok();
 
         if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
-            PostMessageW(main_window.widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
+            std::thread::spawn(|| {
+                std::thread::sleep(std::time::Duration::from_millis(6000));
+                PostMessageW(
+                    Some(utils::find_child_window_by_class(
+                        FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
+                        "Chrome_RenderWidgetHostHWND",
+                    )),
+                    WM_USER,
+                    WPARAM(1),
+                    LPARAM(0),
+                )
+                .ok();
+            });
         }
 
         main_window

@@ -113,18 +113,18 @@ impl Window {
         match VIRTUAL_KEY(key) {
             VK_F4 | VK_F6 => {
                 utils::set_cpu_throttling(&self.webview, 1.0);
-                println!("set to 1.0");
                 unsafe {
                     self.webview.Navigate(w!("https://krunker.io")).ok();
-                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
+                    // WM_USER with wparam = 0 (unlocked)
+                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(0), LPARAM(0)).ok();
                 }
             }
             VK_F5 => {
                 utils::set_cpu_throttling(&self.webview, 1.0);
-                println!("set to 1.0");
                 unsafe {
                     self.webview.Reload().ok();
-                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
+                    // WM_USER with wparam = 0 (unlocked)
+                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(0), LPARAM(0)).ok();
                 }
             }
             VK_F11 => {
