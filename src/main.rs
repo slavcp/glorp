@@ -145,9 +145,7 @@ fn main() {
             .add_PermissionRequested(
                 &PermissionRequestedEventHandler::create(Box::new(
                     move |_, args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
-                        args.unwrap()
-                            .SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW)
-                            .ok();
+                        args.unwrap().SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW).ok();
                         Ok(())
                     },
                 )),
@@ -174,55 +172,54 @@ fn main() {
             )
             .ok();
 
-        main_window.webview.add_WebResourceRequested(
-            &WebResourceRequestedEventHandler::create(Box::new(
-                move |webview: Option<ICoreWebView2>,
-                      args: Option<ICoreWebView2WebResourceRequestedEventArgs>| {
-                    if let Some(args) = args {
-                        let request: ICoreWebView2WebResourceRequest = args.Request()?;
-                        let mut uri_string = utils::create_utf_string("");
-                        let uri = uri_string.as_mut_ptr() as *mut PWSTR;
-                        request.Uri(uri)?;
-                        let uri = uri.as_ref().unwrap().to_string()?;
-                        let filename: &str = uri
-                            .split("krunker.io/")
-                            .nth(1)
-                            .and_then(|s| s.split('?').next())
-                            .unwrap_or("");
+        main_window
+            .webview
+            .add_WebResourceRequested(
+                &WebResourceRequestedEventHandler::create(Box::new(
+                    move |webview: Option<ICoreWebView2>, args: Option<ICoreWebView2WebResourceRequestedEventArgs>| {
+                        if let Some(args) = args {
+                            let request: ICoreWebView2WebResourceRequest = args.Request()?;
+                            let mut uri_string = utils::create_utf_string("");
+                            let uri = uri_string.as_mut_ptr() as *mut PWSTR;
+                            request.Uri(uri)?;
+                            let uri = uri.as_ref().unwrap().to_string()?;
+                            let filename: &str = uri
+                                .split("krunker.io/")
+                                .nth(1)
+                                .and_then(|s| s.split('?').next())
+                                .unwrap_or("");
 
-                        if filename.contains("game-info") || uri.contains("lobby-ranked") {
-                            webview
-                                .unwrap()
-                                .PostWebMessageAsString(w!("game-updated"))
-                                .ok();
-                            return Ok(());
-                        }
-
-                        let stream = swaps.get(filename);
-                        if let Some(stream) = stream {
-                            let response = env.CreateWebResourceResponse(
-                                stream,
-                                200,
-                                w!("OK"),
-                                w!("Access-Control-Allow-Origin: *"),
-                                )?;
-                            args.SetResponse(Some(&response))?;
-
-                            return Ok(());
-                        }
-
-                        for regex in &blocklist {
-                            if regex.is_match(&uri) {
-                                request.SetUri(PCWSTR::null())?;
+                            if filename.contains("game-info") || uri.contains("lobby-ranked") {
+                                webview.unwrap().PostWebMessageAsString(w!("game-updated")).ok();
                                 return Ok(());
                             }
+
+                            let stream = swaps.get(filename);
+                            if let Some(stream) = stream {
+                                let response = env.CreateWebResourceResponse(
+                                    stream,
+                                    200,
+                                    w!("OK"),
+                                    w!("Access-Control-Allow-Origin: *"),
+                                )?;
+                                args.SetResponse(Some(&response))?;
+
+                                return Ok(());
+                            }
+
+                            for regex in &blocklist {
+                                if regex.is_match(&uri) {
+                                    request.SetUri(PCWSTR::null())?;
+                                    return Ok(());
+                                }
+                            }
                         }
-                    }
-                    Ok(())
-                },
-            )),
-            token,
-        ).ok();
+                        Ok(())
+                    },
+                )),
+                token,
+            )
+            .ok();
 
         let widget_wnd = Some(utils::find_child_window_by_class(
             FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
@@ -239,38 +236,27 @@ fn main() {
                 .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
                 .unwrap();
 
-            let handler =
-                DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
-                    if let Some(args) = args {
-                        let mut params_vec = utils::create_utf_string("");
-                        let params = params_vec.as_mut_ptr() as *mut PWSTR;
-                        args.ParameterObjectAsJson(params)?;
-                        let json = serde_json::from_str::<serde_json::Value>(
-                            &params.as_ref().unwrap().to_string().unwrap(),
-                        )
-                        .unwrap();
-                        let url = json.get("url").unwrap().to_string();
-                        if url.contains("lobby-") {
-                            let host = url
-                                .split("://")
-                                .last()
-                                .unwrap()
-                                .split("/")
-                                .next()
-                                .unwrap()
-                                .to_string();
-                            let resolved_ips = dns_lookup::lookup_host(&host)?;
-                            if let Some(ip) = resolved_ips.into_iter().next() {
-                                *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
-                            }
+            let handler = DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
+                if let Some(args) = args {
+                    let mut params_vec = utils::create_utf_string("");
+                    let params = params_vec.as_mut_ptr() as *mut PWSTR;
+                    args.ParameterObjectAsJson(params)?;
+                    let json =
+                        serde_json::from_str::<serde_json::Value>(&params.as_ref().unwrap().to_string().unwrap())
+                            .unwrap();
+                    let url = json.get("url").unwrap().to_string();
+                    if url.contains("lobby-") {
+                        let host = url.split("://").last().unwrap().split("/").next().unwrap().to_string();
+                        let resolved_ips = dns_lookup::lookup_host(&host)?;
+                        if let Some(ip) = resolved_ips.into_iter().next() {
+                            *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
                         }
                     }
-                    Ok(())
-                }));
+                }
+                Ok(())
+            }));
 
-            ws_receiver
-                .add_DevToolsProtocolEventReceived(&handler, token)
-                .ok();
+            ws_receiver.add_DevToolsProtocolEventReceived(&handler, token).ok();
 
             std::thread::spawn(move || {
                 loop {
@@ -293,50 +279,6 @@ fn main() {
 
         let config_clone = Arc::clone(&config);
 
-        fn set_cpu_throttling_inmenu(webview: &ICoreWebView2, cfg: &Arc<Mutex<config::Config>>) {
-            unsafe {
-                webview
-                    .CallDevToolsProtocolMethod(
-                        w!("Emulation.setCPUThrottlingRate"),
-                        PCWSTR(
-                            utils::create_utf_string(&format!(
-                                "{{\"rate\":{}}}",
-                                cfg.lock()
-                                    .unwrap()
-                                    .get::<f32>("inMenuThrottle")
-                                    .unwrap_or(2.0)
-                            ))
-                            .as_ptr(),
-                        ),
-                        None,
-                    )
-                    .ok();
-            }
-        }
-
-        unsafe fn set_cpu_throttling_ingame(
-            webview: &ICoreWebView2,
-            cfg: &Arc<Mutex<config::Config>>,
-        ) {
-            unsafe {
-                webview
-                    .CallDevToolsProtocolMethod(
-                        w!("Emulation.setCPUThrottlingRate"),
-                        PCWSTR(
-                            utils::create_utf_string(&format!(
-                                "{{\"rate\":{}}}",
-                                cfg.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
-                            ))
-                            .as_ptr(),
-                        ),
-                        None,
-                    )
-                    .ok();
-            }
-        }
-
-        set_cpu_throttling_inmenu(&main_window.webview, &config_clone);
-
         main_window
             .webview
             .add_WebMessageReceived(
@@ -350,8 +292,7 @@ fn main() {
 
                         let message_string = message.as_ref().unwrap().to_string().unwrap();
 
-                        let parts: Vec<&str> =
-                            message_string.split(", ").map(|s| s.trim()).collect();
+                        let parts: Vec<&str> = message_string.split(", ").map(|s| s.trim()).collect();
                         match parts.first() {
                             Some(&"set-config") => {
                                 let setting = parts[1];
@@ -361,10 +302,7 @@ fn main() {
                                     serde_json::Value::Number(serde_json::Number::from(int_val))
                                 } else if let Ok(float_val) = parts[2].parse::<f64>() {
                                     serde_json::Value::Number(
-                                        serde_json::Number::from_f64(
-                                            (float_val * 100.0).round() / 100.0,
-                                        )
-                                        .unwrap(),
+                                        serde_json::Number::from_f64((float_val * 100.0).round() / 100.0).unwrap(),
                                     )
                                 } else {
                                     serde_json::Value::String(parts[2].to_string())
@@ -374,43 +312,34 @@ fn main() {
                             Some(&"get-info") => {
                                 let version = env!("CARGO_PKG_VERSION");
                                 let mut info_map = serde_json::Map::new();
-                                info_map.insert(
-                                    "settings".to_string(),
-                                    serde_json::json!(&*config_clone),
-                                );
-                                info_map.insert(
-                                    "version".to_string(),
-                                    serde_json::Value::String(version.to_string()),
-                                );
+                                info_map.insert("settings".to_string(), serde_json::json!(&*config_clone));
+                                info_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
                                 if !LAUNCH_ARGS.lock().unwrap().is_empty() {
                                     info_map.insert(
                                         "launchArgs".to_string(),
-                                        serde_json::Value::String(
-                                            LAUNCH_ARGS.lock().unwrap().join(" "),
-                                        ),
+                                        serde_json::Value::String(LAUNCH_ARGS.lock().unwrap().join(" ")),
                                     );
                                 }
 
                                 let info_json = serde_json::to_string_pretty(&info_map).unwrap();
                                 webview
-                                    .PostWebMessageAsJson(PCWSTR(
-                                        utils::create_utf_string(&info_json).as_ptr(),
-                                    ))
+                                    .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(&info_json).as_ptr()))
                                     .ok();
                             }
                             Some(&"pointer-lock") => {
                                 let value = parts[1].parse::<bool>().unwrap_or(false);
-                                PostMessageW(
-                                    widget_wnd,
-                                    WM_USER,
-                                    WPARAM(value as usize),
-                                    LPARAM(0),
-                                )
-                                .ok();
+                                PostMessageW(widget_wnd, WM_USER, WPARAM(value as usize), LPARAM(0)).ok();
+
                                 if value {
-                                    set_cpu_throttling_ingame(&webview, &config_clone);
+                                    utils::set_cpu_throttling(
+                                        &webview,
+                                        config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0),
+                                    );
                                 } else {
-                                    set_cpu_throttling_inmenu(&webview, &config_clone);
+                                    utils::set_cpu_throttling(
+                                        &webview,
+                                        config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0),
+                                    );
                                 }
                             }
                             Some(&"close") => {
@@ -463,9 +392,8 @@ fn main() {
                 &AcceleratorKeyPressedEventHandler::create(Box::new(
                     move |_, args: Option<ICoreWebView2AcceleratorKeyPressedEventArgs>| {
                         let mut pressed_key: u32 = 0;
-                        let mut key_event_kind: COREWEBVIEW2_KEY_EVENT_KIND =
-                            COREWEBVIEW2_KEY_EVENT_KIND::default();
-                        let args: ICoreWebView2AcceleratorKeyPressedEventArgs = args.unwrap();
+                        let mut key_event_kind = COREWEBVIEW2_KEY_EVENT_KIND::default();
+                        let args = args.unwrap();
 
                         args.KeyEventKind(&mut key_event_kind)?;
                         args.VirtualKey(&mut pressed_key)?;
@@ -474,24 +402,14 @@ fn main() {
                         }
                         match VIRTUAL_KEY(pressed_key as u16) {
                             VK_F4 | VK_F6 => {
+                                utils::set_cpu_throttling(&main_window.webview, 1.0);
                                 main_window.webview.Navigate(w!("https://krunker.io")).ok();
-                                PostMessageW(
-                                    widget_wnd,
-                                    WM_USER,
-                                    WPARAM(false as usize),
-                                    LPARAM(0),
-                                )
-                                .ok();
+                                PostMessageW(widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
                             }
                             VK_F5 => {
+                                utils::set_cpu_throttling(&main_window.webview, 1.0);
                                 main_window.webview.Reload().ok();
-                                PostMessageW(
-                                    widget_wnd,
-                                    WM_USER,
-                                    WPARAM(false as usize),
-                                    LPARAM(0),
-                                )
-                                .ok();
+                                PostMessageW(widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
                             }
                             VK_F11 => {
                                 main_window.toggle_fullscreen();

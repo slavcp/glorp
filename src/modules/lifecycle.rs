@@ -25,8 +25,7 @@ pub fn check_update() {
             Some(v) => v,
             None => return,
         };
-        if semver::Version::parse(newest_version).unwrap()
-            <= semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap()
+        if semver::Version::parse(newest_version).unwrap() <= semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap()
         {
             return;
         };
@@ -47,10 +46,7 @@ pub fn check_update() {
                     MessageBoxW(
                         None,
                         PCWSTR(
-                            crate::utils::create_utf_string(
-                                format!("Failed to download: {:?}", e).as_str(),
-                            )
-                            .as_ptr(),
+                            crate::utils::create_utf_string(format!("Failed to download: {:?}", e).as_str()).as_ptr(),
                         ),
                         w!("Download Error"),
                         MB_ICONERROR | MB_SYSTEMMODAL,
@@ -67,10 +63,8 @@ pub fn check_update() {
                     MessageBoxW(
                         None,
                         PCWSTR(
-                            crate::utils::create_utf_string(
-                                format!("Failed to create file: {:?}", e).as_str(),
-                            )
-                            .as_ptr(),
+                            crate::utils::create_utf_string(format!("Failed to create file: {:?}", e).as_str())
+                                .as_ptr(),
                         ),
                         w!("Download Error"),
                         MB_ICONERROR | MB_SYSTEMMODAL,
@@ -125,11 +119,8 @@ pub fn installer_cleanup() -> io::Result<()> {
 
 pub fn set_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
-        let exe_path =
-            std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("unknown_path"));
-        let log_dir = exe_path
-            .parent()
-            .unwrap_or_else(|| std::path::Path::new("./"));
+        let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("unknown_path"));
+        let log_dir = exe_path.parent().unwrap_or_else(|| std::path::Path::new("./"));
         let log_file_path = log_dir.join("crash_log.txt");
 
         let crash_message = format!(
@@ -186,12 +177,7 @@ pub fn set_panic_hook() {
 
 pub fn register_instance() {
     unsafe {
-        CreateMutexW(
-            None,
-            false,
-            PCWSTR(create_utf_string(INSTANCE_MUTEX_NAME).as_ptr()),
-        )
-        .ok();
+        CreateMutexW(None, false, PCWSTR(create_utf_string(INSTANCE_MUTEX_NAME).as_ptr())).ok();
         if GetLastError() == ERROR_ALREADY_EXISTS {
             eprintln!("Instance already running");
             let data = env::args().skip(1).collect::<Vec<String>>().join(" ");
@@ -204,10 +190,7 @@ pub fn register_instance() {
                 cbData: data_bytes.len() as u32,
                 lpData: data_bytes.as_ptr() as *mut std::ffi::c_void,
             };
-            println!(
-                "{:?}",
-                FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap()
-            );
+            println!("{:?}", FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap());
             SendMessageW(
                 FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
                 WM_COPYDATA,

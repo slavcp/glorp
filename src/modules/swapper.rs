@@ -11,11 +11,7 @@ use windows::{
 
 use crate::utils;
 
-fn recurse_swap(
-    root_dir: PathBuf,
-    swap_dir: PathBuf,
-    window: &ICoreWebView2_22,
-) -> Option<HashMap<String, IStream>> {
+fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2_22) -> Option<HashMap<String, IStream>> {
     let mut swaps = HashMap::new();
 
     for entry in std::fs::read_dir(&swap_dir).ok()? {
@@ -54,11 +50,7 @@ fn recurse_swap(
                 let file_content = std::fs::read(entry.path()).unwrap();
                 let stream = CreateStreamOnHGlobal(HGLOBAL::default(), true).unwrap();
                 stream
-                    .Write(
-                        file_content.as_ptr() as *const _,
-                        file_content.len() as u32,
-                        None,
-                    )
+                    .Write(file_content.as_ptr() as *const _, file_content.len() as u32, None)
                     .unwrap();
                 stream.Seek(0, STREAM_SEEK_SET, None).unwrap();
                 swaps.insert(relative_path, stream);
@@ -69,8 +61,7 @@ fn recurse_swap(
 }
 
 pub fn load(window: &ICoreWebView2_22) -> HashMap<String, IStream> {
-    let swap_dir =
-        PathBuf::from(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper");
+    let swap_dir = PathBuf::from(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper");
     std::fs::create_dir_all(&swap_dir).unwrap_or_default();
     let swaps = recurse_swap(swap_dir.clone(), swap_dir, window);
     swaps.unwrap()

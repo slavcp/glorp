@@ -41,11 +41,7 @@ impl Config {
 
         if settings_file.metadata().unwrap().len() == 0 {
             settings_file
-                .write_all(
-                    serde_json::to_string_pretty(&load_defaults())
-                        .unwrap()
-                        .as_bytes(),
-                )
+                .write_all(serde_json::to_string_pretty(&load_defaults()).unwrap().as_bytes())
                 .unwrap();
         }
 
@@ -83,8 +79,7 @@ impl Config {
     }
 
     pub fn save(&self) {
-        let settings_path =
-            std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\settings.json";
+        let settings_path = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\settings.json";
         let settings_string = serde_json::to_string_pretty(&self.data).unwrap();
         std::fs::write(settings_path, settings_string).unwrap();
     }

@@ -58,11 +58,7 @@ impl Window {
                 webview: window.webview.clone(),
                 window_state: window.window_state,
             });
-            SetWindowLongPtrW(
-                window.hwnd,
-                GWLP_USERDATA,
-                Box::into_raw(window_clone) as isize,
-            );
+            SetWindowLongPtrW(window.hwnd, GWLP_USERDATA, Box::into_raw(window_clone) as isize);
         }
 
         (window, env)
@@ -70,11 +66,7 @@ impl Window {
     pub fn toggle_fullscreen(&mut self) {
         unsafe {
             if self.window_state.fullscreen {
-                SetWindowLongPtrW(
-                    self.hwnd,
-                    GWL_STYLE,
-                    (WS_VISIBLE.0 | WS_OVERLAPPEDWINDOW.0) as _,
-                );
+                SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0 | WS_OVERLAPPEDWINDOW.0) as _);
 
                 SetWindowPos(
                     self.hwnd,
@@ -211,11 +203,7 @@ fn create_window(start_mode: &str) -> (HWND, WindowState) {
 pub fn create_webview2(
     hwnd: HWND,
     args: String,
-) -> (
-    ICoreWebView2Controller4,
-    ICoreWebView2Environment,
-    ICoreWebView2_22,
-) {
+) -> (ICoreWebView2Controller4, ICoreWebView2Environment, ICoreWebView2_22) {
     unsafe {
         let args = args + " --autoplay-policy=no-user-gesture-required";
         let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
@@ -234,16 +222,11 @@ pub fn create_webview2(
             Box::new(move |environment_created_handler| {
                 CreateCoreWebView2EnvironmentWithOptions(
                     PCWSTR(
-                        utils::create_utf_string(
-                            &(current_exe.to_str().unwrap().to_owned() + "\\WebView2"),
-                        )
-                        .as_ptr(),
+                        utils::create_utf_string(&(current_exe.to_str().unwrap().to_owned() + "\\WebView2")).as_ptr(),
                     ),
                     PCWSTR(
-                        utils::create_utf_string(
-                            &(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp"),
-                        )
-                        .as_ptr(),
+                        utils::create_utf_string(&(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp"))
+                            .as_ptr(),
                     ),
                     &ICoreWebView2EnvironmentOptions::from(options),
                     &environment_created_handler,
@@ -252,9 +235,7 @@ pub fn create_webview2(
             }),
             Box::new(move |error_code, env| {
                 error_code?;
-                let env = env
-                    .ok_or_else(|| windows::core::Error::from(E_POINTER))
-                    .unwrap();
+                let env = env.ok_or_else(|| windows::core::Error::from(E_POINTER)).unwrap();
                 let env_clone = env.clone();
 
                 CreateCoreWebView2ControllerCompletedHandler::wait_for_async_operation(
@@ -265,9 +246,7 @@ pub fn create_webview2(
                     }),
                     Box::new(move |controller_error, controller| {
                         controller_error?;
-                        let controller = controller
-                            .ok_or_else(|| windows::core::Error::from(E_POINTER))
-                            .unwrap();
+                        let controller = controller.ok_or_else(|| windows::core::Error::from(E_POINTER)).unwrap();
 
                         // initial bounds
                         let mut rect = RECT::default();
@@ -303,17 +282,9 @@ pub fn create_webview2(
             panic!("cannot create webview2 env, {:?}", result)
         };
 
-        let controller = rx
-            .recv()
-            .unwrap()
-            .cast::<ICoreWebView2Controller4>()
-            .unwrap();
+        let controller = rx.recv().unwrap().cast::<ICoreWebView2Controller4>().unwrap();
         let env = erx.recv().unwrap();
-        let webview2 = controller
-            .CoreWebView2()
-            .unwrap()
-            .cast::<ICoreWebView2_22>()
-            .unwrap();
+        let webview2 = controller.CoreWebView2().unwrap().cast::<ICoreWebView2_22>().unwrap();
 
         controller.SetAllowExternalDrop(false).unwrap();
         controller
@@ -332,19 +303,13 @@ pub fn create_webview2(
             .cast::<ICoreWebView2Settings9>()
             .unwrap();
 
-        webview2_settings
-            .SetIsReputationCheckingRequired(false)
-            .ok();
+        webview2_settings.SetIsReputationCheckingRequired(false).ok();
         webview2_settings.SetIsSwipeNavigationEnabled(false).ok();
         webview2_settings.SetIsPinchZoomEnabled(false).ok();
         webview2_settings.SetIsPasswordAutosaveEnabled(false).ok();
         webview2_settings.SetIsGeneralAutofillEnabled(false).ok();
-        webview2_settings
-            .SetAreBrowserAcceleratorKeysEnabled(false)
-            .ok();
-        webview2_settings
-            .SetAreDefaultContextMenusEnabled(false)
-            .ok();
+        webview2_settings.SetAreBrowserAcceleratorKeysEnabled(false).ok();
+        webview2_settings.SetAreDefaultContextMenusEnabled(false).ok();
         webview2_settings.SetIsZoomControlEnabled(false).ok();
         webview2_settings.SetUserAgent(w!("Electron")).ok();
 
@@ -353,12 +318,7 @@ pub fn create_webview2(
     }
 }
 
-unsafe extern "system" fn wnd_proc_setup(
-    hwnd: HWND,
-    msg: u32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn wnd_proc_setup(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_NCCREATE {
             #[allow(clippy::all)]
@@ -369,12 +329,7 @@ unsafe extern "system" fn wnd_proc_setup(
     }
 }
 
-unsafe extern "system" fn wnd_proc_main(
-    hwnd: HWND,
-    msg: u32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         let window_data_ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Window;
         if window_data_ptr.is_null() {
@@ -392,8 +347,7 @@ unsafe extern "system" fn wnd_proc_main(
                     .ExecuteScript(
                         PCWSTR(
                             utils::create_utf_string(
-                                format!("window.glorpClient.handleMouseWheel({})", scroll_amount)
-                                    .as_str(),
+                                format!("window.glorpClient.handleMouseWheel({})", scroll_amount).as_str(),
                             )
                             .as_ptr(),
                         ),
@@ -433,8 +387,7 @@ unsafe extern "system" fn wnd_proc_main(
             WM_COPYDATA => {
                 let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
                 let cds = &*cds_ptr;
-                let data: &[u8] =
-                    std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
+                let data: &[u8] = std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
 
                 let string = match String::from_utf8(data.to_vec()) {
                     Ok(s) => s,
@@ -447,10 +400,8 @@ unsafe extern "system" fn wnd_proc_main(
                     .webview
                     .ExecuteScript(
                         PCWSTR(
-                            utils::create_utf_string(
-                                format!("window.glorpClient.parseArgs('{}')", string).as_str(),
-                            )
-                            .as_ptr(),
+                            utils::create_utf_string(format!("window.glorpClient.parseArgs('{}')", string).as_str())
+                                .as_ptr(),
                         ),
                         None,
                     )

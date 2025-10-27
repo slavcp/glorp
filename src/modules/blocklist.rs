@@ -14,8 +14,7 @@ struct BlocklistConfig {
 }
 
 pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
-    let blocklist_path: String =
-        std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
+    let blocklist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
     let mut blocklist_file = OpenOptions::new()
         .write(true)
         .read(true)
@@ -42,8 +41,7 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
         }
     };
 
-    let default_urls =
-        serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap();
+    let default_urls = serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap();
 
     for url in default_urls.disabled {
         blocklist.disabled.insert(url);
@@ -53,16 +51,12 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
         blocklist.enabled.insert(url);
     }
 
-    blocklist
-        .enabled
-        .retain(|url| !blocklist.disabled.contains(url));
+    blocklist.enabled.retain(|url| !blocklist.disabled.contains(url));
 
     let updated_blocklist_string = serde_json::to_string_pretty(&blocklist).unwrap();
     blocklist_file.set_len(0).unwrap();
     blocklist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
-    blocklist_file
-        .write_all(updated_blocklist_string.as_bytes())
-        .unwrap();
+    blocklist_file.write_all(updated_blocklist_string.as_bytes()).unwrap();
 
     let mut blocklist_regex: Vec<Regex> = Vec::<Regex>::new();
 

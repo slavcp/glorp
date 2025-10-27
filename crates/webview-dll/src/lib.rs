@@ -67,10 +67,7 @@ impl ChromeWindows {
     fn get(parent: HWND) -> Self {
         ChromeWindows {
             chrome_window: Self::find_child_window_by_class(parent, "Chrome_WidgetWin_1"),
-            chrome_renderwidget: Self::find_child_window_by_class(
-                parent,
-                "Chrome_RenderWidgetHostHWND",
-            ),
+            chrome_renderwidget: Self::find_child_window_by_class(parent, "Chrome_RenderWidgetHostHWND"),
         }
     }
 
@@ -79,23 +76,17 @@ impl ChromeWindows {
         unsafe {
             // set proc for chrome_window
             let original_proc_1 = GetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC);
-            PREV_WNDPROC_1 = transmute::<
-                isize,
-                Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>,
-            >(original_proc_1);
+            PREV_WNDPROC_1 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
+                original_proc_1,
+            );
             SetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC, wnd_proc_1 as isize);
 
             // set proc for chrome_renderwidget
             let original_proc_2 = GetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC);
-            PREV_WNDPROC_2 = transmute::<
-                isize,
-                Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>,
-            >(original_proc_2);
-            SetWindowLongPtrW(
-                self.chrome_renderwidget,
-                GWLP_WNDPROC,
-                wnd_proc_widget as isize,
+            PREV_WNDPROC_2 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
+                original_proc_2,
             );
+            SetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC, wnd_proc_widget as isize);
         }
     }
 
@@ -200,12 +191,7 @@ extern "system" fn find_child_window(handle: HWND, lparam: LPARAM) -> BOOL {
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "system" fn wnd_proc_1(
-    window: HWND,
-    message: u32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         match message {
             WM_CHAR => LRESULT(1),
@@ -215,24 +201,20 @@ unsafe extern "system" fn wnd_proc_1(
             }
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_KEYDOWN | WM_KEYUP => {
-                if wparam.0 == VK_ESCAPE.0 as usize
-                    && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed)
-                {
+                if wparam.0 == VK_ESCAPE.0 as usize && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     // glorp.exe (not the webview)
                     let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
                     SetFocus(Some(*glorp)).ok();
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => {
-                CallWindowProcW(
-                    PREV_WNDPROC_1,
-                    window,
-                    message,
-                    WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                    lparam,
-                )
-            }
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => CallWindowProcW(
+                PREV_WNDPROC_1,
+                window,
+                message,
+                WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
+                lparam,
+            ),
             WM_MOUSEMOVE => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
                     return CallWindowProcW(
@@ -272,12 +254,7 @@ unsafe extern "system" fn wnd_proc_1(
 
 #[allow(clippy::fn_to_numeric_cast)]
 #[unsafe(no_mangle)]
-unsafe extern "system" fn wnd_proc_widget(
-    window: HWND,
-    message: u32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         match message {
             WM_APP => {

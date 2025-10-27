@@ -5,9 +5,8 @@ use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
 static METADATA_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
-static IIFE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap()
-});
+static IIFE_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap());
 
 use crate::utils;
 
@@ -57,10 +56,7 @@ pub fn load(webview: &ICoreWebView2) -> Result<()> {
             let parsed = parse(content);
 
             unsafe {
-                webview.AddScriptToExecuteOnDocumentCreated(
-                    PCWSTR(utils::create_utf_string(&parsed).as_ptr()),
-                    None,
-                )?
+                webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(&parsed).as_ptr()), None)?
             }
         }
     }

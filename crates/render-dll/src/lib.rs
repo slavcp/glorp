@@ -86,10 +86,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
                     Height: 1,
                     Format: DXGI_FORMAT_B8G8R8A8_UNORM,
                     Stereo: BOOL(0),
-                    SampleDesc: DXGI_SAMPLE_DESC {
-                        Count: 1,
-                        Quality: 0,
-                    },
+                    SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 },
                     BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
                     BufferCount: 2,
                     Scaling: DXGI_SCALING_STRETCH,
@@ -114,13 +111,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
 
 #[allow(clippy::type_complexity)]
 static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
-    unsafe fn(
-        *mut c_void,
-        *mut c_void,
-        *const DXGI_SWAP_CHAIN_DESC1,
-        *mut c_void,
-        *mut *mut c_void,
-    ) -> HRESULT,
+    unsafe fn(*mut c_void, *mut c_void, *const DXGI_SWAP_CHAIN_DESC1, *mut c_void, *mut *mut c_void) -> HRESULT,
 > = None;
 // static mut ORIGINAL_PRESENT: unsafe fn(
 //     *mut c_void,
@@ -195,8 +186,8 @@ unsafe extern "system" fn create_swapchain_hk(
         desc.BufferCount = 2;
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-        desc.Flags = (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0
-            | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0) as u32;
+        desc.Flags =
+            (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0 | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0) as u32;
 
         let original_fn = ORIGINAL_CREATE_SWAPCHAIN.unwrap();
 
