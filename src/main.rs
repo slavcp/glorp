@@ -8,7 +8,6 @@ use std::{
     sync::{Arc, Mutex, atomic::*},
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
-use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
     Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
     core::*,
@@ -89,43 +88,45 @@ fn main() {
         *discord_client.lock().unwrap() = Some(client);
     }
 
+    let (main_window, env) = window::Window::new(
+        config
+            .lock()
+            .unwrap()
+            .get::<String>("startMode")
+            .unwrap_or_else(|| String::from("Borderless Fullscreen"))
+            .as_str(),
+        args,
+    );
+
+    modules::priority::set(
+        config
+            .lock()
+            .unwrap()
+            .get::<String>("webviewPriority")
+            .unwrap_or(String::from("Normal"))
+            .as_str(),
+    );
+
+    let mut webview_pid: u32 = 0;
+
     unsafe {
-        let (mut main_window, env) = window::Window::new(
-            config
-                .lock()
-                .unwrap()
-                .get::<String>("startMode")
-                .unwrap_or_else(|| String::from("Borderless Fullscreen"))
-                .as_str(),
-            args,
-        );
-
-        modules::priority::set(
-            config
-                .lock()
-                .unwrap()
-                .get::<String>("webviewPriority")
-                .unwrap_or(String::from("Normal"))
-                .as_str(),
-        );
-
-        let mut webview_pid: u32 = 0;
         main_window.webview.BrowserProcessId(&mut webview_pid).ok();
+    }
 
-        println!("Webview PID: {}", webview_pid);
-        #[cfg(feature = "packaged")]
-        {
-            if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-                modules::lifecycle::check_update();
-            }
+    println!("Webview PID: {}", webview_pid);
+    #[cfg(feature = "packaged")]
+    {
+        if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
+            modules::lifecycle::check_update();
         }
+    }
 
-        if config.lock().unwrap().get("userscripts").unwrap_or(false) {
-            if let Err(e) = modules::userscripts::load(&main_window.webview) {
-                eprintln!("Failed to load userscripts: {}", e);
-            }
+    if config.lock().unwrap().get("userscripts").unwrap_or(false) {
+        if let Err(e) = modules::userscripts::load(&main_window.webview) {
+            eprintln!("Failed to load userscripts: {}", e);
         }
-
+    }
+    unsafe {
         #[cfg(feature = "editor-ignore")]
         {
             main_window
@@ -139,7 +140,6 @@ fn main() {
 
         main_window.webview.Navigate(w!("https://krunker.io")).ok();
 
-        // auto accept permission requests
         main_window
             .webview
             .add_PermissionRequested(
@@ -152,17 +152,19 @@ fn main() {
                 token,
             )
             .ok();
+    }
+    let mut blocklist: Vec<Regex> = Vec::new();
+    let mut swaps: HashMap<String, IStream> = HashMap::new();
 
-        let mut blocklist: Vec<Regex> = Vec::new();
-        let mut swaps: HashMap<String, IStream> = HashMap::new();
+    if config.lock().unwrap().get("blocklist").unwrap_or(true) {
+        blocklist = modules::blocklist::load(&main_window.webview)
+    };
 
-        if config.lock().unwrap().get("blocklist").unwrap_or(true) {
-            blocklist = modules::blocklist::load(&main_window.webview)
-        };
-        if config.lock().unwrap().get("swapper").unwrap_or(true) {
-            swaps = modules::swapper::load(&main_window.webview)
-        };
+    if config.lock().unwrap().get("swapper").unwrap_or(true) {
+        swaps = modules::swapper::load(&main_window.webview)
+    };
 
+    unsafe {
         main_window
             .webview
             .AddWebResourceRequestedFilterWithRequestSourceKinds(
@@ -220,65 +222,69 @@ fn main() {
                 token,
             )
             .ok();
+    }
 
-        let widget_wnd = Some(utils::find_child_window_by_class(
-            FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
-            "Chrome_RenderWidgetHostHWND",
-        ));
-
-        if config.lock().unwrap().get("realPing").unwrap_or(false) {
+    if config.lock().unwrap().get("realPing").unwrap_or(false) {
+        unsafe {
             main_window
                 .webview
                 .CallDevToolsProtocolMethod(w!("Network.enable"), w!("{}"), None)
                 .ok();
-            let ws_receiver = main_window
+        }
+        let ws_receiver = unsafe {
+            main_window
                 .webview
                 .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
-                .unwrap();
+                .unwrap()
+        };
 
-            let handler = DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
-                if let Some(args) = args {
-                    let mut params_vec = utils::create_utf_string("");
-                    let params = params_vec.as_mut_ptr() as *mut PWSTR;
+        let handler = DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
+            if let Some(args) = args {
+                let mut params_vec = utils::create_utf_string("");
+                let params = params_vec.as_mut_ptr() as *mut PWSTR;
+                unsafe {
                     args.ParameterObjectAsJson(params)?;
-                    let json =
-                        serde_json::from_str::<serde_json::Value>(&params.as_ref().unwrap().to_string().unwrap())
-                            .unwrap();
-                    let url = json.get("url").unwrap().to_string();
-                    if url.contains("lobby-") {
-                        let host = url.split("://").last().unwrap().split("/").next().unwrap().to_string();
-                        let resolved_ips = dns_lookup::lookup_host(&host)?;
-                        if let Some(ip) = resolved_ips.into_iter().next() {
-                            *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
-                        }
+                }
+                let json = unsafe {
+                    serde_json::from_str::<serde_json::Value>(&params.as_ref().unwrap().to_string().unwrap()).unwrap()
+                };
+                let url = json.get("url").unwrap().to_string();
+                if url.contains("lobby-") {
+                    let host = url.split("://").last().unwrap().split("/").next().unwrap().to_string();
+                    let resolved_ips = dns_lookup::lookup_host(&host)?;
+                    if let Some(ip) = resolved_ips.into_iter().next() {
+                        *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
                     }
                 }
-                Ok(())
-            }));
+            }
+            Ok(())
+        }));
 
+        unsafe {
             ws_receiver.add_DevToolsProtocolEventReceived(&handler, token).ok();
-
-            std::thread::spawn(move || {
-                loop {
-                    let result = ping_rs::send_ping(
-                        &LAST_CONNECTED_LOBBY.lock().unwrap(),
-                        std::time::Duration::from_secs(1),
-                        Default::default(),
-                        Some(&ping_rs::PingOptions {
-                            ttl: 128,
-                            dont_fragment: true,
-                        }),
-                    );
-                    if let Ok(reply) = result {
-                        PING.store(reply.rtt, Ordering::Relaxed);
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(3000));
-                }
-            });
         }
+        std::thread::spawn(move || {
+            loop {
+                let result = ping_rs::send_ping(
+                    &LAST_CONNECTED_LOBBY.lock().unwrap(),
+                    std::time::Duration::from_secs(1),
+                    Default::default(),
+                    Some(&ping_rs::PingOptions {
+                        ttl: 128,
+                        dont_fragment: true,
+                    }),
+                );
+                if let Ok(reply) = result {
+                    PING.store(reply.rtt, Ordering::Relaxed);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(3000));
+            }
+        });
+    }
 
-        let config_clone = Arc::clone(&config);
+    let config_clone = Arc::clone(&config);
 
+    unsafe {
         main_window
             .webview
             .add_WebMessageReceived(
@@ -289,7 +295,6 @@ fn main() {
                         let mut message_vec = utils::create_utf_string("");
                         let message = message_vec.as_mut_ptr() as *mut PWSTR;
                         args.TryGetWebMessageAsString(message).ok();
-
                         let message_string = message.as_ref().unwrap().to_string().unwrap();
 
                         let parts: Vec<&str> = message_string.split(", ").map(|s| s.trim()).collect();
@@ -322,20 +327,28 @@ fn main() {
                                 }
 
                                 let info_json = serde_json::to_string_pretty(&info_map).unwrap();
+
                                 webview
                                     .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(&info_json).as_ptr()))
                                     .ok();
                             }
                             Some(&"pointer-lock") => {
                                 let value = parts[1].parse::<bool>().unwrap_or(false);
-                                PostMessageW(widget_wnd, WM_USER, WPARAM(value as usize), LPARAM(0)).ok();
-
+                                PostMessageW(main_window.widget_wnd, WM_USER, WPARAM(value as usize), LPARAM(0)).ok();
                                 if value {
                                     utils::set_cpu_throttling(
                                         &webview,
                                         config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0),
                                     );
+                                    println!(
+                                        "set to {}",
+                                        config_clone.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0)
+                                    );
                                 } else {
+                                    println!(
+                                        "set to {}",
+                                        config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0)
+                                    );
                                     utils::set_cpu_throttling(
                                         &webview,
                                         config_clone.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0),
@@ -385,6 +398,10 @@ fn main() {
             )
             .ok();
 
+        if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
+            PostMessageW(main_window.widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
+        }
+
         main_window
             .controller
             .clone()
@@ -400,42 +417,22 @@ fn main() {
                         if key_event_kind != COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN {
                             return Ok(());
                         }
-                        match VIRTUAL_KEY(pressed_key as u16) {
-                            VK_F4 | VK_F6 => {
-                                utils::set_cpu_throttling(&main_window.webview, 1.0);
-                                main_window.webview.Navigate(w!("https://krunker.io")).ok();
-                                PostMessageW(widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
-                            }
-                            VK_F5 => {
-                                utils::set_cpu_throttling(&main_window.webview, 1.0);
-                                main_window.webview.Reload().ok();
-                                PostMessageW(widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
-                            }
-                            VK_F11 => {
-                                main_window.toggle_fullscreen();
-                            }
-                            VK_F12 => {
-                                main_window.webview.OpenDevToolsWindow().ok();
-                            }
-                            _ => {}
-                        }
+                        main_window.clone().handle_accelerator_key(pressed_key as u16);
                         Ok(())
                     },
                 )),
                 token,
             )
             .ok();
+    }
 
-        if config.lock().unwrap().get("rampBoost").unwrap_or(false) {
-            PostMessageW(widget_wnd, WM_APP, WPARAM(1), LPARAM(0)).ok();
-        }
-
-        let mut msg: MSG = MSG::default();
+    let mut msg: MSG = MSG::default();
+    unsafe {
         while GetMessageW(&mut msg, None, 0, 0).into() {
             let _ = TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
-    };
+    }
     // code here runs after window is closed
 
     config.lock().unwrap().save();

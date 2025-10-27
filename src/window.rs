@@ -38,17 +38,26 @@ pub struct Window {
     pub controller: ICoreWebView2Controller4,
     pub webview: ICoreWebView2_22,
     pub window_state: WindowState,
+    pub widget_wnd: Option<HWND>,
 }
 
 impl Window {
     pub fn new(start_mode: &str, args: String) -> (Self, ICoreWebView2Environment) {
         let (hwnd, window_state) = create_window(start_mode);
         let (controller, env, webview) = create_webview2(hwnd, args);
+        let widget_wnd = unsafe {
+            Some(utils::find_child_window_by_class(
+                FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
+                "Chrome_RenderWidgetHostHWND",
+            ))
+        };
+
         let window = Window {
             hwnd,
             controller,
             webview,
             window_state,
+            widget_wnd,
         };
 
         unsafe {
@@ -57,6 +66,7 @@ impl Window {
                 controller: window.controller.clone(),
                 webview: window.webview.clone(),
                 window_state: window.window_state,
+                widget_wnd: window.widget_wnd,
             });
             SetWindowLongPtrW(window.hwnd, GWLP_USERDATA, Box::into_raw(window_clone) as isize);
         }
@@ -97,6 +107,33 @@ impl Window {
                 .ok();
             }
             self.window_state.fullscreen = !self.window_state.fullscreen;
+        }
+    }
+    pub fn handle_accelerator_key(&mut self, key: u16) {
+        match VIRTUAL_KEY(key) {
+            VK_F4 | VK_F6 => {
+                utils::set_cpu_throttling(&self.webview, 1.0);
+                println!("set to 1.0");
+                unsafe {
+                    self.webview.Navigate(w!("https://krunker.io")).ok();
+                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
+                }
+            }
+            VK_F5 => {
+                utils::set_cpu_throttling(&self.webview, 1.0);
+                println!("set to 1.0");
+                unsafe {
+                    self.webview.Reload().ok();
+                    PostMessageW(self.widget_wnd, WM_USER, WPARAM(false as usize), LPARAM(0)).ok();
+                }
+            }
+            VK_F11 => {
+                self.toggle_fullscreen();
+            }
+            VK_F12 => unsafe {
+                self.webview.OpenDevToolsWindow().ok();
+            },
+            _ => {}
         }
     }
 }
@@ -359,21 +396,7 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 PostQuitMessage(0);
             }
             WM_KEYDOWN => {
-                match VIRTUAL_KEY(wparam.0 as u16) {
-                    VK_F4 | VK_F6 => {
-                        window.webview.Navigate(w!("https://krunker.io")).ok();
-                    }
-                    VK_F5 => {
-                        window.webview.Reload().ok();
-                    }
-                    VK_F11 => {
-                        window.toggle_fullscreen();
-                    }
-                    VK_F12 => {
-                        window.webview.OpenDevToolsWindow().ok();
-                    }
-                    _ => (),
-                };
+                window.handle_accelerator_key(wparam.0 as u16);
             }
             WM_SIZE => {
                 let bounds = RECT {

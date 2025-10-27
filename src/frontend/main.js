@@ -131,5 +131,6 @@ Object.defineProperty(window, "gameLoaded", {
 			menuTimerCSS.innerHTML = css.default;
 			document.head.append(menuTimerCSS);
 		}
+		window.chrome.webview.postMessage(`pointer-lock, false`); // enable the cpu throttle after it loads
 	},
 });
