@@ -1,6 +1,5 @@
 use std::{collections::HashSet, fs::*, io::*};
 
-use regex::Regex;
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
 
@@ -13,7 +12,7 @@ struct BlocklistConfig {
     disabled: HashSet<String>,
 }
 
-pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
+pub fn load(webview_window: &ICoreWebView2_22) {
     let blocklist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
     let mut blocklist_file = OpenOptions::new()
         .write(true)
@@ -43,22 +42,18 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
 
     let default_urls = serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap();
 
-    for url in default_urls.disabled {
-        blocklist.disabled.insert(url);
-    }
-
-    for url in default_urls.enabled {
-        blocklist.enabled.insert(url);
-    }
-
-    blocklist.enabled.retain(|url| !blocklist.disabled.contains(url));
+    blocklist.disabled.extend(default_urls.disabled);
+    blocklist.enabled.extend(
+        default_urls
+            .enabled
+            .into_iter()
+            .filter(|url| !blocklist.disabled.contains(url)),
+    );
 
     let updated_blocklist_string = serde_json::to_string_pretty(&blocklist).unwrap();
-    blocklist_file.set_len(0).unwrap();
-    blocklist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
-    blocklist_file.write_all(updated_blocklist_string.as_bytes()).unwrap();
-
-    let mut blocklist_regex: Vec<Regex> = Vec::<Regex>::new();
+    blocklist_file.set_len(0).ok();
+    blocklist_file.seek(std::io::SeekFrom::Start(0)).ok();
+    blocklist_file.write_all(updated_blocklist_string.as_bytes()).ok();
 
     for url in blocklist.enabled.iter() {
         unsafe {
@@ -69,11 +64,6 @@ pub fn load(webview_window: &ICoreWebView2_22) -> Vec<Regex> {
             ) {
                 eprintln!("Failed to add web resource requested filter: {}", e);
             }
-        }
-        let pattern = url.replace("*", ".*");
-        let pattern = format!("^{}$", pattern);
-        let regex = Regex::new(&pattern).unwrap();
-        blocklist_regex.push(regex);
+        };
     }
-    blocklist_regex
 }

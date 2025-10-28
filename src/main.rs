@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
-use regex::Regex;
 use std::collections::HashMap;
 use std::{
     net::{IpAddr, Ipv4Addr},
@@ -153,11 +152,10 @@ fn main() {
             )
             .ok();
     }
-    let mut blocklist: Vec<Regex> = Vec::new();
     let mut swaps: HashMap<String, IStream> = HashMap::new();
 
     if config.lock().unwrap().get("blocklist").unwrap_or(true) {
-        blocklist = modules::blocklist::load(&main_window.webview)
+        modules::blocklist::load(&main_window.webview);
     };
 
     if config.lock().unwrap().get("swapper").unwrap_or(true) {
@@ -185,36 +183,33 @@ fn main() {
                             let uri = uri_string.as_mut_ptr() as *mut PWSTR;
                             request.Uri(uri)?;
                             let uri = uri.as_ref().unwrap().to_string()?;
-                            let filename: &str = uri
-                                .split("krunker.io/")
-                                .nth(1)
-                                .and_then(|s| s.split('?').next())
-                                .unwrap_or("");
+                            if uri.contains("krunker.io") {
+                                if uri.contains("game-info") || uri.contains("lobby-ranked") {
+                                    webview.unwrap().PostWebMessageAsString(w!("game-updated")).ok();
+                                    return Ok(());
+                                }
+                                let filename: &str = uri
+                                    .split("krunker.io/")
+                                    .nth(1)
+                                    .and_then(|s| s.split('?').next())
+                                    .unwrap_or("");
 
-                            if filename.contains("game-info") || uri.contains("lobby-ranked") {
-                                webview.unwrap().PostWebMessageAsString(w!("game-updated")).ok();
-                                return Ok(());
-                            }
+                                let stream = swaps.get(filename);
+                                if let Some(stream) = stream {
+                                    let response = env.CreateWebResourceResponse(
+                                        stream,
+                                        200,
+                                        w!("OK"),
+                                        w!("Access-Control-Allow-Origin: *"),
+                                    )?;
+                                    args.SetResponse(Some(&response))?;
 
-                            let stream = swaps.get(filename);
-                            if let Some(stream) = stream {
-                                let response = env.CreateWebResourceResponse(
-                                    stream,
-                                    200,
-                                    w!("OK"),
-                                    w!("Access-Control-Allow-Origin: *"),
-                                )?;
-                                args.SetResponse(Some(&response))?;
-
-                                return Ok(());
-                            }
-
-                            for regex in &blocklist {
-                                if regex.is_match(&uri) {
-                                    request.SetUri(PCWSTR::null())?;
                                     return Ok(());
                                 }
                             }
+                            // other cases MUST be from the blocklist
+                            request.SetUri(PCWSTR::null())?;
+                            return Ok(());
                         }
                         Ok(())
                     },

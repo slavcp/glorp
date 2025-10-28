@@ -101,8 +101,8 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
                 panic!("Failed to create swapchain");
             });
 
-        let present1_fn = swap_chain.vtable().Present1 as *const c_void;
-        debug_print(format!("Present1 function pointer: {:?}", present1_fn));
+        // let present1_fn = swap_chain.vtable().Present1 as *const c_void;
+        // debug_print(format!("Present1 function pointer: {:?}", present1_fn));
 
         PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).unwrap();
         Ok((factory, swap_chain))
