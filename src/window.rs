@@ -1,10 +1,9 @@
-use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::{
     Win32::{
         Foundation::*,
         Graphics::Gdi::*,
-        System::{DataExchange::COPYDATASTRUCT, LibraryLoader::*},
-        UI::WindowsAndMessaging::*,
+        System::{DataExchange::COPYDATASTRUCT, LibraryLoader::GetModuleHandleW},
+        UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
     },
     core::*,
 };
@@ -258,12 +257,9 @@ pub fn create_webview2(
         let result = CreateCoreWebView2EnvironmentCompletedHandler::wait_for_async_operation(
             Box::new(move |environment_created_handler| {
                 CreateCoreWebView2EnvironmentWithOptions(
+                    PCWSTR(utils::create_utf_string(current_exe.to_string_lossy() + "\\WebView2").as_ptr()),
                     PCWSTR(
-                        utils::create_utf_string(&(current_exe.to_str().unwrap().to_owned() + "\\WebView2")).as_ptr(),
-                    ),
-                    PCWSTR(
-                        utils::create_utf_string(&(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp"))
-                            .as_ptr(),
+                        utils::create_utf_string(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp").as_ptr(),
                     ),
                     &ICoreWebView2EnvironmentOptions::from(options),
                     &environment_created_handler,
@@ -306,7 +302,7 @@ pub fn create_webview2(
                         let current_exe = std::env::current_exe().unwrap();
                         let mut command = std::process::Command::new(&current_exe);
                         command.arg("crash");
-                        command.spawn().unwrap();
+                        command.spawn().unwrap().wait().ok();
                     }
 
                     std::process::exit(0);
@@ -323,7 +319,7 @@ pub fn create_webview2(
         let env = erx.recv().unwrap();
         let webview2 = controller.CoreWebView2().unwrap().cast::<ICoreWebView2_22>().unwrap();
 
-        controller.SetAllowExternalDrop(false).unwrap();
+        controller.SetAllowExternalDrop(false).ok();
         controller
             .SetDefaultBackgroundColor(COREWEBVIEW2_COLOR {
                 A: 255,
@@ -333,12 +329,7 @@ pub fn create_webview2(
             })
             .ok();
 
-        let webview2_settings = webview2
-            .clone()
-            .Settings()
-            .unwrap()
-            .cast::<ICoreWebView2Settings9>()
-            .unwrap();
+        let webview2_settings = webview2.Settings().unwrap().cast::<ICoreWebView2Settings9>().unwrap();
 
         webview2_settings.SetIsReputationCheckingRequired(false).ok();
         webview2_settings.SetIsSwipeNavigationEnabled(false).ok();
@@ -383,10 +374,8 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                     .webview
                     .ExecuteScript(
                         PCWSTR(
-                            utils::create_utf_string(
-                                format!("window.glorpClient.handleMouseWheel({})", scroll_amount).as_str(),
-                            )
-                            .as_ptr(),
+                            utils::create_utf_string(format!("window.glorpClient.handleMouseWheel({})", scroll_amount))
+                                .as_ptr(),
                         ),
                         None,
                     )
@@ -423,8 +412,7 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                     .webview
                     .ExecuteScript(
                         PCWSTR(
-                            utils::create_utf_string(format!("window.glorpClient.parseArgs('{}')", string).as_str())
-                                .as_ptr(),
+                            utils::create_utf_string(format!("window.glorpClient.parseArgs('{}')", string)).as_ptr(),
                         ),
                         None,
                     )

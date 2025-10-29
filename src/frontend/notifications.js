@@ -16,7 +16,7 @@ class Notification {
 	createNotificationElement() {
 		this.notificationEl = document.createElement("div");
 		this.notificationEl.id = "notification";
-		this.notificationEl.innerHTML = `
+		this.notificationEl.innerHTML = /* html */ `
             <style>
                 #notification {
                     position: absolute;

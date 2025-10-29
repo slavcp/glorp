@@ -104,7 +104,7 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
         // let present1_fn = swap_chain.vtable().Present1 as *const c_void;
         // debug_print(format!("Present1 function pointer: {:?}", present1_fn));
 
-        PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).unwrap();
+        PostMessageW(Some(window), WM_CLOSE, WPARAM(0), LPARAM(0)).ok();
         Ok((factory, swap_chain))
     }
 }
@@ -154,7 +154,7 @@ fn attach() {
         //     panic!("hh")
         // });
 
-        MinHook::enable_all_hooks().unwrap();
+        MinHook::enable_all_hooks().ok();
         ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute::<
             *mut c_void,
             Option<

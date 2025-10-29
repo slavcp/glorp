@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-  <title>External Queue</title>
-  <style>
+	<head>
+		<title>External Queue</title>
+		<style>
   @font-face {
     font-family: "Inter";
     font-weight: 400;
@@ -289,7 +288,7 @@
       cursor: pointer;
     }
   </style>
-  <script>
+		<script>
 
     let isQueued = false;
     let queueStartTime;
@@ -544,48 +543,52 @@
     }
 
   </script>
-</head>
+	</head>
 
-<body>
-  <div class="queuer-container">
-    <div class="blur-overlay"></div>
-    <div class="content">
-      <div class="status-section">
-        <span id="queueStatus">Not in queue</span>
-        <div class="queue-time-display">
-          Queue Time: <span id="queueTimer">00:00</span>
-        </div>
-      </div>
+	<body>
+		<div class="queuer-container">
+			<div class="blur-overlay"></div>
+			<div class="content">
+				<div class="status-section">
+					<span id="queueStatus">Not in queue</span>
+					<div class="queue-time-display">
+						Queue Time: <span id="queueTimer">00:00</span>
+					</div>
+				</div>
 
-      <div class="controls-section">
-        <div id="regionCheckboxes">
-          <input type="checkbox" id="eu" value="eu" />
-          <label for="eu">EU</label>
+				<div class="controls-section">
+					<div id="regionCheckboxes">
+						<input type="checkbox" id="eu" value="eu">
+						<label for="eu">EU</label>
 
-          <input type="checkbox" id="na" value="na" />
-          <label for="na">NA</label>
+						<input type="checkbox" id="na" value="na">
+						<label for="na">NA</label>
 
-          <input type="checkbox" id="as" value="as" />
-          <label for="as">AS</label>
-        </div>
-        <button id="queueButton">Join Queue</button>
-      </div>
-    </div>
-  </div>
+						<input type="checkbox" id="as" value="as">
+						<label for="as">AS</label>
+					</div>
+					<button id="queueButton">Join Queue</button>
+				</div>
+			</div>
+		</div>
 
-  <div id="matchPopupOverlay">
-    <div id="matchPopup"
-      style="text-align:center; padding:20px; font-family:Arial, sans-serif; background:#1e1e2f; color:#fff; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.3); width:320px; margin:auto;">
-      <div id="closeMatch" style="font-size:1.5em; cursor:pointer; text-align:right; margin-bottom:10px;">&times;</div>
-      <div style="font-size:2em; font-weight:bold; margin-bottom:6px;">Match Found!</div>
-      <div id="region" style="font-size:1.1em; color:#a0aec0; margin-bottom:15px;"></div>
-      <div id="countdownTimer" style="font-size:2.5em; font-weight:bold; color:#ff5555; margin-bottom:18px;">01:00</div>
-      <div style="font-size:1em; line-height:1.5; color:#e2e8f0;">
-        Open the client and rejoin the game from the ranked menu!
-      </div>
-    </div>
-  </div>
-  </div>
-</body>
-
+		<div id="matchPopupOverlay">
+			<div
+				id="matchPopup"
+				style="text-align:center; padding:20px; font-family:Arial, sans-serif; background:#1e1e2f; color:#fff; border-radius:16px; box-shadow:0 8px 20px rgba(0,0,0,0.3); width:320px; margin:auto;"
+			>
+				<div id="closeMatch" style="font-size:1.5em; cursor:pointer; text-align:right; margin-bottom:10px;">
+					&times;
+				</div>
+				<div style="font-size:2em; font-weight:bold; margin-bottom:6px;">Match Found!</div>
+				<div id="region" style="font-size:1.1em; color:#a0aec0; margin-bottom:15px;"></div>
+				<div id="countdownTimer" style="font-size:2.5em; font-weight:bold; color:#ff5555; margin-bottom:18px;">
+					01:00
+				</div>
+				<div style="font-size:1em; line-height:1.5; color:#e2e8f0;">
+					Open the client and rejoin the game from the ranked menu!
+				</div>
+			</div>
+		</div>
+	</body>
 </html>

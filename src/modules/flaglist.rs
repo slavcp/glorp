@@ -19,7 +19,7 @@ pub fn load() -> String {
         .unwrap();
 
     if flaglist_file.metadata().unwrap().len() == 0 {
-        flaglist_file.write_all(constants::DEFAULT_FLAGS.as_bytes()).unwrap();
+        flaglist_file.write_all(constants::DEFAULT_FLAGS.as_bytes()).ok();
     }
 
     let flaglist_string = std::fs::read_to_string(&flaglist_path).unwrap();
@@ -27,7 +27,7 @@ pub fn load() -> String {
     let mut flaglist = match serde_json::from_str::<FlaglistConfig>(&flaglist_string) {
         Ok(config) => config,
         Err(_) => {
-            flaglist_file.write_all(constants::DEFAULT_FLAGS.as_bytes()).unwrap();
+            flaglist_file.write_all(constants::DEFAULT_FLAGS.as_bytes()).ok();
             serde_json::from_str::<FlaglistConfig>(constants::DEFAULT_FLAGS).unwrap()
         }
     };
@@ -45,9 +45,9 @@ pub fn load() -> String {
     flaglist.enabled.retain(|url| !flaglist.disabled.contains(url));
 
     let updated_flaglist_string = serde_json::to_string_pretty(&flaglist).unwrap();
-    flaglist_file.set_len(0).unwrap();
-    flaglist_file.seek(std::io::SeekFrom::Start(0)).unwrap();
-    flaglist_file.write_all(updated_flaglist_string.as_bytes()).unwrap();
+    flaglist_file.set_len(0).ok();
+    flaglist_file.seek(std::io::SeekFrom::Start(0)).ok();
+    flaglist_file.write_all(updated_flaglist_string.as_bytes()).ok();
 
     let mut args_str = String::new();
     for flag in &flaglist.enabled {

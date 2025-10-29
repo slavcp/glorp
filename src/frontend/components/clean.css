@@ -24,19 +24,19 @@
 
 .verticalSeparator,
 .verticalSeparatorInline {
-	visibility: hidden;
+	visibility: hidden !important;
 }
 
 #mLevelCont {
-	background-color: transparent;
+	background-color: transparent !important;
 }
 
 #uiBase.onMenu #spectButton {
-	top: 94%;
+	top: 94% !important;
 }
 
 .headerBarRight {
-	right: -23px;
+	right: -23px !important;
 }
 
 .headerBarLeft,

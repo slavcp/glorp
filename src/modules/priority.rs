@@ -2,6 +2,7 @@ use windows::Win32::{
     Foundation::*,
     System::{Diagnostics::ToolHelp::*, Threading::*},
 };
+
 pub fn set(level: &str) {
     let priority_class = match level {
         "High" => HIGH_PRIORITY_CLASS,
@@ -26,11 +27,10 @@ pub fn set(level: &str) {
                     .to_string()
                     .to_lowercase()
                     .contains("webview2")
+                    && let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid)
                 {
-                    if let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid) {
-                        SetPriorityClass(handle, priority_class).ok();
-                        CloseHandle(handle).ok();
-                    }
+                    SetPriorityClass(handle, priority_class).ok();
+                    CloseHandle(handle).ok();
                 }
 
                 if Process32NextW(snapshot, &mut entry).is_err() {

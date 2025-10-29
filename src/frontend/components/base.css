@@ -48,8 +48,8 @@
 }
 
 #phonePop {
-	top: 0 !important;
-	bottom: 0 !important;
+	top: 0;
+	bottom: 0;
 }
 
 div #setHed_local,

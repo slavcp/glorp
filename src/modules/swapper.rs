@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::{
     Win32::{
@@ -52,7 +51,7 @@ fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2_22)
                 stream
                     .Write(file_content.as_ptr() as *const _, file_content.len() as u32, None)
                     .unwrap();
-                stream.Seek(0, STREAM_SEEK_SET, None).unwrap();
+                stream.Seek(0, STREAM_SEEK_SET, None).ok();
                 swaps.insert(relative_path, stream);
             }
         }

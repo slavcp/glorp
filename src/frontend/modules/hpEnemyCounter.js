@@ -4,7 +4,7 @@ class HpEnemyCounter {
 		this.numberDisplay.id = "hpEnemyCounter";
 		this.numberDisplay.classList.add("statIcon");
 		this.numberDisplay.style.cssText = "inline-block; transform: translate(0, -2.7px);";
-		this.numberDisplay.innerHTML = `
+		this.numberDisplay.innerHTML = /* html */ `
             <div class="greyInner" style="display: flex">
                 <span style="color:white; font-size:15px; margin-right: 4px;">on</span>
                 <span id="myScoreVal" class="pointVal">0</span>
@@ -36,7 +36,7 @@ class HpEnemyCounter {
 	processTeamScores = () => {
 		for (const team of document.querySelectorAll("#tScoreC1, #tScoreC2")) {
 			if (team && !team.className.includes("you")) {
-				const currentEnemyOBJ = Number.parseInt(team.nextElementSibling.innerText);
+				const currentEnemyOBJ = Number.parseInt(team.nextElementSibling.innerText, 10);
 				if (currentEnemyOBJ > this.enemyOBJ) {
 					this.pointCounter.innerText = (currentEnemyOBJ - this.enemyOBJ) / 10;
 					if (this.enemyTimeout) clearTimeout(this.enemyTimeout);

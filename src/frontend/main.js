@@ -69,7 +69,7 @@ Object.defineProperty(window, "gameLoaded", {
 		window.windows[0].toggleType({ checked: true });
 
 		// append ranked and mod button to comp host ui
-		document.querySelector("#compBtnLst").innerHTML += `
+		document.querySelector("#compBtnLst").innerHTML += /* html */ `
     <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
     <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
 
@@ -120,16 +120,18 @@ Object.defineProperty(window, "gameLoaded", {
 		if (window.glorpClient?.settings.data?.textSelect) {
 			const textSelectCSS = document.createElement("style");
 			textSelectCSS.id = "textSelectCSS";
-			textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+			textSelectCSS.innerHTML = /* css */ "#chatHolder * { user-select: text }";
 			document.head.append(textSelectCSS);
 		}
 
 		if (window.glorpClient?.settings.data?.menuTimer) {
-			const css = import("./components/menuTimer.css");
-			const menuTimerCSS = document.createElement("style");
-			menuTimerCSS.id = "menuTimerCSS";
-			menuTimerCSS.innerHTML = css.default;
-			document.head.append(menuTimerCSS);
+			import("./components/menuTimer.css").then((module) => {
+				window.originalConsole.log(module);
+				const menuTimerCSS = document.createElement("style");
+				menuTimerCSS.id = "menuTimerCSS";
+				menuTimerCSS.innerHTML = module.default;
+				document.head.append(menuTimerCSS);
+			});
 		}
 		window.chrome.webview.postMessage(`pointer-lock, false`); // enable the cpu throttle after it loads
 	},

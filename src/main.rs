@@ -1,8 +1,8 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 use std::{
+    collections::HashMap,
     net::{IpAddr, Ipv4Addr},
     sync::{Arc, Mutex, atomic::*},
 };
@@ -14,7 +14,6 @@ use windows::{
 
 mod config;
 mod constants;
-
 mod utils;
 mod window;
 mod modules {
@@ -37,7 +36,7 @@ static PING: Lazy<AtomicU32> = Lazy::new(|| AtomicU32::new(0));
 fn main() {
     #[cfg(feature = "packaged")]
     {
-        modules::lifecycle::set_panic_hook();
+        modules::lifecycle::set_panic_hook().ok();
         modules::lifecycle::installer_cleanup().ok();
     }
     modules::lifecycle::register_instance();
@@ -62,13 +61,13 @@ fn main() {
     if config.lock().unwrap().get("hardFlip").unwrap_or(true) {
         std::fs::rename(
             webview2_folder.join("OLD_vk_swiftshader.dll"),
-            &webview2_folder.join("vk_swiftshader.dll"),
+            webview2_folder.join("vk_swiftshader.dll"),
         )
         .ok();
     } else {
         std::fs::rename(
             webview2_folder.join("vk_swiftshader.dll"),
-            &webview2_folder.join("OLD_vk_swiftshader.dll"),
+            webview2_folder.join("OLD_vk_swiftshader.dll"),
         )
         .ok();
     }
@@ -116,14 +115,14 @@ fn main() {
     #[cfg(feature = "packaged")]
     {
         if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-            modules::lifecycle::check_update();
+            modules::lifecycle::check_update().ok();
         }
     }
 
-    if config.lock().unwrap().get("userscripts").unwrap_or(false) {
-        if let Err(e) = modules::userscripts::load(&main_window.webview) {
-            eprintln!("Failed to load userscripts: {}", e);
-        }
+    if config.lock().unwrap().get("userscripts").unwrap_or(false)
+        && let Err(e) = modules::userscripts::load(&main_window.webview)
+    {
+        eprintln!("Failed to load userscripts: {}", e);
     }
     unsafe {
         #[cfg(feature = "editor-ignore")]
@@ -324,7 +323,7 @@ fn main() {
                                 let info_json = serde_json::to_string_pretty(&info_map).unwrap();
 
                                 webview
-                                    .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(&info_json).as_ptr()))
+                                    .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr()))
                                     .ok();
                             }
                             Some(&"pointer-lock") => {
@@ -374,7 +373,7 @@ fn main() {
                             Some(&"ping") => {
                                 webview
                                     .PostWebMessageAsJson(PCWSTR(
-                                        utils::create_utf_string(&format!(
+                                        utils::create_utf_string(format!(
                                             "{{\"pingInfo\":{}}}",
                                             &PING.load(Ordering::Relaxed)
                                         ))

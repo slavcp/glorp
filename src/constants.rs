@@ -1,10 +1,12 @@
 pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
+pub const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
+pub const INSTANCE_MUTEX_NAME: &str = "Global\\7e0f405e-fe65-493a-acf0-9719b85697cd";
 
 pub const DEFAULT_BLOCKLIST: &str = r#"{
     "enabled": [
         "*://*.pollfish.com/*",
         "*://storage.googleapis.com/pollfish_production/*",
-        "*://*.paypalobjects.com/*", 
+        "*://*.paypalobjects.com/*",
         "*://c.amazon-adsystem.com/*",
         "*://config.aps.amazon-adsystem.com/*",
         "*://securepubads.g.doubleclick.net/*",

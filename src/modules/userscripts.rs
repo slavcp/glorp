@@ -56,7 +56,7 @@ pub fn load(webview: &ICoreWebView2) -> Result<()> {
             let parsed = parse(content);
 
             unsafe {
-                webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(&parsed).as_ptr()), None)?
+                webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(parsed).as_ptr()), None)?
             }
         }
     }

@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::utils::create_utf_string;
+use crate::{constants, utils::create_utf_string};
 use std::{env, fs, io, io::*, process};
 use windows::{
     Win32::Foundation::*,
@@ -8,17 +8,14 @@ use windows::{
     core::*,
 };
 
-const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
-const INSTANCE_MUTEX_NAME: &str = "Global\\7e0f405e-fe65-493a-acf0-9719b85697cd";
-
 pub fn check_update() {
     std::thread::spawn(|| {
-        let mut response = match ureq::get(UPDATE_URL).call() {
+        let mut response = match ureq::get(constants::UPDATE_URL).call() {
             Ok(response) => response.into_body(),
             Err(_) => return,
         };
         let mut buf = String::new();
-        response.as_reader().read_to_string(&mut buf).unwrap();
+        response.as_reader().read_to_string(&mut buf).ok();
 
         let json = serde_json::from_str::<serde_json::Value>(&buf).unwrap();
         let newest_version = match json["tag_name"].as_str() {
@@ -45,9 +42,7 @@ pub fn check_update() {
                 unsafe {
                     MessageBoxW(
                         None,
-                        PCWSTR(
-                            crate::utils::create_utf_string(format!("Failed to download: {:?}", e).as_str()).as_ptr(),
-                        ),
+                        PCWSTR(crate::utils::create_utf_string(format!("Failed to download: {:?}", e)).as_ptr()),
                         w!("Download Error"),
                         MB_ICONERROR | MB_SYSTEMMODAL,
                     );
@@ -62,10 +57,7 @@ pub fn check_update() {
                 unsafe {
                     MessageBoxW(
                         None,
-                        PCWSTR(
-                            crate::utils::create_utf_string(format!("Failed to create file: {:?}", e).as_str())
-                                .as_ptr(),
-                        ),
+                        PCWSTR(crate::utils::create_utf_string(format!("Failed to create file: {:?}", e)).as_ptr()),
                         w!("Download Error"),
                         MB_ICONERROR | MB_SYSTEMMODAL,
                     );
@@ -88,7 +80,7 @@ pub fn check_update() {
                 ShellExecuteW(
                     None,
                     w!("open"),
-                    PCWSTR(crate::utils::create_utf_string(output_path.to_str().unwrap()).as_ptr()),
+                    PCWSTR(crate::utils::create_utf_string(output_path.to_string_lossy()).as_ptr()),
                     w!("/q"),
                     None,
                     SW_NORMAL,
@@ -106,12 +98,11 @@ pub fn installer_cleanup() -> io::Result<()> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(extension) = path.extension() {
-                if extension.eq_ignore_ascii_case("msi") {
-                    fs::remove_file(&path).ok();
-                }
-            }
+        if path.is_file()
+            && let Some(extension) = path.extension()
+            && extension.eq_ignore_ascii_case("msi")
+        {
+            fs::remove_file(&path).ok();
         }
     }
     Ok(())
@@ -149,7 +140,7 @@ pub fn set_panic_hook() {
             let result = MessageBoxW(
                 None,
                 PCWSTR(
-                    create_utf_string(&format!(
+                    create_utf_string(format!(
                         "A crash report has been saved to:\n\
                      {}\n\n\
                      Click Yes to open the log.",
@@ -165,7 +156,7 @@ pub fn set_panic_hook() {
                 ShellExecuteW(
                     None,
                     PCWSTR(create_utf_string("open").as_ptr()),
-                    PCWSTR(create_utf_string(&log_file_path.to_string_lossy()).as_ptr()),
+                    PCWSTR(create_utf_string(log_file_path.to_string_lossy()).as_ptr()),
                     PCWSTR::null(),
                     PCWSTR::null(),
                     SW_SHOW,
@@ -177,7 +168,12 @@ pub fn set_panic_hook() {
 
 pub fn register_instance() {
     unsafe {
-        CreateMutexW(None, false, PCWSTR(create_utf_string(INSTANCE_MUTEX_NAME).as_ptr())).ok();
+        CreateMutexW(
+            None,
+            false,
+            PCWSTR(create_utf_string(constants::INSTANCE_MUTEX_NAME).as_ptr()),
+        )
+        .ok();
         if GetLastError() == ERROR_ALREADY_EXISTS {
             eprintln!("Instance already running");
             let data = env::args().skip(1).collect::<Vec<String>>().join(" ");

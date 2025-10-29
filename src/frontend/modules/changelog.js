@@ -19,7 +19,7 @@ function semverCompare(a, b) {
 	async function showChangelogPopup(version) {
 		const html = await import("../components/changelog.html");
 		const overlay = document.createElement("div");
-		overlay.style = `
+		overlay.style = /* css */ `
 			position: fixed;
 			top: 0;
 			left: 0;

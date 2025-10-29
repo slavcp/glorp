@@ -23,9 +23,7 @@ pub fn load(webview_window: &ICoreWebView2_22) {
         .unwrap();
 
     if blocklist_file.metadata().unwrap().len() == 0 {
-        blocklist_file
-            .write_all(constants::DEFAULT_BLOCKLIST.as_bytes())
-            .unwrap();
+        blocklist_file.write_all(constants::DEFAULT_BLOCKLIST.as_bytes()).ok();
     }
 
     let blocklist_string = std::fs::read_to_string(&blocklist_path).unwrap();
@@ -33,9 +31,7 @@ pub fn load(webview_window: &ICoreWebView2_22) {
     let mut blocklist = match serde_json::from_str::<BlocklistConfig>(&blocklist_string) {
         Ok(config) => config,
         Err(_) => {
-            blocklist_file
-                .write_all(constants::DEFAULT_BLOCKLIST.as_bytes())
-                .unwrap();
+            blocklist_file.write_all(constants::DEFAULT_BLOCKLIST.as_bytes()).ok();
             serde_json::from_str::<BlocklistConfig>(constants::DEFAULT_BLOCKLIST).unwrap()
         }
     };

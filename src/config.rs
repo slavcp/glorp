@@ -42,12 +42,12 @@ impl Config {
         if settings_file.metadata().unwrap().len() == 0 {
             settings_file
                 .write_all(serde_json::to_string_pretty(&load_defaults()).unwrap().as_bytes())
-                .unwrap();
+                .ok();
         }
 
         let mut settings_string = String::new();
-        settings_file.seek(SeekFrom::Start(0)).unwrap();
-        settings_file.read_to_string(&mut settings_string).unwrap();
+        settings_file.seek(SeekFrom::Start(0)).ok();
+        settings_file.read_to_string(&mut settings_string).ok();
 
         let mut data = match serde_json::from_str(&settings_string) {
             Ok(data) => data,
@@ -81,6 +81,6 @@ impl Config {
     pub fn save(&self) {
         let settings_path = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\settings.json";
         let settings_string = serde_json::to_string_pretty(&self.data).unwrap();
-        std::fs::write(settings_path, settings_string).unwrap();
+        std::fs::write(settings_path, settings_string).ok();
     }
 }

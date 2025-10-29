@@ -1,7 +1,7 @@
 const externalQueue = document.createElement("button");
 
 externalQueue.textContent = "open_in_new";
-externalQueue.style = `background-color: #5ce05a;
+externalQueue.style = /* css */ `background-color: #5ce05a;
     color: #ffffff;
     border-radius: 9px;
     padding: 20px 21px;
