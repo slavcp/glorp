@@ -185,9 +185,6 @@ fn create_window(start_mode: &str) -> (HWND, WindowState) {
         let mut fullscreen_state = false;
 
         match start_mode {
-            "Frameless" => {
-                window_style = WS_POPUP | WS_VISIBLE;
-            }
             "Borderless Fullscreen" => {
                 window_style = WS_VISIBLE;
                 x = 0;
@@ -196,7 +193,7 @@ fn create_window(start_mode: &str) -> (HWND, WindowState) {
                 height = screen_height;
                 fullscreen_state = true;
             }
-            "Fullscreen" => {
+            "Maximized" => {
                 window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MAXIMIZE;
                 x = 0;
                 y = 0;

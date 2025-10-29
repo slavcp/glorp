@@ -108,12 +108,14 @@ pub fn installer_cleanup() -> io::Result<()> {
     Ok(())
 }
 
-pub fn set_panic_hook() {
-    std::panic::set_hook(Box::new(|panic_info| {
-        let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("unknown_path"));
-        let log_dir = exe_path.parent().unwrap_or_else(|| std::path::Path::new("./"));
-        let log_file_path = log_dir.join("crash_log.txt");
+pub fn set_panic_hook() -> io::Result<()> {
+    let exe_path = std::env::current_exe()?;
+    let log_dir = exe_path
+        .parent()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "No parent directory"))?;
+    let log_file_path = log_dir.join("crash_log.txt");
 
+    std::panic::set_hook(Box::new(move |panic_info| {
         let crash_message = format!(
             "Location: {}\n\
             Message: {}\n\
@@ -164,6 +166,7 @@ pub fn set_panic_hook() {
             }
         }
     }));
+    Ok(())
 }
 
 pub fn register_instance() {

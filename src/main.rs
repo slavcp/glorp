@@ -115,7 +115,7 @@ fn main() {
     #[cfg(feature = "packaged")]
     {
         if config.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-            modules::lifecycle::check_update().ok();
+            modules::lifecycle::check_update();
         }
     }
 
