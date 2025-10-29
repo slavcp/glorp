@@ -11,11 +11,6 @@
 			"enabled": true
 		}
 	},
-	"html": {
-		"formatter": {
-			"enabled": true
-		}
-	},
 	"json": {
 		"formatter": {
 			"trailingCommas": "none"
