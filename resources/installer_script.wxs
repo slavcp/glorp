@@ -6,7 +6,7 @@
     Id="glorpPackage"
     Name="glorp"
     Manufacturer="slav"
-    Version="0.7.5"
+    Version="0.7.6"
     Scope="perUser"
     UpgradeCode="80b28117-cea0-4ef1-8d6f-5884f5ae7270">
         <util:CloseApplication
@@ -43,6 +43,7 @@
       <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">
         <File Id="glorp.exe" Name="glorp.exe" Source="target\x86_64-pc-windows-msvc\release\glorp.exe" KeyPath="yes"/>
         <File Id="glorp.pdb" Name ="glorp.pdb" Source="target\x86_64-pc-windows-msvc\release\glorp.pdb"/>
+				<File Id="vcruntime140_1.dll" Name="vcruntime140_1.dll" Source="target\x86_64-pc-windows-msvc\release\vcruntime140_1.dll"/>
 
         <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />
         <Shortcut Id="ProgramMenuShortcut" Directory="ProgramMenuFolder" Name="glorp" Target="[INSTALLFOLDER]glorp.exe" WorkingDirectory="INSTALLFOLDER" />

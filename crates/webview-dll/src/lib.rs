@@ -232,7 +232,13 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
             ),
             WM_MOUSEMOVE => {
                 if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    return LRESULT(1);
+                    return CallWindowProcW(
+                        PREV_WNDPROC_1,
+                        window,
+                        message,
+                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
+                        lparam,
+                    );
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }

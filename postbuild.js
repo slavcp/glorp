@@ -20,7 +20,9 @@ function copyDirAll(source, destination) {
 		if (entry.isDirectory()) {
 			copyDirAll(sourcePath, destPath);
 		} else {
-			fs.copyFileSync(sourcePath, destPath);
+			if (!fs.existsSync(destPath)) {
+				fs.copyFileSync(sourcePath, destPath);
+			}
 		}
 	}
 }
@@ -30,14 +32,24 @@ try {
 
 	copyDirAll(webview2RuntimeDir, targetWebview2Dir);
 
-	const webviewDllPath = path.join(targetDir, "webview.dll");
-	if (fs.existsSync(webviewDllPath)) {
-		fs.copyFileSync(webviewDllPath, path.join(targetWebview2Dir, "XInput1_4.dll"));
+	const dllMappings = [
+		{ source: "webview.dll", target: "XInput1_4.dll" },
+		{ source: "render.dll", target: "vk_swiftshader.dll" },
+	];
+
+	for (const mapping of dllMappings) {
+		const sourceDllPath = path.join(targetDir, mapping.source);
+		if (fs.existsSync(sourceDllPath)) {
+			fs.copyFileSync(sourceDllPath, path.join(targetWebview2Dir, mapping.target));
+		}
 	}
 
-	const renderDllPath = path.join(targetDir, "render.dll");
-	if (fs.existsSync(renderDllPath)) {
-		fs.copyFileSync(renderDllPath, path.join(targetWebview2Dir, "vk_swiftshader.dll"));
+	const vcruntimePath = path.join(targetDir, "vcruntime140_1.dll");
+	if (!fs.existsSync(vcruntimePath)) {
+		const resourcesVcruntimePath = path.join(process.cwd(), "resources", "vcruntime140_1.dll");
+		if (fs.existsSync(resourcesVcruntimePath)) {
+			fs.copyFileSync(resourcesVcruntimePath, vcruntimePath);
+		}
 	}
 } catch (error) {
 	console.error("cannot copy", error);

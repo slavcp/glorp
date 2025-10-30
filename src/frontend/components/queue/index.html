@@ -441,7 +441,6 @@
             const queueTimerDisplay = document.getElementById("queueTimerDisplay");
             const regionSelectors = document.getElementById("regionCheckboxes");
             const matchPopupOverlay = document.getElementById("matchPopupOverlay");
-            const closeButton = document.getElementById("closeMatch");
             const countdownTimer = document.getElementById("countDownTimer");
             const foundRegion = document.getElementById("foundRegion");
             const mapSelectorButton = document.getElementById("mapSelectorButton");
@@ -665,7 +664,6 @@
                     queueInterval = setInterval(updateQueueTimer, 1000);
                     queueButton.disabled = false;
                 };
-                window.matchFound = matchFound;
                 queueConnection.onmessage = (event) => {
                     const data = JSON.parse(event.data);
                     switch (data.type) {
@@ -733,16 +731,18 @@
 
                     if (remaining <= 0) window.close();
                 }, 1000);
-            }
 
-            function closeMatchPopup() {
-                clearInterval(countdownInterval);
-                stopNotificationSound();
-                matchPopupOverlay.classList.remove("active");
-            }
+                isQueued = false;
+                isConnecting = false;
+                clearInterval(queueInterval);
+                queueButton.textContent = "Start Queue";
+                queueButton.classList.remove("in-queue");
+                queueStatus.textContent = "Ready";
+                queueStatus.classList.remove("active");
+                statusArea.classList.remove("active");
+                queueTimerDisplay.textContent = "00:00:00";
+                queueButton.disabled = false;
 
-            if (closeButton) {
-                closeButton.onclick = () => closeMatchPopup();
             }
 
             if (mapSelectorButton) {
@@ -829,19 +829,18 @@
         </div>
         <div class="overlay" id="matchPopupOverlay">
             <div class="popup">
-                <button class="close-icon" id="closeMatch">×</button>
                 <h2>Match Found</h2>
                 <div class="popup-content">
-                    <div class="region-found" id="foundRegion">Region: NA</div>
+                    <div class="region-found" id="foundRegion">Region: </div>
                     <div id="matchFoundMessage" >open the client and rejoin the game from the ranked menu</div>
-                    <div class="countdown-large" id="countDownTimer">60</div>
+                    <div class="countdown-large" id="countDownTimer">00:60</div>
                 </div>
             </div>
         </div>
         <div class="overlay" id="mapSelectorOverlay">
             <div class="map-panel">
                 <button class="close-icon" id="closeMapSelector">×</button>
-                <h2>Select Map</h2>
+                <h2>Select Maps</h2>
                 <div class="map-grid" id="mapGrid"></div>
             </div>
         </div>
