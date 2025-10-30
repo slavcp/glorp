@@ -290,7 +290,7 @@ pub fn create_webview2(
                     }),
                 )
                 .unwrap_or_else(|e| {
-                    eprintln!("{}", e);
+                    eprintln!("crass{}", e);
                     utils::kill("msedgewebview2.exe");
                     let args: Vec<String> = std::env::args().collect();
                     let arg_present = args.iter().any(|arg| arg == "crash");
@@ -299,7 +299,7 @@ pub fn create_webview2(
                         let current_exe = std::env::current_exe().unwrap();
                         let mut command = std::process::Command::new(&current_exe);
                         command.arg("crash");
-                        command.spawn().unwrap().wait().ok();
+                        command.spawn().ok();
                     }
 
                     std::process::exit(0);

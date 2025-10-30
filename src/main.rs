@@ -74,16 +74,9 @@ fn main() {
 
     let token: *mut i64 = &mut 0i64 as *mut i64;
     let mut args = modules::flaglist::load();
-    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
 
     if config.lock().unwrap().get("uncapFps").unwrap_or(true) {
         args.push_str("--disable-frame-rate-limit")
-    }
-
-    if config.lock().unwrap().get("discordRPC").unwrap_or(false) {
-        let mut client = DiscordIpcClient::new(constants::DISCORD_CLIENT_ID);
-        client.connect().ok();
-        *discord_client.lock().unwrap() = Some(client);
     }
 
     let (main_window, env) = window::Window::new(
@@ -95,6 +88,13 @@ fn main() {
             .as_str(),
         args,
     );
+
+    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
+    if config.lock().unwrap().get("discordRPC").unwrap_or(false) {
+        let mut client = DiscordIpcClient::new(constants::DISCORD_CLIENT_ID);
+        client.connect().ok();
+        *discord_client.lock().unwrap() = Some(client);
+    }
 
     modules::priority::set(
         config
