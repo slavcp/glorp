@@ -89,7 +89,7 @@ impl Window {
                 .ok();
             } else {
                 let mut rect = RECT::default();
-                let _ = GetWindowRect(self.hwnd, &mut rect);
+                GetWindowRect(self.hwnd, &mut rect).ok();
                 self.window_state.last_position = rect;
 
                 SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
@@ -99,8 +99,8 @@ impl Window {
                     Some(HWND_TOP),
                     0,
                     0,
-                    GetSystemMetrics(SYSTEM_METRICS_INDEX(0)),
-                    GetSystemMetrics(SYSTEM_METRICS_INDEX(1)),
+                    GetSystemMetrics(SM_CXSCREEN),
+                    GetSystemMetrics(SM_CYSCREEN),
                     SWP_NOZORDER | SWP_FRAMECHANGED,
                 )
                 .ok();

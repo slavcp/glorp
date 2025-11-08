@@ -79,7 +79,7 @@ fn main() {
         args.push_str("--disable-frame-rate-limit")
     }
 
-    let (main_window, env) = window::Window::new(
+    let (mut main_window, env) = window::Window::new(
         config
             .lock()
             .unwrap()
@@ -413,16 +413,17 @@ fn main() {
             .add_AcceleratorKeyPressed(
                 &AcceleratorKeyPressedEventHandler::create(Box::new(
                     move |_, args: Option<ICoreWebView2AcceleratorKeyPressedEventArgs>| {
-                        let mut pressed_key: u32 = 0;
-                        let mut key_event_kind = COREWEBVIEW2_KEY_EVENT_KIND::default();
                         let args = args.unwrap();
 
+                        let mut key_event_kind = COREWEBVIEW2_KEY_EVENT_KIND::default();
                         args.KeyEventKind(&mut key_event_kind)?;
-                        args.VirtualKey(&mut pressed_key)?;
                         if key_event_kind != COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN {
                             return Ok(());
                         }
-                        main_window.clone().handle_accelerator_key(pressed_key as u16);
+                        let mut pressed_key: u32 = 0;
+                        args.VirtualKey(&mut pressed_key)?;
+
+                        main_window.handle_accelerator_key(pressed_key as u16);
                         Ok(())
                     },
                 )),
