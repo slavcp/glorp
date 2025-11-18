@@ -14,12 +14,8 @@ const waitForElement = (selector) => {
 
 const automateCompHost = async (params) => {
 	window.openHostWindow(false, 1);
-	window.originalConsole.log(`Test ${params.mapId}`);
-
 	await waitForElement(".hostTb0");
-
 	let mapCheckbox = null;
-
 	mapCheckbox = document.querySelector(`#${params.mapId}`);
 
 	if (!mapCheckbox) {

@@ -3,7 +3,7 @@ import styles from "./components/base.css";
 let initialLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
-window.originalConsole = { ...window.console };
+window.consol = { ...window.console };
 
 (async () => {
 	window.glorpClient = await new Promise((resolve) => {
@@ -85,11 +85,23 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/changelog.js");
 		import("./modules/externalQueue.js");
 		import("./modules/args.js");
-		if (window.glorpClient?.settings.data?.hideBundles) window.bundlePopup = () => null;
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
 		if (window.glorpClient?.settings.data?.showPing) import("./modules/showPing.js");
 		if (window.glorpClient?.settings.data?.realPing) import("./modules/realPing.js");
+
+		if (window.glorpClient?.settings.data?.hideBundles) {
+			const origBundlePopup = window.bundlePopup;
+			window.bundlePopup = (...args) => {
+				const windowHolder = document.querySelector("#windowHolder");
+				if (
+					windowHolder &&
+					windowHolder.style.display !== "none" &&
+					document.querySelector("#windowHeader").textContent === "Store"
+				)
+					origBundlePopup(...args);
+			};
+		}
 
 		setTimeout(() => {
 			if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs)
@@ -126,7 +138,6 @@ Object.defineProperty(window, "gameLoaded", {
 
 		if (window.glorpClient?.settings.data?.menuTimer) {
 			import("./components/menuTimer.css").then((module) => {
-				window.originalConsole.log(module);
 				const menuTimerCSS = document.createElement("style");
 				menuTimerCSS.id = "menuTimerCSS";
 				menuTimerCSS.innerHTML = module.default;
