@@ -61,7 +61,7 @@ window.glorpClient.settings.changeSetting = (id, value, slider) => {
 			if (value) {
 				const textSelectCSS = document.createElement("style");
 				textSelectCSS.id = "textSelect";
-				textSelectCSS.innerHTML = /* css */ "#chatHolder * { user-select: text }";
+				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
 				document.head.append(textSelectCSS);
 			} else {
 				document.querySelector("#textSelect")?.remove();
@@ -108,26 +108,26 @@ class SettingsManager {
 		switch (option.type) {
 			// biome-ignore format: it looks like straight ass when biome formats it
 			case "checkbox":
-				return /* html */ `<label class='switch'>
-                    <input id="${option.id}" type='checkbox'
-                           onclick='window.glorpClient.settings.changeSetting("${option.id}", this.checked, false)'
-                           ${value ? "checked" : ""}>
-                    <span class='slider'></span>
-                </label>
+				return `<label class='switch'>
+									<input id="${option.id}" type='checkbox'
+										onclick='window.glorpClient.settings.changeSetting("${option.id}", this.checked, false)'
+										${value ? "checked" : ""}>
+										<span class='slider'></span>
+								</label>
                 ${option.button
-						? /* html */ `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
+						? `<div class="settingsBtn" style="margin-right: 20px; width: auto" onclick="${option.buttonAction}">${option.button}</div>`
 						: ""
 					}`;
 			// biome-ignore format: see above
 			case "slider":
-				return /* html */ `<input type="number" class="sliderVal" id="slid_input_${option.id}" min="${option.min}" value="${value || option.min}"
-                step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)' style="margin-right:0px;border-width:0px">
-                <div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}"
-				step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
+				return `<input type="number" class="sliderVal" id="slid_input_${option.id}" min="${option.min}" value="${value || option.min}"
+								step="${option.step}" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)' style="margin-right:0px;border-width:0px">
+								<div class="slidecontainer" style="margin-top: -8px;"><input type="range" id="${option.id}" min="${option.min}" max="${option.max}"
+								step="${option.step}" value="${value}" class="sliderM" oninput='window.glorpClient.settings.changeSetting("${option.id}", this.value, true)'></div>`;
 			// biome-ignore format: see above
 			case "select":
-				return /* html */ `<select id="${option.id}" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)'>
-                    ${option.options.map(
+				return  `<select id="${option.id}" class="inputGrey2" onchange='window.glorpClient.settings.changeSetting("${option.id}", this.value, false)'>
+							${option.options.map(
 					(opt) => `<option value="${opt}" ${opt === value ? "selected" : ""}>${opt}</option>`,
 				)}</select>`;
 			case "none":
@@ -157,15 +157,15 @@ class SettingsManager {
 				if (previousCategory) tempHTML += "</div>";
 
 				previousCategory = setting.category;
-				tempHTML += /* html */ `<div class='setHed' id="setHed_glorpClient_${setting.category}" onclick='window.windows[0].collapseFolder(this)'>
-                    <span class='material-icons plusOrMinus'>keyboard_arrow_down</span> ${setting.category}</div>
-                    <div class='setBodH' id="setBod_glorpClient_${setting.category}">`;
+				tempHTML += `<div class='setHed' id="setHed_glorpClient_${setting.category}" onclick='window.windows[0].collapseFolder(this)'>
+										<span class='material-icons plusOrMinus'>keyboard_arrow_down</span> ${setting.category}</div>
+										<div class='setBodH' id="setBod_glorpClient_${setting.category}">`;
 			}
 
-			tempHTML += /* html */ `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""}>
-                ${setting.name}
-                ${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""}
-                ${setting.html}</div>`;
+			tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""}>
+								${setting.name}
+								${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""}
+								${setting.html}</div>`;
 		}
 
 		return tempHTML ? `${tempHTML}</div></div></div>` : "";

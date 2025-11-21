@@ -69,7 +69,7 @@ Object.defineProperty(window, "gameLoaded", {
 		window.windows[0].toggleType({ checked: true });
 
 		// append ranked and mod button to comp host ui
-		document.querySelector("#compBtnLst").innerHTML += /* html */ `
+		document.querySelector("#compBtnLst").innerHTML += `
     <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
     <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
 
@@ -85,6 +85,7 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/changelog.js");
 		import("./modules/externalQueue.js");
 		import("./modules/args.js");
+		if (window.glorpClient?.settings.data?.betterChatChannels) import("./modules/betterChatChannels.js");
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
 		if (window.glorpClient?.settings.data?.showPing) import("./modules/showPing.js");
@@ -132,7 +133,7 @@ Object.defineProperty(window, "gameLoaded", {
 		if (window.glorpClient?.settings.data?.textSelect) {
 			const textSelectCSS = document.createElement("style");
 			textSelectCSS.id = "textSelectCSS";
-			textSelectCSS.innerHTML = /* css */ "#chatHolder * { user-select: text }";
+			textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
 			document.head.append(textSelectCSS);
 		}
 

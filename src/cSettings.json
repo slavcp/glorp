@@ -79,6 +79,14 @@
 		"defaultValue": false,
 		"needsRestart": true
 	},
+	"betterChat": {
+		"name": "Better Chat Channels",
+		"id": "betterChatChannels",
+		"description": "Groups the team and all chat into a single channel; press tab to switch where you send yours",
+		"type": "checkbox",
+		"category": "Game",
+		"defaultValue": true
+	},
 	"hpEnemyCounter": {
 		"name": "Hardpoint Enemy counter",
 		"id": "hpEnemyCounter",
