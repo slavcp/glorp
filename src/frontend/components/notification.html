@@ -1,0 +1,71 @@
+<style>
+#notification {
+	position: absolute;
+	display: flex;
+	top: 50px;
+	right: -350px;
+	background-color: #333;
+	padding: 15px 20px;
+	border-radius: 8px;
+	box-shadow: 0px 0px 8px 2px black;
+	font-family: gamefont;
+	font-size: 14px;
+	width: 300px;
+	height: 50px;
+	z-index: 999;
+}
+
+#notification.slide-in {
+	transform: translateX(-380px);
+	transition: all 1s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+#notification.slide-out {
+	transform: translateX(380px);
+	transition: all 1s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+#notification-content {
+	text-align: center;
+	align-self: center;
+	color: white;
+	width: 100%;
+	flex-wrap: nowrap;
+}
+
+#notification-timer {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	margin-right: 5px;
+	margin-bottom: 2px;
+	justify-content: flex-end;
+	font-size: 12px;
+	color: white;
+}
+
+#notification-actions {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	margin-left: 20px;
+	margin-bottom: 5px;
+	font-size:10px;
+}
+
+.bounce {
+	transform: scale(1.2)!important;
+	transition: transform 0.2s ease-in-out!important;
+	display: inline-block!important;
+}
+
+</style>
+<div id="notification-content"></div>
+<div id="notification-timer"></div>
+<div id="notification-actions" style="display: none;">
+	<span id="y" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">Y</span>
+	<span id="n" style="background-color: #444; border-radius: 4px; padding: 2px 4px; color: white; margin-right: 3px; display: inline-block;">N</span>
+</div>
