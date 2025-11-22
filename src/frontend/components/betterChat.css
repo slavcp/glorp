@@ -20,7 +20,7 @@
 #chatHolder #chatList {
 	background: transparent;
 	transform: translateY(0);
-	transition: transform 0.2s ease-in-out;
+	transition: all 0.2s ease-in-out;
 }
 
 #uiBase.onGame #chatHolder {
