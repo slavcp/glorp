@@ -484,12 +484,12 @@
                     const span = document.createElement("span");
                     span.textContent = mapName;
 
-                    mapItem.appendChild(img);
-                    mapItem.appendChild(span);
+                    mapItem.append(img);
+                    mapItem.append(span);
 
                     mapItem.onclick = () => toggleMapSelection(mapName);
 
-                    mapGrid.appendChild(mapItem);
+                    mapGrid.append(mapItem);
                 }
             }
 

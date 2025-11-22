@@ -4,7 +4,7 @@ class HpEnemyCounter {
 		this.numberDisplay.id = "hpEnemyCounter";
 		this.numberDisplay.classList.add("statIcon");
 		this.numberDisplay.style.cssText = "inline-block; transform: translate(0, -2.7px);";
-		this.numberDisplay.innerHTML = /* html */ `
+		this.numberDisplay.innerHTML = `
             <div class="greyInner" style="display: flex">
                 <span style="color:white; font-size:15px; margin-right: 4px;">on</span>
                 <span id="myScoreVal" class="pointVal">0</span>
@@ -28,7 +28,7 @@ class HpEnemyCounter {
 			window.chrome.webview.addEventListener("message", this.gameUpdateListener);
 			this.checkComp();
 		} else {
-			removeEventListener("message", this.gameUpdateListener);
+			window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 			this.numberDisplay.remove();
 		}
 	}

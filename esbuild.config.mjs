@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { build, transform } from "esbuild";
+
 export const minifyCSS = {
 	name: "minifyCSS",
 	setup(build) {
@@ -17,52 +18,30 @@ export const textMinifyPlugin = {
 		build.onLoad({ filter: /\.html$/ }, async (args) => {
 			let contents = await readFile(args.path, "utf8");
 
-			// replace script tags with cause they get owned by the "minification"
-			const preserved = [];
+			const scripts = [];
 			let index = 0;
 
-			contents = contents.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (match) => {
-				const placeholder = `___SCRIPT_${index}___`;
-				preserved[index] = match;
-				index++;
-				return placeholder;
+			// replace all script tags with placeholders cause they get owned by my whitespace remover 3000
+			contents = contents.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (_, scriptContent) => {
+				scripts.push(scriptContent);
+				return `___SCRIPT_${index++}___`;
 			});
 
+			for (let i = 0; i < scripts.length; i++) {
+				const transformed = await transform(scripts[i], { loader: "js", minify: true });
+				scripts[i] = transformed.code;
+			}
+
+			// holy minifier
 			contents = contents.replace(/\s+/g, " ").trim();
 
-			for (let i = 0; i < preserved.length; i++) {
-				contents = contents.replace(`___SCRIPT_${i}___`, preserved[i]);
-				contents = contents.replace(`___STYLE_${i}___`, preserved[i]);
+			// reinstert script tags
+			for (let i = 0; i < scripts.length; i++) {
+				const minifiedCode = scripts[i];
+				contents = contents.replace(`___SCRIPT_${i}___`, `<script>${minifiedCode}</script>`);
 			}
 
 			return { loader: "text", contents };
-		});
-	},
-};
-
-export const minifyInlinePlugin = {
-	name: "minifyInlinePlugin",
-	setup(build) {
-		build.onLoad({ filter: /\.js$/ }, async (args) => {
-			let contents = await readFile(args.path, "utf8");
-
-			// find /* css */ or /* html */ comments in js files and parse them
-			const cssRegex = /\/\*\s*css\s*\*\/\s*`([\s\S]*?)`/g;
-			const htmlRegex = /\/\*\s*html\s*\*\/\s*`([\s\S]*?)`/g;
-			const cssMatches = [...contents.matchAll(cssRegex)];
-			if (cssMatches.length > 0) {
-				const transformPromises = cssMatches.map((match) => transform(match[1], { loader: "css", minify: true }));
-				const results = await Promise.all(transformPromises);
-				let index = 0;
-				contents = contents.replace(cssRegex, () => `\`${results[index++].code}\``);
-			}
-
-			contents = contents.replace(htmlRegex, (html) => {
-				const minified = html.replace(/\s+/g, " ").trim();
-				return `${minified}`;
-			});
-
-			return { contents, loader: "js" };
 		});
 	},
 };
@@ -81,7 +60,7 @@ await build({
 		".html": "text",
 	},
 	outfile: "./target/bundle.js",
-	plugins: [textMinifyPlugin, minifyCSS, minifyInlinePlugin],
+	plugins: [textMinifyPlugin, minifyCSS],
 })
 	.then(() => {
 		console.log("Build completed successfully!");

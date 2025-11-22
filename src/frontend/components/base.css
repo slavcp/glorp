@@ -15,43 +15,6 @@
 	}
 }
 
-#splash,
-.carousel,
-.onSpect #hpEnemyCounter,
-#settHolder div.setHed:not([id]),
-#homeStoreAd,
-#newUserGuide,
-#phonePop,
-#signupRewardsButton,
-#streamContainer,
-#aHider,
-#endAContainer,
-#endAHolder,
-#topRightAdHolder {
-	display: none !important;
-}
-
-.death-ui-bottom,
-#uiBase.onDeathScrn #chatHolder {
-	backdrop-filter: none;
-	animation: none;
-}
-
-#menuAccountUsername {
-	animation: none;
-	border: 0;
-}
-
-.ranked-matchmaking-status {
-	animation: none !important;
-	box-shadow: none !important;
-}
-
-#phonePop {
-	top: 0;
-	bottom: 0;
-}
-
 div #setHed_local,
 .glorpSettings .setHed:first-of-type {
 	margin-top: 10px;
@@ -59,4 +22,57 @@ div #setHed_local,
 
 .setBodH {
 	margin-top: 5px;
+}
+
+.carousel,
+.onSpect #hpEnemyCounter,
+#settHolder div.setHed:not([id]),
+#newUserGuide,
+#phonePop,
+#signupRewardsButton,
+#streamContainer,
+#aHider,
+.webpush-container,
+.endAHolder {
+	display: none !important;
+}
+
+.death-ui-bottom {
+	backdrop-filter: none;
+	animation: none;
+}
+
+#menuAccountUsername {
+	border: 0;
+}
+
+.ranked-matchmaking-status {
+	box-shadow: none !important;
+}
+
+#homeStoreAdC,
+#menuAccountUsername,
+#uiBase.onDeathScrn #chatHolder,
+.ranked-matchmaking-status {
+	animation: none !important;
+}
+
+#phonePop {
+	top: 0;
+	bottom: 0;
+}
+.chatItem {
+	max-width: 387px;
+}
+
+.moreKrunkerPopup {
+	width: 600px;
+}
+
+.moreKrunkerClient {
+	display: none !important;
+}
+
+#mLevelCont {
+	background-color: transparent;
 }

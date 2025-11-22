@@ -9,31 +9,29 @@ class AccountManager {
 		this.container = document.createElement("div");
 		this.accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 
-		this.boundHandleMenuClick = this.handleMenuClick.bind(this);
-		this.boundRemoveAccount = this.removeAccount.bind(this);
-		this.boundCreateMenu = this.createMenu.bind(this);
-		this.gameUpdateListener = (event) => {
-			if (event.data === "game-updated") setTimeout(() => this.checkComp(), 2000);
-		};
-
 		window.glorpClient.settings.toggleAccountManager = (enabled) => this.toggle(enabled);
 
 		this.toggle(true);
 	}
 
+	gameUpdateListener = (event) => {
+		if (event.data === "game-updated") setTimeout(() => this.checkComp(), 2000);
+	};
+
 	toggle(enabled) {
 		if (enabled) {
 			window.chrome.webview.addEventListener("message", this.gameUpdateListener);
 			document.querySelector("#signedOutHeaderBar")?.append(this.button);
-			this.button.addEventListener("click", this.boundCreateMenu);
+			this.button.addEventListener("click", this.createMenu);
 			this.checkComp();
 		} else {
-			removeEventListener("message", this.gameUpdateListener);
-			this.button.removeEventListener("click", this.boundCreateMenu);
+			window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+			this.button.removeEventListener("click", this.createMenu);
 			this.button.remove();
 		}
 	}
-	handleMenuClick(event) {
+
+	handleMenuClick = (event) => {
 		const clickedElement = event.target;
 		if (clickedElement.classList.contains("accountHolder")) {
 			this.handleAccountSelection(clickedElement);
@@ -52,7 +50,7 @@ class AccountManager {
 					break;
 			}
 		}
-	}
+	};
 
 	encode(decoded) {
 		const key = decoded.length;
@@ -145,25 +143,25 @@ class AccountManager {
 	}
 
 	removeWindow() {
-		this.container.removeEventListener("contextmenu", this.boundRemoveAccount);
-		document.removeEventListener("click", this.boundHandleMenuClick);
+		this.container.removeEventListener("contextmenu", this.handleMenuClick);
+		document.removeEventListener("click", this.handleMenuClick);
 		this.container.remove();
 	}
 
-	createMenu() {
+	createMenu = () => {
 		import("../components/accountManager.html").then((html) => {
 			this.container.innerHTML = html.default;
 			document.body.append(this.container);
 			this.updateAccounts();
-			this.container.addEventListener("contextmenu", this.boundRemoveAccount);
-			document.addEventListener("click", this.boundHandleMenuClick);
+			this.container.addEventListener("contextmenu", this.removeAccount);
+			document.addEventListener("click", this.handleMenuClick);
 			document.querySelector("#color-picker").value = `#${Math.floor(Math.random() * 16777215)
 				.toString(16)
 				.padStart(6, "0")}`;
 		});
-	}
+	};
 
-	removeAccount(event) {
+	removeAccount = (event) => {
 		event.preventDefault();
 		const clickedElement = event.target;
 		if (clickedElement.classList.contains("accountHolder")) {
@@ -174,11 +172,11 @@ class AccountManager {
 				this.updateAccounts();
 			}
 		}
-	}
+	};
 
 	checkComp() {
 		if (document.querySelector(".cmpTmHed")) {
-			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", gameUpdateListener);
 
 			this.button.style.cssText =
 				"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
