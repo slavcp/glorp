@@ -55,17 +55,16 @@ class BetterChat {
 			for (const node of mutation.addedNodes) {
 				const chatItem = node.querySelector(".chatItem");
 				const chatMsg = chatItem.querySelector(".chatMsg");
+				if (chatMsg.textContent.includes("Text & Voice Chat")) {
+					node.remove();
+					continue;
+				}
 				if (
-					chatMsg.textContent.includes("on a \u200E") ||
-					chatMsg.textContent.includes("\u200E unboxed") ||
+					!chatItem.textContent.includes("\u200E:") ||
 					!this.teamModes.has(window.getGameActivity().mode) ||
 					!node.dataset.tab
 				)
 					continue;
-				if (chatMsg.style.color === "rgb(252, 3, 236)" || chatMsg.style.color === "rgb(0, 255, 0)") {
-					if (chatMsg.textContent.includes("Text & Voice Chat")) node.remove();
-					continue;
-				}
 				if (node.dataset.tab === "0") {
 					const clone = this.channelA.cloneNode(true);
 					chatMsg.insertBefore(clone, chatMsg.firstChild);

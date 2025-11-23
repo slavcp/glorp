@@ -80,8 +80,8 @@
 		"needsRestart": true
 	},
 	"betterChat": {
-		"name": "Better Chat Channels",
-		"id": "betterChatChannels",
+		"name": "Better Chat",
+		"id": "betterChat",
 		"description": "Groups the team and all chat into a single channel; press tab to switch where you send yours",
 		"type": "checkbox",
 		"category": "Game",

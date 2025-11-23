@@ -176,7 +176,7 @@ class AccountManager {
 
 	checkComp() {
 		if (document.querySelector(".cmpTmHed")) {
-			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", gameUpdateListener);
+			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 
 			this.button.style.cssText =
 				"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";

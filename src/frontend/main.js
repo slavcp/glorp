@@ -85,7 +85,7 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/changelog.js");
 		import("./modules/externalQueue.js");
 		import("./modules/args.js");
-		if (window.glorpClient?.settings.data?.betterChatChannels) import("./modules/betterChatChannels.js");
+		if (window.glorpClient?.settings.data?.betterChat) import("./modules/betterChat.js");
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
 		if (window.glorpClient?.settings.data?.showPing) import("./modules/showPing.js");
