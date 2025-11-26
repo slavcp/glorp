@@ -47,19 +47,9 @@ static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
     std::thread::spawn(move || {
         while rx.recv().is_ok() {
             unsafe {
-                SendInput(
-                    &[
-                        SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN, SPACE_DOWN,
-                    ],
-                    std::mem::size_of::<INPUT>() as i32,
-                );
-                Sleep(1);
-                SendInput(
-                    &[
-                        SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP, SPACE_UP,
-                    ],
-                    std::mem::size_of::<INPUT>() as i32,
-                );
+                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
+                Sleep(5);
+                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
             }
         }
     });
