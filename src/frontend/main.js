@@ -84,6 +84,7 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./settings.js");
 		import("./modules/changelog.js");
 		import("./modules/externalQueue.js");
+		import ("./modules/ClaimAllFromBattlePass.js")
 		import("./modules/args.js");
 		if (window.glorpClient?.settings.data?.betterChat) import("./modules/betterChat.js");
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
