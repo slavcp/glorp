@@ -11,7 +11,7 @@ use windows::Win32::{
 };
 use windows::core::*;
 
-fn _debug_print<T: AsRef<str>>(msg: T) {
+fn debug_print<T: AsRef<str>>(msg: T) {
     let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
     unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
@@ -146,6 +146,32 @@ fn attach() {
         WINDOW_HANDLE.store(handle_ptr, std::sync::atomic::Ordering::Relaxed);
         let chrome_windows = ChromeWindows::get(parent);
         chrome_windows.set_window_procs();
+
+        // thread to check if the parent window has disappeared
+        std::thread::spawn(move || {
+            loop {
+                let current_parent_handle_ptr = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+
+                if !IsWindow(Some(*current_parent_handle_ptr)).as_bool() {
+                    let new_parent = FindWindowW(w!("krunker_webview"), PCWSTR::null());
+
+                    if let Ok(new_parent) = new_parent {
+                        let old_handle_ptr = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                        if !old_handle_ptr.is_null() {
+                            std::mem::drop(Box::from_raw(old_handle_ptr));
+                        }
+
+                        let new_handle_ptr = Box::into_raw(Box::new(new_parent));
+                        WINDOW_HANDLE.store(new_handle_ptr, std::sync::atomic::Ordering::Relaxed);
+
+                        let new_chrome_windows = ChromeWindows::get(new_parent);
+                        new_chrome_windows.set_window_procs();
+                    }
+                }
+
+                Sleep(5000);
+            }
+        });
 
         std::thread::spawn(move || {
             THREAD_ID.store(GetCurrentThreadId(), std::sync::atomic::Ordering::Relaxed);
