@@ -52,10 +52,12 @@ document.addEventListener(
 	{ once: true },
 );
 
-document.addEventListener("pointerlockchange", () => {
+window.checkPointerLock = () => {
 	const pointerLock = document.pointerLockElement !== null;
 	window.chrome.webview.postMessage(`pointer-lock, ${pointerLock}`);
-});
+};
+
+document.addEventListener("pointerlockchange", () => window.checkPointerLock());
 
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
@@ -70,21 +72,15 @@ Object.defineProperty(window, "gameLoaded", {
 
 		// append ranked and mod button to comp host ui
 		document.querySelector("#compBtnLst").innerHTML += `
-    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
-    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
+		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
+		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
 
 		import("./notifications.js");
-		// trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
-		const originalExportSettings = window.exportSettings;
-		window.exportSettings = () => {
-			window.glorpClient.showNotification("Settings exported to Downloads!", false, 3);
-			return originalExportSettings();
-		};
-
 		import("./settings.js");
 		import("./modules/changelog.js");
 		import("./modules/externalQueue.js");
 		import("./modules/args.js");
+		import("./modules/fixes.js");
 		if (window.glorpClient?.settings.data?.betterChat) import("./modules/betterChat.js");
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
@@ -108,6 +104,7 @@ Object.defineProperty(window, "gameLoaded", {
 			if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs)
 				window.glorpClient.parseArgs(window.glorpClient.launchArgs);
 		}, 2000);
+
 		if (window.glorpClient?.settings.data?.autoSpec) {
 			const trySetSpect = () => {
 				const activity = window.getGameActivity();
@@ -145,6 +142,5 @@ Object.defineProperty(window, "gameLoaded", {
 				document.head.append(menuTimerCSS);
 			});
 		}
-		window.chrome.webview.postMessage(`pointer-lock, false`); // enable the cpu throttle after it loads
 	},
 });
