@@ -24,11 +24,10 @@ window.openRankedMenu = () => {
 function openExtQueue() {
 	const screenWidth = window.screen.width;
 	const screenHeight = window.screen.height;
-	const windowWidth = screenWidth * 0.35;
-	const windowHeight = windowWidth * 0.4;
-	const menuBarHeight = 150;
+	const windowWidth = 850;
+	const windowHeight = 350;
 	const left = (screenWidth - windowWidth) / 2;
-	const top = (screenHeight - windowHeight - menuBarHeight) / 2;
+	const top = (screenHeight - windowHeight) / 2;
 	const queueWindow = window.open(
 		"about:blank",
 		"_blank",
