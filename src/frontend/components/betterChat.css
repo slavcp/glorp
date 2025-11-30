@@ -34,3 +34,12 @@
 #uiBase.onGame #chatHolder:focus-within #chatList {
 	margin-bottom: 0;
 }
+
+#uiBase.onSpect #chatInputHolder {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+#uiBase.onSpect #chatList {
+	margin-bottom: 0;
+}
