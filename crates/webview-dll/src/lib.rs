@@ -11,7 +11,7 @@ use windows::Win32::{
 };
 use windows::core::*;
 
-fn debug_print<T: AsRef<str>>(msg: T) {
+fn _debug_print<T: AsRef<str>>(msg: T) {
     let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
     unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
