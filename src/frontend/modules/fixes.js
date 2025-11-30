@@ -38,7 +38,7 @@ window.showWindow = (...args) => {
 	return originalshowWindow.apply(this, args);
 };
 
-const originalclosWind = windowclosWind;
+const originalclosWind = window.closWind;
 window.closWind = (...args) => {
 	window.chrome.webview.postMessage("pointer-lock, false");
 	return originalclosWind.apply(this, args);
