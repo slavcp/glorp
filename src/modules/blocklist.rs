@@ -12,7 +12,7 @@ struct BlocklistConfig {
     disabled: HashSet<String>,
 }
 
-pub fn load(webview_window: &ICoreWebView2_22) {
+pub fn load(webview_window: &ICoreWebView2) {
     let blocklist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json";
     let mut blocklist_file = OpenOptions::new()
         .write(true)
@@ -53,10 +53,9 @@ pub fn load(webview_window: &ICoreWebView2_22) {
 
     for url in blocklist.enabled.iter() {
         unsafe {
-            if let Err(e) = webview_window.AddWebResourceRequestedFilterWithRequestSourceKinds(
+            if let Err(e) = webview_window.AddWebResourceRequestedFilter(
                 PCWSTR(utils::create_utf_string(url).as_ptr()),
                 COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-                COREWEBVIEW2_WEB_RESOURCE_REQUEST_SOURCE_KINDS_ALL,
             ) {
                 eprintln!("Failed to add web resource requested filter: {}", e);
             }

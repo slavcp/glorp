@@ -97,3 +97,36 @@ pub fn set_cpu_throttling(webview: &ICoreWebView2, value: f32) {
             .ok();
     }
 }
+
+pub struct UnsafeSend<T> {
+    val: T,
+}
+
+impl<T> UnsafeSend<T> {
+    pub fn new(val: T) -> Self {
+        Self { val }
+    }
+
+    pub fn take(self) -> T {
+        self.val
+    }
+}
+use webview2_com::Microsoft::Web::WebView2::Win32::*;
+
+unsafe impl<T> Send for UnsafeSend<T> {}
+
+pub trait EnvironmentRef {
+    fn env_ref(&self) -> &ICoreWebView2Environment;
+}
+
+impl EnvironmentRef for ICoreWebView2Environment {
+    fn env_ref(&self) -> &ICoreWebView2Environment {
+        self
+    }
+}
+
+impl EnvironmentRef for UnsafeSend<ICoreWebView2Environment> {
+    fn env_ref(&self) -> &ICoreWebView2Environment {
+        &self.val
+    }
+}

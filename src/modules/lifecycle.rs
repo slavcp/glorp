@@ -177,10 +177,12 @@ pub fn register_instance() {
             PCWSTR(create_utf_string(constants::INSTANCE_MUTEX_NAME).as_ptr()),
         )
         .ok();
+
         if GetLastError() == ERROR_ALREADY_EXISTS {
             eprintln!("Instance already running");
             let data = env::args().skip(1).collect::<Vec<String>>().join(" ");
-            if data.is_empty() {
+
+            if data.is_empty() && FindWindowW(w!("krunker_webview_subwindow"), PCWSTR::null()).is_err() {
                 std::process::exit(0);
             }
             let data_bytes = data.as_bytes();
@@ -189,13 +191,21 @@ pub fn register_instance() {
                 cbData: data_bytes.len() as u32,
                 lpData: data_bytes.as_ptr() as *mut std::ffi::c_void,
             };
-            println!("{:?}", FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap());
-            SendMessageW(
-                FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
-                WM_COPYDATA,
-                Some(WPARAM(0)),
-                Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
-            );
+            if let Ok(hwnd) = FindWindowExW(None, None, w!("krunker_webview"), PCWSTR::null()) {
+                SendMessageW(
+                    hwnd,
+                    WM_COPYDATA,
+                    Some(WPARAM(0)),
+                    Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
+                );
+            } else {
+                SendMessageW(
+                    FindWindowW(w!("krunker_webview_subwindow"), PCWSTR::null()).unwrap(),
+                    WM_COPYDATA,
+                    None,
+                    Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
+                );
+            }
             std::process::exit(0);
         }
     }
