@@ -14,11 +14,11 @@
 }
 
 #chatList {
-	transition: transform 0.2s ease-in-out;
+	transition: margin-bottom 0.2s ease-in-out;
 }
 
 #uiBase.onGame #chatList {
-	transform: translateY(50px);
+	margin-bottom: -50px;
 }
 
 #uiBase.onGame #chatInputHolder {
@@ -32,5 +32,5 @@
 }
 
 #uiBase.onGame #chatHolder:focus-within #chatList {
-	transform: translateY(0);
+	margin-bottom: 0;
 }

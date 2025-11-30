@@ -38,9 +38,9 @@ class BetterChat {
 		this.chatSwitch = document.querySelector("#chatSwitch");
 		this.channelT = document.createElement("div");
 		this.channelA = document.createElement("div");
-		this.channelT.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #eb5656;";
+		this.channelT.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #9eeb56;";
 		this.channelT.textContent = "[TEAM]";
-		this.channelA.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #9eeb56;";
+		this.channelA.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #eb5656;";
 		this.channelA.textContent = "[MATCH]";
 	}
 
