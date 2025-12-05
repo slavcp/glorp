@@ -82,7 +82,7 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/bpClaimAll.js");
 		import("./modules/args.js");
 		import("./modules/fixes.js");
-		import('./modules/rankProgress.js');
+		import("./modules/rankProgress.js");
 		if (window.glorpClient?.settings.data?.betterChat) import("./modules/betterChat.js");
 		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
