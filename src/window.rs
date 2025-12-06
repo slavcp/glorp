@@ -291,7 +291,6 @@ pub fn create_webview2(
     provided_env: Option<ICoreWebView2Environment>,
 ) -> (ICoreWebView2Controller, ICoreWebView2Environment, ICoreWebView2) {
     unsafe {
-        let args = args + " --autoplay-policy=no-user-gesture-required";
         let options: CoreWebView2EnvironmentOptions = CoreWebView2EnvironmentOptions::default();
         options.set_exclusive_user_data_folder_access(false);
         options.set_are_browser_extensions_enabled(false);
