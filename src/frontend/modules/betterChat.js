@@ -39,9 +39,9 @@ class BetterChat {
 		this.channelT = document.createElement("div");
 		this.channelA = document.createElement("div");
 		this.channelT.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #9eeb56;";
-		this.channelT.textContent = "[TEAM]";
+		this.channelT.textContent = "[T]";
 		this.channelA.style.cssText = "float: left; display: inline-block; margin-right: 5px; color: #eb5656;";
-		this.channelA.textContent = "[MATCH]";
+		this.channelA.textContent = "[M]";
 	}
 
 	switchChat = (event) => {
@@ -73,6 +73,7 @@ class BetterChat {
 					const clone = this.channelT.cloneNode(true);
 					chatMsg.insertBefore(clone, chatMsg.firstChild);
 				}
+				this.chatList.scrollTop = this.chatList.scrollHeight;
 			}
 		}
 	}
