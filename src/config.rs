@@ -29,6 +29,7 @@ impl Config {
         }
         let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
         let settings_path: String = client_dir + "\\settings.json";
+        let defaults = load_defaults();
 
         // recursively create dir
         let mut settings_file = OpenOptions::new()
@@ -41,7 +42,7 @@ impl Config {
 
         if settings_file.metadata().unwrap().len() == 0 {
             settings_file
-                .write_all(serde_json::to_string_pretty(&load_defaults()).unwrap().as_bytes())
+                .write_all(serde_json::to_string_pretty(&defaults).unwrap().as_bytes())
                 .ok();
         }
 
@@ -58,7 +59,6 @@ impl Config {
         };
 
         // check for new entries
-        let defaults = load_defaults();
         for (key, default_value) in defaults {
             data.entry(key).or_insert(default_value);
         }

@@ -4,8 +4,8 @@
 		"id": "startMode",
 		"type": "select",
 		"category": "Main",
-		"defaultValue": "Borderless Fullscreen",
-		"options": ["Borderless Fullscreen", "Windowed", "Maximized"]
+		"defaultValue": "Remember Previous",
+		"options": ["Remember Previous", "Borderless Fullscreen", "Windowed", "Maximized"]
 	},
 	"uncapFps": {
 		"name": "Uncap FPS",

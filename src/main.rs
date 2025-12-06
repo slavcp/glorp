@@ -33,7 +33,7 @@ static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> =
 static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> =
     Lazy::new(|| Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))));
 
-static CONFIG: Lazy<Arc<Mutex<config::Config>>> = Lazy::new(|| Arc::new(Mutex::new(config::Config::load())));
+pub static CONFIG: Lazy<Arc<Mutex<config::Config>>> = Lazy::new(|| Arc::new(Mutex::new(config::Config::load())));
 
 static PING: Lazy<AtomicU32> = Lazy::new(|| AtomicU32::new(0));
 
@@ -151,7 +151,7 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
                         let _ = features.Height(&mut height);
                         window_state = Some(WindowState {
                             fullscreen: false,
-                            position: RECT {
+                            position: window::Position {
                                 left: left as i32,
                                 top: top as i32,
                                 right: left as i32 + width as i32,
@@ -162,7 +162,7 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
 
                     let deferral = args.GetDeferral()?;
                     args.SetHandled(true).unwrap();
-                    let (hwnd, window_state) = window::create_window("Windowed", true, window_state);
+                    let (hwnd, window_state) = window::create_window("Custom", true, window_state);
                     let args = utils::UnsafeSend::new(args);
                     let deferral = utils::UnsafeSend::new(deferral);
                     // man
@@ -213,16 +213,19 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
         args.push_str("--disable-frame-rate-limit")
     }
 
-    let mut main_window = window::Window::new(
-        CONFIG
-            .lock()
-            .unwrap()
-            .get::<String>("startMode")
-            .unwrap_or_else(|| String::from("Borderless Fullscreen"))
-            .as_str(),
-        args,
-        env,
-    );
+    let start_mode = CONFIG
+        .lock()
+        .unwrap()
+        .get::<String>("startMode")
+        .unwrap_or_else(|| String::from("Remember Previous"));
+
+    let state = if start_mode == "Remember Previous" {
+        crate::CONFIG.lock().unwrap().get::<window::WindowState>("lastPosition")
+    } else {
+        None
+    };
+
+    let mut main_window = window::Window::new_core(&start_mode, args, env, state);
 
     let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
     if CONFIG.lock().unwrap().get("discordRPC").unwrap_or(false) {
@@ -493,6 +496,7 @@ fn main() {
             modules::lifecycle::check_update();
         }
     }
+
     create_main_window(None);
     let mut msg: MSG = MSG::default();
     unsafe {

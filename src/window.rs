@@ -14,24 +14,29 @@ use windows::{
 
 static WINDOW_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-#[derive(Copy, Clone)]
-pub struct WindowState {
-    pub fullscreen: bool,
-    pub position: RECT,
+#[derive(Copy, Clone, serde::Serialize, serde::Deserialize, Default, Debug)]
+pub struct Position {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
 }
 
-impl Default for WindowState {
-    fn default() -> Self {
-        Self {
-            fullscreen: false,
-            position: RECT {
-                left: 0,
-                top: 0,
-                right: 0,
-                bottom: 0,
-            },
+impl From<RECT> for Position {
+    fn from(rect: RECT) -> Self {
+        Position {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
         }
     }
+}
+
+#[derive(Copy, Clone, serde::Serialize, serde::Deserialize, Default, Debug)]
+pub struct WindowState {
+    pub fullscreen: bool,
+    pub position: Position,
 }
 
 #[derive(Clone)]
@@ -40,13 +45,18 @@ pub struct Window {
     pub env: ICoreWebView2Environment,
     pub controller: ICoreWebView2Controller,
     pub webview: ICoreWebView2,
-    pub window_state: WindowState,
+    pub state: WindowState,
     pub widget_wnd: Option<HWND>,
 }
 
 impl Window {
-    pub fn new(start_mode: &str, args: String, env: Option<ICoreWebView2Environment>) -> Self {
-        let (hwnd, window_state) = create_window(start_mode, false, None);
+    pub fn new_core(
+        start_mode: &str,
+        args: String,
+        env: Option<ICoreWebView2Environment>,
+        state: Option<WindowState>,
+    ) -> Self {
+        let (hwnd, state) = create_window(start_mode, false, state);
         let (controller, env, webview) = create_webview2(hwnd, args, env);
         let widget_wnd = unsafe {
             Some(utils::find_child_window_by_class(
@@ -59,7 +69,7 @@ impl Window {
             env,
             controller,
             webview,
-            window_state,
+            state,
             widget_wnd,
         };
 
@@ -69,7 +79,7 @@ impl Window {
                 env: window.env.clone(),
                 controller: window.controller.clone(),
                 webview: window.webview.clone(),
-                window_state: window.window_state,
+                state,
                 widget_wnd: window.widget_wnd,
             });
             SetWindowLongPtrW(window.hwnd, GWLP_USERDATA, Box::into_raw(window_clone) as isize);
@@ -79,23 +89,23 @@ impl Window {
     }
     pub fn toggle_fullscreen(&mut self) {
         unsafe {
-            if self.window_state.fullscreen {
+            if self.state.fullscreen {
                 SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0 | WS_OVERLAPPEDWINDOW.0) as _);
 
                 SetWindowPos(
                     self.hwnd,
                     Some(HWND_TOP),
-                    self.window_state.position.left,
-                    self.window_state.position.top,
-                    self.window_state.position.right - self.window_state.position.left,
-                    self.window_state.position.bottom - self.window_state.position.top,
+                    self.state.position.left,
+                    self.state.position.top,
+                    self.state.position.right - self.state.position.left,
+                    self.state.position.bottom - self.state.position.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED,
                 )
                 .ok();
             } else {
                 let mut rect = RECT::default();
                 GetWindowRect(self.hwnd, &mut rect).ok();
-                self.window_state.position = rect;
+                self.state.position = Position::from(rect);
 
                 SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
 
@@ -110,7 +120,7 @@ impl Window {
                 )
                 .ok();
             }
-            self.window_state.fullscreen = !self.window_state.fullscreen;
+            self.state.fullscreen = !self.state.fullscreen;
         }
     }
     pub fn handle_accelerator_key(&mut self, key: u16) {
@@ -142,7 +152,7 @@ impl Window {
     }
 }
 
-pub fn create_window(start_mode: &str, is_subwindow: bool, initial_state: Option<WindowState>) -> (HWND, WindowState) {
+pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<WindowState>) -> (HWND, WindowState) {
     unsafe {
         let hinstance: HINSTANCE = GetModuleHandleW(None).unwrap().into();
         let icon = match LoadIconW(Some(hinstance), w!("icon")) {
@@ -172,62 +182,66 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, initial_state: Option
         let screen_width = GetSystemMetrics(SM_CXSCREEN);
         let screen_height = GetSystemMetrics(SM_CYSCREEN);
 
-        let window_style;
-
-        let (mut x, mut y, mut width, mut height, mut fullscreen_state, state) =
-            if let Some(initial_state) = initial_state {
-                (
-                    initial_state.position.left,
-                    initial_state.position.top,
-                    initial_state.position.right - initial_state.position.left,
-                    initial_state.position.bottom - initial_state.position.top,
-                    initial_state.fullscreen,
-                    initial_state.position,
-                )
-            } else {
-                let normal_width = (screen_width as f32 * 0.85) as i32;
-                let normal_height = (screen_height as f32 * 0.85) as i32;
-                let normal_x = (screen_width - normal_width) / 2;
-                let normal_y = (screen_height - normal_height) / 2;
-                let state = RECT {
-                    left: normal_x,
-                    top: normal_y,
-                    right: normal_x + normal_width,
-                    bottom: normal_y + normal_height,
-                };
-                (normal_x, normal_y, normal_width, normal_height, false, state)
+        fn windowed_size(state: &mut WindowState) {
+            let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+            let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+            let window_width = (screen_width as f32 * 0.8) as i32;
+            let window_height = (screen_height as f32 * 0.8) as i32;
+            let left = (screen_width - window_width) / 2;
+            let top = (screen_height - window_height) / 2;
+            state.fullscreen = false;
+            state.position = Position {
+                left,
+                top,
+                right: left + window_width,
+                bottom: top + window_height,
             };
-
-        match start_mode {
-            "Borderless Fullscreen" => {
-                window_style = WS_VISIBLE;
-                x = 0;
-                y = 0;
-                width = screen_width;
-                height = screen_height;
-                fullscreen_state = true;
-            }
-            "Maximized" => {
-                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MAXIMIZE;
-                x = 0;
-                y = 0;
-                width = screen_width;
-                height = screen_height;
-            }
-            _ => {
-                window_style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-            }
         }
+
+        let state: WindowState = {
+            //fallback
+            let mut creation_state = WindowState {
+                fullscreen: true,
+                position: Position {
+                    left: 0,
+                    top: 0,
+                    right: screen_width,
+                    bottom: screen_height,
+                },
+            };
+            match start_mode {
+                "Borderless Fullscreen" => {}
+                "Maximized" => {
+                    creation_state.fullscreen = false;
+                }
+                "Remember Previous" => {
+                    if let Some(init_state) = init_state {
+                        creation_state = init_state;
+                    }
+                }
+                "Custom" => {
+                    if let Some(init_state) = init_state {
+                        creation_state = init_state;
+                    } else {
+                        windowed_size(&mut creation_state);
+                    }
+                }
+                _ => {
+                    windowed_size(&mut creation_state);
+                }
+            }
+            creation_state
+        };
 
         let hwnd: HWND = CreateWindowExW(
             WINDOW_EX_STYLE::default(),
             class_name,
             w!("glorp"),
-            window_style,
-            x,
-            y,
-            width,
-            height,
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            state.position.left,
+            state.position.top,
+            state.position.right - state.position.left,
+            state.position.bottom - state.position.top,
             None,
             None,
             Some(hinstance),
@@ -235,22 +249,18 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, initial_state: Option
         )
         .unwrap();
 
-        if start_mode == "Borderless Fullscreen" {
+        if state.fullscreen {
             SetWindowLongPtrW(hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
         }
 
-        let window_state = WindowState {
-            fullscreen: fullscreen_state,
-            position: state,
-        };
-        (hwnd, window_state)
+        (hwnd, state)
     }
 }
 
 pub fn create_core_webview2_controller_async<F>(
     hwnd: HWND,
     env: ICoreWebView2Environment,
-    window_state: WindowState,
+    state: WindowState,
     callback: F,
 ) where
     F: FnOnce(std::result::Result<ICoreWebView2Controller, Error>) + Send + 'static,
@@ -268,7 +278,7 @@ pub fn create_core_webview2_controller_async<F>(
                     env: env_,
                     controller: controller.clone(),
                     webview: webview.clone(),
-                    window_state,
+                    state,
                     widget_wnd: None,
                 });
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, Box::into_raw(window) as isize);
@@ -459,6 +469,14 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 window.controller.Close().ok();
                 drop(Box::from_raw(window_data_ptr));
                 let count = WINDOW_COUNT.fetch_sub(1, Ordering::SeqCst);
+
+                let mut rect = RECT::default();
+                GetWindowRect(hwnd, &mut rect).ok();
+                window.state.position = Position::from(rect);
+                let styles = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
+                window.state.fullscreen = (styles & WS_OVERLAPPEDWINDOW.0) == 0;
+
+                crate::CONFIG.lock().unwrap().set("lastPosition", window.state);
 
                 if count == 1 {
                     PostQuitMessage(0);
