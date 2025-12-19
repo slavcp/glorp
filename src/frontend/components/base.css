@@ -15,6 +15,10 @@
 	}
 }
 
+.entry-info {
+	z-index: 9;
+}
+
 div #setHed_local,
 .glorpSettings .setHed:first-of-type {
 	margin-top: 10px;

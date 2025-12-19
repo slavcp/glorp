@@ -75,14 +75,6 @@ function semverCompare(a, b) {
 			a.setAttribute("rel", "noopener");
 		}
 
-		// open links in the system browser
-		shadow.addEventListener("click", (e) => {
-			if (e.target.tagName === "A") {
-				e.preventDefault();
-				window.chrome.webview.postMessage(`open,${e.target.href}`);
-			}
-		});
-
 		overlay.addEventListener("mousedown", (e) => {
 			if (e.target === overlay) overlay.remove();
 		});

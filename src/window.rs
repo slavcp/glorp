@@ -495,13 +495,13 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
                 let cds = &*cds_ptr;
                 let data: &[u8] = std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
-                if let Ok(string) = String::from_utf8(data.to_vec()) {
+                if let Ok(mut string) = String::from_utf8(data.to_vec()) {
+                    string = serde_json::to_string(&string).unwrap_or_else(|_| String::new());
                     window
                         .webview
                         .ExecuteScript(
                             PCWSTR(
-                                utils::create_utf_string(format!("window.glorpClient.parseArgs('{}')", string))
-                                    .as_ptr(),
+                                utils::create_utf_string(format!("window.glorpClient.parseArgs({})", string)).as_ptr(),
                             ),
                             None,
                         )

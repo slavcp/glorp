@@ -12,7 +12,7 @@ use windows::{
     core::*,
 };
 
-use crate::window::WindowState;
+use crate::{modules::userscripts, window::WindowState};
 
 mod config;
 mod constants;
@@ -42,11 +42,11 @@ pub static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 fn init_fs() {
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
     let swap_dir = String::from(&client_dir) + "\\swapper";
-    let scripts_dir = String::from(&client_dir) + "\\scripts";
-    let flaglist_path = String::from(&client_dir) + "\\flags.json";
-    let blocklist_path = String::from(&client_dir) + "\\blocklist.json";
+    let scripts_dir = String::from(&client_dir) + "\\scripts\\social";
+    let flaglist_path = String::from(&client_dir) + "\\user_flags.json";
+    let blocklist_path = String::from(&client_dir) + "\\user_blocklist.json";
     std::fs::create_dir_all(&swap_dir).ok();
-    std::fs::create_dir(&scripts_dir).ok();
+    std::fs::create_dir_all(&scripts_dir).ok();
 
     if !std::path::Path::new(&flaglist_path).exists() {
         std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
@@ -139,7 +139,6 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
                     let mut has_size: BOOL = false.into();
                     let _ = features.HasSize(&mut has_size);
                     let mut window_state = None;
-
                     if has_position.as_bool() && has_size.as_bool() {
                         let mut left = 0;
                         let mut top = 0;
@@ -163,6 +162,9 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
                     let deferral = args.GetDeferral()?;
                     args.SetHandled(true).unwrap();
                     let (hwnd, window_state) = window::create_window("Custom", true, window_state);
+                    let mut uri = PWSTR::null();
+                    let _ = args.Uri(&mut uri);
+                    let uri = take_pwstr(uri);
                     let args = utils::UnsafeSend::new(args);
                     let deferral = utils::UnsafeSend::new(deferral);
                     // man
@@ -175,6 +177,12 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
                         move |controller| {
                             let controller = controller.unwrap();
                             let webview = controller.CoreWebView2().unwrap();
+                            if uri.contains("krunker.io/social.html")
+                                && CONFIG.lock().unwrap().get("userscripts").unwrap_or(false)
+                                && let Err(e) = userscripts::load(&webview, true)
+                            {
+                                println!("can't load userscripts on social window {}", e);
+                            }
 
                             args.take().SetNewWindow(&webview).unwrap();
                             set_handlers(&webview, &env_for_handler);
@@ -244,7 +252,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     );
 
     if CONFIG.lock().unwrap().get("userscripts").unwrap_or(false)
-        && let Err(e) = modules::userscripts::load(&main_window.webview)
+        && let Err(e) = userscripts::load(&main_window.webview, false)
     {
         eprintln!("Failed to load userscripts: {}", e);
     }
@@ -416,10 +424,32 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
                             PostQuitMessage(0);
                         }
                         Some(&"open") => {
-                            std::process::Command::new("cmd")
-                                .args(["/C", "start", "", parts[1]])
-                                .spawn()
-                                .ok();
+                            let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
+                            match parts[1] {
+                                "blocklist" => {
+                                    let blocklist_path =
+                                        std::path::PathBuf::from(&client_dir).join("user_blocklist.json");
+                                    std::process::Command::new("explorer.exe")
+                                        .arg(&blocklist_path)
+                                        .spawn()
+                                        .ok();
+                                }
+                                "swapper" => {
+                                    let swapper_path = std::path::PathBuf::from(&client_dir).join("swapper");
+                                    std::process::Command::new("explorer.exe")
+                                        .arg(&swapper_path)
+                                        .spawn()
+                                        .ok();
+                                }
+                                "userscripts" => {
+                                    let scripts_path = std::path::PathBuf::from(&client_dir).join("scripts");
+                                    std::process::Command::new("explorer.exe")
+                                        .arg(&scripts_path)
+                                        .spawn()
+                                        .ok();
+                                }
+                                _ => {}
+                            }
                         }
                         Some(&"rpc-update") => {
                             let state = format!("{} on {}", parts[1], parts[2]);

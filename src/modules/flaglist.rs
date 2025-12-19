@@ -20,27 +20,41 @@ pub fn load() -> String {
 }"#;
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_FLAGS).unwrap();
+    std::fs::remove_file(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\flags.json").ok(); // outdated flag file
     let flaglist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_flags.json";
-    let mut flaglist_file = OpenOptions::new()
+    let mut flaglist_file = if let Ok(flaglist_file) = OpenOptions::new()
         .write(true)
         .read(true)
         .create(true)
         .truncate(false)
         .open(&flaglist_path)
-        .unwrap();
+    {
+        flaglist_file
+    } else {
+        eprintln!("can't open user flags file");
+        return defaults.join(" ");
+    };
 
     if flaglist_file.metadata().unwrap().len() == 0 {
         flaglist_file.write_all(example_flags.as_bytes()).ok();
     }
 
-    let flaglist_string = std::fs::read_to_string(&flaglist_path).unwrap();
+    let flaglist_string = if let Ok(flaglist_string) = std::fs::read_to_string(&flaglist_path) {
+        flaglist_string
+    } else {
+        eprintln!("can't read user flags file");
+        flaglist_file.set_len(0).ok();
+        flaglist_file.write_all(example_flags.as_bytes()).ok();
+        example_flags.to_string();
+        return defaults.join(" ");
+    };
 
     let flaglist = match serde_json::from_str::<UserBlocklist>(&flaglist_string) {
         Ok(config) => config,
         Err(_) => {
             flaglist_file.set_len(0).ok();
             flaglist_file.write_all(example_flags.as_bytes()).ok();
-            serde_json::from_str::<UserBlocklist>(example_flags).unwrap()
+            return defaults.join(" ");
         }
     };
 

@@ -6,7 +6,7 @@
     Id="glorpPackage"
     Name="glorp"
     Manufacturer="slav"
-    Version="0.8.1"
+    Version="0.8.2"
     Scope="perUser"
     UpgradeCode="80b28117-cea0-4ef1-8d6f-5884f5ae7270">
         <util:CloseApplication

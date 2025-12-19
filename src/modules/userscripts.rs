@@ -37,8 +37,12 @@ fn parse(mut content: String) -> String {
     format!("(function() {{\n{}\n}})();", content)
 }
 
-pub fn load(webview: &ICoreWebView2) -> Result<()> {
-    let scripts_dir = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts";
+pub fn load(webview: &ICoreWebView2, social: bool) -> Result<()> {
+    let scripts_dir = if social {
+        std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts\\social"
+    } else {
+        std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts"
+    };
 
     if let Ok(entries) = std::fs::read_dir(scripts_dir) {
         for entry in entries.flatten() {
