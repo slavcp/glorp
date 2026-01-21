@@ -1,3 +1,8 @@
+window.checkPointerLock = () => {
+	const pointerLock = document.pointerLockElement !== null;
+	window.chrome.webview.postMessage(`pointer-lock, ${pointerLock}`);
+};
+
 window.waitForElement = (selector) => {
 	return new Promise((resolve) => {
 		if (document.querySelector(selector)) return resolve(document.querySelector(selector));

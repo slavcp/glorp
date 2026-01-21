@@ -1,5 +1,14 @@
 window.checkPointerLock(); // enable the cpu throttle after the game loads
 
+// sometimes pointerlockchange doesnt trigger (??)
+// best i can do is check every few seconds to make sure it doesnt
+const windowHolder = document.querySelector("#windowHolder");
+setInterval(() => {
+	if (!windowHolder.style.display === "none") return;
+	console.log("checking");
+	window.checkPointerLock();
+}, 3000);
+
 // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
 const originalExportSettings = window.exportSettings;
 window.exportSettings = () => {

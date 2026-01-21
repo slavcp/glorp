@@ -2,7 +2,6 @@ class RealPing {
 	constructor() {
 		this.ingamePing = null;
 		this.menuPing = null;
-		this.originalTextContentDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, "textContent");
 		this.interval = null;
 		this.listener = null;
 
@@ -14,7 +13,6 @@ class RealPing {
 		if (!element) return;
 		Object.defineProperty(element, "textContent", {
 			set: () => {},
-			get: () => this.originalTextContentDescriptor.get.call(element),
 			configurable: true,
 		});
 	}
@@ -39,8 +37,8 @@ class RealPing {
 		} else {
 			clearInterval(this.interval);
 			window.chrome.webview.removeEventListener("message", this.listener);
-			Object.defineProperty(this.ingamePing, "textContent", this.originalTextContentDescriptor);
-			Object.defineProperty(this.menuPing, "textContent", this.originalTextContentDescriptor);
+			delete this.ingamePing.textContent;
+			delete this.menuPing.textContent;
 		}
 	}
 }

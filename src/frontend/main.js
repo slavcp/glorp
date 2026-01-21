@@ -52,11 +52,6 @@ document.addEventListener(
 	{ once: true },
 );
 
-window.checkPointerLock = () => {
-	const pointerLock = document.pointerLockElement !== null;
-	window.chrome.webview.postMessage(`pointer-lock, ${pointerLock}`);
-};
-
 document.addEventListener("pointerlockchange", () => window.checkPointerLock());
 
 Object.defineProperty(window, "gameLoaded", {
