@@ -4,11 +4,10 @@
 	"formatter": { "enabled": true, "indentStyle": "tab", "lineWidth": 120 },
 	"linter": {
 		"enabled": true,
-		"rules": { "recommended": true, "complexity": { "noImportantStyles": "off" } }
-	},
-	"css": {
-		"formatter": {
-			"enabled": true
+		"rules": {
+			"recommended": true,
+			"complexity": { "noImportantStyles": "off" },
+			"a11y": { "useGenericFontNames": "off" }
 		}
 	},
 	"json": {
