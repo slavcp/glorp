@@ -19,11 +19,8 @@ async function claimEverything() {
 
 	for (const btn of items) {
 		const code = btn.getAttribute("onclick");
-		if (code?.includes("windows[5].claimItem(")) {
-			try {
-				btn.click();
-			} catch (_) {}
-		}
+		if (code?.includes("windows[5].claimItem(")) btn.click();
+
 		await new Promise((r) => setTimeout(r, 200));
 	}
 

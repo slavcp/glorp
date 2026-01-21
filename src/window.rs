@@ -549,6 +549,9 @@ unsafe extern "system" fn wnd_proc_subwindow(hwnd: HWND, msg: u32, wparam: WPARA
                 window.controller.SetBounds(bounds).ok();
             }
             WM_COPYDATA => {
+                if WINDOW_COUNT.load(Ordering::SeqCst) != 1 {
+                    return DefWindowProcW(hwnd, msg, wparam, lparam);
+                }
                 let window = create_main_window(Some(window.env.clone()));
                 let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
                 let cds = &*cds_ptr;

@@ -19,41 +19,17 @@ class RealPing {
 		});
 	}
 
-	async waitForElement(id, delay = 500, maxChecks = 30) {
-		return new Promise((resolve) => {
-			let currentChecks = 0;
-			const checkElement = () => {
-				const element = document.getElementById(id);
-				if (element) {
-					resolve(element);
-					return;
-				}
-
-				currentChecks++;
-				if (maxChecks && currentChecks >= maxChecks) {
-					resolve(null);
-					return;
-				}
-
-				setTimeout(checkElement, delay);
-			};
-
-			checkElement();
-		});
-	}
-
 	async toggle(enabled) {
+		[this.ingamePing, this.menuPing] = await Promise.all([
+			window.waitForElement("#pingText"),
+			window.waitForElement("#menuPingText"),
+		]);
 		if (enabled) {
-			[this.ingamePing, this.menuPing] = await Promise.all([
-				this.waitForElement("pingText"),
-				this.waitForElement("menuPingText"),
-			]);
-
 			this.applyPingDisplay(this.ingamePing);
 			this.applyPingDisplay(this.menuPing);
 			this.interval = setInterval(() => {
 				window.chrome.webview.postMessage("ping");
-			}, 3200);
+			}, 3000);
 
 			this.listener = window.chrome.webview.addEventListener("message", (event) => {
 				if (!event.data.pingInfo) return;
@@ -63,8 +39,8 @@ class RealPing {
 		} else {
 			clearInterval(this.interval);
 			window.chrome.webview.removeEventListener("message", this.listener);
-			if (this.ingamePing) Object.defineProperty(this.ingamePing, "textContent", this.originalTextContentDescriptor);
-			if (this.menuPing) Object.defineProperty(this.menuPing, "textContent", this.originalTextContentDescriptor);
+			Object.defineProperty(this.ingamePing, "textContent", this.originalTextContentDescriptor);
+			Object.defineProperty(this.menuPing, "textContent", this.originalTextContentDescriptor);
 		}
 	}
 }

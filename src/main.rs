@@ -3,8 +3,7 @@ use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
-    net::{IpAddr, Ipv4Addr},
-    sync::{Arc, Mutex, atomic::*},
+    sync::{Arc, Mutex},
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
@@ -22,6 +21,7 @@ mod modules {
     pub mod blocklist;
     pub mod flaglist;
     pub mod lifecycle;
+    pub mod ping;
     pub mod priority;
     pub mod swapper;
     pub mod userscripts;
@@ -30,12 +30,7 @@ mod modules {
 static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> =
     Lazy::new(|| Arc::new(Mutex::new(std::env::args().skip(1).collect())));
 
-static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> =
-    Lazy::new(|| Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))));
-
 pub static CONFIG: Lazy<Arc<Mutex<config::Config>>> = Lazy::new(|| Arc::new(Mutex::new(config::Config::load())));
-
-static PING: Lazy<AtomicU32> = Lazy::new(|| AtomicU32::new(0));
 
 pub static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 
@@ -270,8 +265,6 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             )
             .ok();
 
-        set_handlers(&main_window.webview, &main_window.env);
-
         main_window
             .webview
             .AddWebResourceRequestedFilter(
@@ -280,58 +273,10 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             )
             .ok();
 
+        set_handlers(&main_window.webview, &main_window.env);
+
         if CONFIG.lock().unwrap().get("realPing").unwrap_or(false) {
-            main_window
-                .webview
-                .CallDevToolsProtocolMethod(w!("Network.enable"), w!("{}"), None)
-                .ok();
-
-            let ws_receiver = main_window
-                .webview
-                .GetDevToolsProtocolEventReceiver(w!("Network.webSocketCreated"))
-                .unwrap();
-
-            let handler = DevToolsProtocolEventReceivedEventHandler::create(Box::new(move |_, args| {
-                let Some(args) = args else {
-                    return Ok(());
-                };
-                let mut params = PWSTR::null();
-
-                args.ParameterObjectAsJson(&mut params)?;
-
-                let params = take_pwstr(params);
-                let json = serde_json::from_str::<serde_json::Value>(&params).unwrap();
-
-                let url = json.get("url").unwrap().to_string();
-                if url.contains("lobby-") {
-                    let host = url.split("://").last().unwrap().split("/").next().unwrap().to_string();
-                    let resolved_ips = dns_lookup::lookup_host(&host)?;
-                    if let Some(ip) = resolved_ips.into_iter().next() {
-                        *LAST_CONNECTED_LOBBY.lock().unwrap() = ip;
-                    }
-                }
-                Ok(())
-            }));
-
-            ws_receiver.add_DevToolsProtocolEventReceived(&handler, TOKEN).ok();
-
-            std::thread::spawn(move || {
-                loop {
-                    let result = ping_rs::send_ping(
-                        &LAST_CONNECTED_LOBBY.lock().unwrap(),
-                        std::time::Duration::from_secs(1),
-                        Default::default(),
-                        Some(&ping_rs::PingOptions {
-                            ttl: 128,
-                            dont_fragment: true,
-                        }),
-                    );
-                    if let Ok(reply) = result {
-                        PING.store(reply.rtt, Ordering::Relaxed);
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(3000));
-                }
-            });
+            modules::ping::load(&main_window.webview);
         }
 
         if CONFIG.lock().unwrap().get("rampBoost").unwrap_or(false) {
@@ -425,30 +370,14 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
                         }
                         Some(&"open") => {
                             let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
-                            match parts[1] {
-                                "blocklist" => {
-                                    let blocklist_path =
-                                        std::path::PathBuf::from(&client_dir).join("user_blocklist.json");
-                                    std::process::Command::new("explorer.exe")
-                                        .arg(&blocklist_path)
-                                        .spawn()
-                                        .ok();
-                                }
-                                "swapper" => {
-                                    let swapper_path = std::path::PathBuf::from(&client_dir).join("swapper");
-                                    std::process::Command::new("explorer.exe")
-                                        .arg(&swapper_path)
-                                        .spawn()
-                                        .ok();
-                                }
-                                "userscripts" => {
-                                    let scripts_path = std::path::PathBuf::from(&client_dir).join("scripts");
-                                    std::process::Command::new("explorer.exe")
-                                        .arg(&scripts_path)
-                                        .spawn()
-                                        .ok();
-                                }
-                                _ => {}
+                            let path_to_open = match parts[1] {
+                                "blocklist" => Some(std::path::PathBuf::from(&client_dir).join("user_blocklist.json")),
+                                "swapper" => Some(std::path::PathBuf::from(&client_dir).join("swapper")),
+                                "userscripts" => Some(std::path::PathBuf::from(&client_dir).join("scripts")),
+                                _ => None,
+                            };
+                            if let Some(path) = path_to_open {
+                                std::process::Command::new("explorer.exe").arg(&path).spawn().ok();
                             }
                         }
                         Some(&"rpc-update") => {
@@ -465,15 +394,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
                             }
                         }
                         Some(&"ping") => {
-                            webview
-                                .PostWebMessageAsJson(PCWSTR(
-                                    utils::create_utf_string(format!(
-                                        "{{\"pingInfo\":{}}}",
-                                        &PING.load(Ordering::Relaxed)
-                                    ))
-                                    .as_ptr(),
-                                ))
-                                .ok();
+                            modules::ping::ping(&webview);
                         }
                         _ => {}
                     }

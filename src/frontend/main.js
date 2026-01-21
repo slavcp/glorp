@@ -1,9 +1,9 @@
 import styles from "./components/base.css";
+import "./utils.js";
 
 let initialLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
-window.consol = { ...window.console };
 
 (async () => {
 	window.glorpClient = await new Promise((resolve) => {
@@ -68,6 +68,8 @@ Object.defineProperty(window, "gameLoaded", {
 		else sessionStorage.setItem("justLaunched", false);
 
 		initialLoad = false;
+		// console is disabled without this
+		localStorage.setItem("logs", true);
 		window.windows[0].toggleType({ checked: true });
 
 		// append ranked and mod button to comp host ui

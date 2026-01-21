@@ -1,20 +1,6 @@
-const waitForElement = (selector) => {
-	return new Promise((resolve) => {
-		if (document.querySelector(selector)) return resolve(document.querySelector(selector));
-
-		const observer = new MutationObserver(() => {
-			if (document.querySelector(selector)) {
-				resolve(document.querySelector(selector));
-				observer.disconnect();
-			}
-		});
-		observer.observe(document.body, { childList: true, subtree: true });
-	});
-};
-
 const automateCompHost = async (params) => {
 	window.openHostWindow(false, 1);
-	await waitForElement(".hostTb0");
+	await window.waitForElement(".hostTb0");
 	let mapCheckbox = null;
 	mapCheckbox = document.querySelector(`#${params.mapId}`);
 
@@ -35,12 +21,12 @@ const automateCompHost = async (params) => {
 	}
 	windows[7].switchTab(2);
 
-	const team1Input = await waitForElement("#customSnameTeam1");
+	const team1Input = await window.waitForElement("#customSnameTeam1");
 	team1Input.value = params.team1Name;
-	const team2Input = await waitForElement("#customSnameTeam2");
+	const team2Input = await window.waitForElement("#customSnameTeam2");
 	team2Input.value = params.team2Name;
 
-	const teamSizeSelect = await waitForElement("#customStmSize");
+	const teamSizeSelect = await window.waitForElement("#customStmSize");
 
 	const teamSizeMap = {
 		"1v1": "0",
@@ -53,7 +39,7 @@ const automateCompHost = async (params) => {
 	teamSizeSelect.value = finalTeamSize;
 	if (params.webhook) {
 		try {
-			const webhookInput = await waitForElement("#customSwebhook");
+			const webhookInput = await window.waitForElement("#customSwebhook");
 			webhookInput.value = decodeURIComponent(params.webhook);
 		} catch {
 			/* */
