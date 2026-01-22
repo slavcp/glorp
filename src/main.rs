@@ -262,8 +262,10 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
 
     let main_window_ = main_window.clone();
 
+    #[allow(unused_mut)]
     let mut buf = include_str!("../target/bundle.js").to_string();
 
+    #[cfg(feature = "packaged")]
     if let Ok(buffer) = modules::lifecycle::read_js_bundle() {
         buf = buffer;
     }
@@ -282,6 +284,14 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             )
             .ok();
         set_handlers(&main_window.webview, &main_window.env);
+
+        main_window
+            .webview
+            .AddWebResourceRequestedFilter(
+                PCWSTR(utils::create_utf_string("*://matchmaker.krunker.io/game-info*").as_ptr()),
+                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+            )
+            .ok();
 
         if CONFIG.lock().unwrap().get("realPing").unwrap_or(false) {
             modules::ping::load(&main_window.webview);
