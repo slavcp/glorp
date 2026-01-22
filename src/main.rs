@@ -40,11 +40,13 @@ static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 fn init_fs() {
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
     let swap_dir = String::from(&client_dir) + "\\swapper";
+    let resources_dir = String::from(&client_dir) + "\\resources";
     let scripts_dir = String::from(&client_dir) + "\\scripts\\social";
     let flaglist_path = String::from(&client_dir) + "\\user_flags.json";
     let blocklist_path = String::from(&client_dir) + "\\user_blocklist.json";
     std::fs::create_dir_all(&swap_dir).ok();
     std::fs::create_dir_all(&scripts_dir).ok();
+    std::fs::create_dir_all(&resources_dir).ok();
 
     if !std::path::Path::new(&flaglist_path).exists() {
         std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
