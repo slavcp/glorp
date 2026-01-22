@@ -6,11 +6,7 @@ use std::{
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
-    Win32::{
-        Foundation::*,
-        System::{Com::*, Threading::GetCurrentThreadId},
-        UI::WindowsAndMessaging::*,
-    },
+    Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
     core::*,
 };
 
@@ -37,23 +33,27 @@ static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::
 
 static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 
-fn init_fs() {
-    let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
-    let swap_dir = String::from(&client_dir) + "\\swapper";
-    let resources_dir = String::from(&client_dir) + "\\resources";
-    let scripts_dir = String::from(&client_dir) + "\\scripts\\social";
-    let flaglist_path = String::from(&client_dir) + "\\user_flags.json";
-    let blocklist_path = String::from(&client_dir) + "\\user_blocklist.json";
-    std::fs::create_dir_all(&swap_dir).ok();
-    std::fs::create_dir_all(&scripts_dir).ok();
-    std::fs::create_dir_all(&resources_dir).ok();
+fn init_fs() -> std::result::Result<(), std::io::Error> {
+    let user_profile = std::path::PathBuf::from(std::env::var("USERPROFILE").unwrap());
+    let client_dir = user_profile.join("Documents").join("glorp");
+    let swap_dir = client_dir.join("swapper");
+    let scripts_dir = client_dir.join("scripts").join("social");
+    let flaglist_path = client_dir.join("user_flags.json");
+    let blocklist_path = client_dir.join("user_blocklist.json");
+
+    let resources_dir = std::env::current_exe().unwrap().parent().unwrap().join("resources");
+
+    std::fs::create_dir_all(&swap_dir)?;
+    std::fs::create_dir_all(&scripts_dir)?;
+    std::fs::create_dir_all(&resources_dir)?;
 
     if !std::path::Path::new(&flaglist_path).exists() {
-        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS).ok();
+        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS)?;
     }
     if !std::path::Path::new(&blocklist_path).exists() {
-        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST).ok();
+        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST)?;
     }
+    Ok(())
 }
 
 fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: &T) {
@@ -451,19 +451,23 @@ fn main() {
         modules::lifecycle::installer_cleanup().ok();
     }
 
-    init_fs();
+    if let Err(e) = init_fs() {
+        eprintln!("failed to set all the files in place {}", e);
+    }
 
     let window = create_main_window(None);
-    let (tx, rx) = std::sync::mpsc::channel::<String>();
+    let (_tx, rx) = std::sync::mpsc::channel::<String>();
+    #[cfg(feature = "packaged")]
     {
-        let main_thread_id = unsafe { GetCurrentThreadId() };
+        let main_thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
         if CONFIG.lock().unwrap().get("checkUpdates").unwrap_or(true) {
             std::thread::spawn(move || {
                 modules::lifecycle::check_major_update();
                 if let Some(new_js) = modules::lifecycle::check_minor_update() {
-                    tx.send(new_js).ok();
+                    _tx.send(new_js).ok();
                     unsafe {
-                        PostThreadMessageW(main_thread_id, constants::WM_MINOR_UPDATE_READY, WPARAM(0), LPARAM(0)).ok();
+                        PostThreadMessageW(main_thread_id, constants::WM_MINOR_UPDATE_READY, WPARAM(0), LPARAM(0))
+                            .unwrap();
                     }
                 }
             });
@@ -476,6 +480,7 @@ fn main() {
             if msg.message == constants::WM_MINOR_UPDATE_READY
                 && let Ok(js_content) = rx.try_recv()
             {
+                println!("updating js, {}", &*SCRIPT_ID.lock().unwrap());
                 window
                     .webview
                     .RemoveScriptToExecuteOnDocumentCreated(PCWSTR(

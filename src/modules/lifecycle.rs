@@ -50,19 +50,28 @@ pub fn check_minor_update() -> Option<String> {
     };
     let resouce_folder = env::current_exe().unwrap().parent().unwrap().join("resources");
 
-    let mut current_ver =
+    let current_ver =
         fs::read_to_string(resouce_folder.join("bundle_version")).unwrap_or_else(|_| String::from("0.0.0"));
 
-    if semver::Version::parse(&new_ver).unwrap() > semver::Version::parse(&current_ver).unwrap() {
-        utils::atomic_write(&resouce_folder.join("bundle_version"), &new_ver).ok();
+    let parsed_current_ver = match semver::Version::parse(current_ver.trim()) {
+        Ok(v) => v,
+        Err(_) => {
+            eprintln!("can't parse current version");
+            return None;
+        }
+    };
+    if semver::Version::parse(&new_ver).unwrap() > parsed_current_ver {
         let Ok(new_js) = string_download(constants::JS_BUNDLE_URL) else {
             return None;
         };
-        utils::atomic_write(&resouce_folder.join("bundle.js"), &new_js).ok();
-        current_ver = new_ver;
+        utils::atomic_write(&resouce_folder.join("bundle.js"), &new_js).ok()?;
+        utils::atomic_write(&resouce_folder.join("bundle_version"), &new_ver).ok()?;
+        *crate::JS_VERSION.lock().unwrap() = new_ver;
+        Some(new_js)
+    } else {
+        *crate::JS_VERSION.lock().unwrap() = current_ver;
+        None
     }
-    *crate::JS_VERSION.lock().unwrap() = current_ver;
-    None
 }
 
 pub fn check_major_update() {
