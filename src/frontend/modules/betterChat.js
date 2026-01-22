@@ -50,6 +50,11 @@ class BetterChat {
 		event.preventDefault();
 	};
 
+	clearChat = () => {
+		this.chatInput.value = "";
+		this.chatInput.blur();
+	};
+
 	parseMessages(mutations) {
 		for (const mutation of mutations) {
 			for (const node of mutation.addedNodes) {
@@ -82,10 +87,12 @@ class BetterChat {
 		if (enabled) {
 			document.head.append(this.styles);
 			this.chatInput.addEventListener("keydown", this.switchChat, { capture: true });
+			this.chatInput.addEventListener("blur", this.clearChat);
 			this.observer.observe(this.chatList, { childList: true });
 		} else {
 			this.styles.remove();
 			this.chatInput.removeEventListener("keydown", this.switchChat, { capture: true });
+			this.chatInput.removeEventListener("blur", this.clearChat);
 			this.observer.disconnect();
 		}
 	}

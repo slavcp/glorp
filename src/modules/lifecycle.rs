@@ -13,7 +13,8 @@ use windows::{
 };
 
 pub fn read_js_bundle() -> io::Result<String> {
-    let dir = env::current_dir().expect("cant get current dir");
+    let current_exe = env::current_exe().unwrap();
+    let dir = current_exe.parent().unwrap();
 
     let frontend_path = dir.join("resources/bundle.js");
     let mut js_bundle = fs::OpenOptions::new()
