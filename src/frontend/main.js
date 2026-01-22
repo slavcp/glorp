@@ -52,8 +52,6 @@ document.addEventListener(
 	{ once: true },
 );
 
-document.addEventListener("pointerlockchange", () => window.checkPointerLock());
-
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;

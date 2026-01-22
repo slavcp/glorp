@@ -20,7 +20,6 @@ pub fn load() -> String {
 }"#;
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_FLAGS).unwrap();
-    std::fs::remove_file(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\flags.json").ok(); // outdated flag file
     let flaglist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_flags.json";
     let mut flaglist_file = if let Ok(flaglist_file) = OpenOptions::new()
         .write(true)

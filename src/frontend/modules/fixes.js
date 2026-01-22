@@ -4,8 +4,7 @@ window.checkPointerLock(); // enable the cpu throttle after the game loads
 // best i can do is check every few seconds to make sure it doesnt
 const windowHolder = document.querySelector("#windowHolder");
 setInterval(() => {
-	if (!windowHolder.style.display === "none") return;
-	console.log("checking");
+	if (windowHolder.style.display !== "none") return;
 	window.checkPointerLock();
 }, 3000);
 

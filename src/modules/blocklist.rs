@@ -36,7 +36,6 @@ pub fn load(webview_window: &ICoreWebView2) {
 }"#;
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_BLOCKLIST).unwrap();
-    std::fs::remove_file(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\blocklist.json").ok(); // outdated blocklist file
     let blocklist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_blocklist.json";
     let mut blocklist_file = if let Ok(file) = OpenOptions::new()
         .write(true)

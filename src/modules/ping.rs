@@ -1,13 +1,12 @@
-use once_cell::sync::Lazy;
 use std::{
     net::{IpAddr, Ipv4Addr},
-    sync::{Arc, Mutex},
+    sync::{LazyLock, Mutex},
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::core::*;
 
-static LAST_CONNECTED_LOBBY: Lazy<Arc<Mutex<IpAddr>>> =
-    Lazy::new(|| Arc::new(Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))));
+static LAST_CONNECTED_LOBBY: LazyLock<Mutex<IpAddr>> =
+    LazyLock::new(|| Mutex::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
 
 pub fn load(window: &ICoreWebView2) {
     unsafe {

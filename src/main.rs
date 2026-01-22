@@ -1,13 +1,16 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
-use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{LazyLock, Mutex},
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
-    Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
+    Win32::{
+        Foundation::*,
+        System::{Com::*, Threading::GetCurrentThreadId},
+        UI::WindowsAndMessaging::*,
+    },
     core::*,
 };
 
@@ -27,12 +30,12 @@ mod modules {
     pub mod userscripts;
 }
 
-static LAUNCH_ARGS: Lazy<Arc<Mutex<Vec<String>>>> =
-    Lazy::new(|| Arc::new(Mutex::new(std::env::args().skip(1).collect())));
+static LAUNCH_ARGS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(std::env::args().skip(1).collect()));
+static CONFIG: LazyLock<Mutex<config::Config>> = LazyLock::new(|| Mutex::new(config::Config::load()));
+static JS_VERSION: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new("0.0.0".to_string()));
+static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
-pub static CONFIG: Lazy<Arc<Mutex<config::Config>>> = Lazy::new(|| Arc::new(Mutex::new(config::Config::load())));
-
-pub static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
+static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 
 fn init_fs() {
     let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
@@ -50,6 +53,7 @@ fn init_fs() {
         std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST).ok();
     }
 }
+
 fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: &T) {
     let env: &ICoreWebView2Environment = env_wrapper.env_ref();
     unsafe {
@@ -195,7 +199,9 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
 }
 
 pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Window {
-    let webview2_folder: std::path::PathBuf = std::env::current_dir().unwrap().join("WebView2");
+    let mut webview2_folder: std::path::PathBuf = std::env::current_exe().unwrap();
+    webview2_folder.pop();
+    webview2_folder = webview2_folder.join("WebView2");
 
     if CONFIG.lock().unwrap().get("hardFlip").unwrap_or(true) {
         std::fs::rename(
@@ -254,25 +260,25 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
 
     let main_window_ = main_window.clone();
 
+    let mut buf = include_str!("../target/bundle.js").to_string();
+
+    if let Ok(buffer) = modules::lifecycle::read_js_bundle() {
+        buf = buffer;
+    }
+
     // > memory safe language
     // unsafe
     unsafe {
         main_window
             .webview
             .AddScriptToExecuteOnDocumentCreated(
-                PCWSTR(utils::create_utf_string(include_str!("../target/bundle.js")).as_ptr()),
-                None,
+                PCWSTR(utils::create_utf_string(buf).as_ptr()),
+                &AddScriptToExecuteOnDocumentCreatedCompletedHandler::create(Box::new(move |_, id| {
+                    *SCRIPT_ID.lock().unwrap() = id;
+                    Ok(())
+                })),
             )
             .ok();
-
-        main_window
-            .webview
-            .AddWebResourceRequestedFilter(
-                PCWSTR(utils::create_utf_string("*://matchmaker.krunker.io/game-info*").as_ptr()),
-                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-            )
-            .ok();
-
         set_handlers(&main_window.webview, &main_window.env);
 
         if CONFIG.lock().unwrap().get("realPing").unwrap_or(false) {
@@ -437,22 +443,48 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
 
 fn main() {
     modules::lifecycle::register_instance();
-
-    init_fs();
     #[cfg(feature = "packaged")]
     {
         modules::lifecycle::set_panic_hook().ok();
         modules::lifecycle::installer_cleanup().ok();
-        if CONFIG.lock().unwrap().get("checkUpdates").unwrap_or(false) {
-            modules::lifecycle::check_update();
-        }
     }
 
-    create_main_window(None);
+    init_fs();
+
+    let window = create_main_window(None);
+    let (tx, rx) = std::sync::mpsc::channel::<String>();
+    {
+        let main_thread_id = unsafe { GetCurrentThreadId() };
+        if CONFIG.lock().unwrap().get("checkUpdates").unwrap_or(true) {
+            std::thread::spawn(move || {
+                modules::lifecycle::check_major_update();
+                if let Some(new_js) = modules::lifecycle::check_minor_update() {
+                    tx.send(new_js).ok();
+                    unsafe {
+                        PostThreadMessageW(main_thread_id, constants::WM_MINOR_UPDATE_READY, WPARAM(0), LPARAM(0)).ok();
+                    }
+                }
+            });
+        }
+    }
     let mut msg: MSG = MSG::default();
     unsafe {
         while GetMessageW(&mut msg, None, 0, 0).into() {
             let _ = TranslateMessage(&msg);
+            if msg.message == constants::WM_MINOR_UPDATE_READY
+                && let Ok(js_content) = rx.try_recv()
+            {
+                window
+                    .webview
+                    .RemoveScriptToExecuteOnDocumentCreated(PCWSTR(
+                        utils::create_utf_string(&*SCRIPT_ID.lock().unwrap()).as_ptr(),
+                    ))
+                    .ok();
+                window
+                    .webview
+                    .AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(js_content).as_ptr()), None)
+                    .ok();
+            }
             DispatchMessageW(&msg);
         }
     }

@@ -1,12 +1,11 @@
-use once_cell::sync::Lazy;
 use regex::Regex;
-use std::io::Read;
+use std::{io::Read, sync::LazyLock};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
-static METADATA_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
-static IIFE_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap());
+static METADATA_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
+static IIFE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap());
 
 use crate::utils;
 

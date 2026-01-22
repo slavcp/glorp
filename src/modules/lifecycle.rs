@@ -1,5 +1,9 @@
 #![allow(dead_code)]
-use crate::{constants, utils::create_utf_string};
+use crate::{
+    constants,
+    utils::{self, create_utf_string},
+};
+
 use std::{env, fs, io, io::*, process};
 use windows::{
     Win32::Foundation::*,
@@ -8,87 +12,122 @@ use windows::{
     core::*,
 };
 
-pub fn check_update() {
-    std::thread::spawn(|| {
-        let mut response = match ureq::get(constants::UPDATE_URL).call() {
-            Ok(response) => response.into_body(),
-            Err(_) => return,
-        };
-        let mut buf = String::new();
-        response.as_reader().read_to_string(&mut buf).ok();
+pub fn read_js_bundle() -> io::Result<String> {
+    let dir = env::current_dir().expect("cant get current dir");
 
-        let json = serde_json::from_str::<serde_json::Value>(&buf).unwrap();
-        let newest_version = match json["tag_name"].as_str() {
-            Some(v) => v,
-            None => return,
+    let frontend_path = dir.join("resources/bundle.js");
+    let mut js_bundle = fs::OpenOptions::new()
+        .write(true)
+        .read(true)
+        .create(true)
+        .truncate(false)
+        .open(&frontend_path)?;
+
+    if let Ok(metadata) = js_bundle.metadata()
+        && metadata.len() > 0
+    {
+        let mut content = String::new();
+        if js_bundle.read_to_string(&mut content).is_ok() {
+            return Ok(content);
+        }
+    }
+
+    Err(io::Error::other("file not found, resorting to included js"))
+}
+
+fn string_download(url: &str) -> std::result::Result<String, ureq::Error> {
+    let response = ureq::get(url).call()?;
+    let mut buf = String::new();
+    response.into_body().as_reader().read_to_string(&mut buf)?;
+
+    Ok(buf)
+}
+
+pub fn check_minor_update() -> Option<String> {
+    let Ok(new_ver) = string_download(constants::JS_VERSION_URL) else {
+        return None;
+    };
+    let resouce_folder = env::current_exe().unwrap().parent().unwrap().join("resources");
+
+    let mut current_ver =
+        fs::read_to_string(resouce_folder.join("bundle_version")).unwrap_or_else(|_| String::from("0.0.0"));
+
+    if semver::Version::parse(&new_ver).unwrap() > semver::Version::parse(&current_ver).unwrap() {
+        utils::atomic_write(&resouce_folder.join("bundle_version"), &new_ver).ok();
+        let Ok(new_js) = string_download(constants::JS_BUNDLE_URL) else {
+            return None;
         };
-        if semver::Version::parse(newest_version).unwrap() <= semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap()
-        {
+        utils::atomic_write(&resouce_folder.join("bundle.js"), &new_js).ok();
+        current_ver = new_ver;
+    }
+    *crate::JS_VERSION.lock().unwrap() = current_ver;
+    None
+}
+
+pub fn check_major_update() {
+    // fetch latest version form github
+    let Ok(buf) = string_download(constants::UPDATE_URL) else {
+        return;
+    };
+
+    let json = serde_json::from_str::<serde_json::Value>(&buf).unwrap();
+    let newest_version = match json["tag_name"].as_str() {
+        Some(v) => v,
+        None => return,
+    };
+    if semver::Version::parse(newest_version).unwrap() <= semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap() {
+        return;
+    };
+
+    // download
+    let download_url = match json["assets"][0]["browser_download_url"].as_str() {
+        Some(url) => url,
+        None => return,
+    };
+
+    let mut output_path = env::current_exe().expect("can't get exe path");
+    output_path.pop();
+    output_path.push(format!("version.{}.msi", newest_version));
+
+    let res = match ureq::get(download_url).call() {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("Failed to download: {:?}", e);
             return;
-        };
-
-        let download_url = match json["assets"][0]["browser_download_url"].as_str() {
-            Some(url) => url,
-            None => return,
-        };
-
-        let mut output_path = std::env::current_exe().unwrap();
-        output_path.pop();
-        output_path.push(format!("version.{}.msi", newest_version));
-
-        let res = match ureq::get(download_url).call() {
-            Ok(res) => res,
-            Err(e) => {
-                unsafe {
-                    MessageBoxW(
-                        None,
-                        PCWSTR(crate::utils::create_utf_string(format!("Failed to download: {:?}", e)).as_ptr()),
-                        w!("Download Error"),
-                        MB_ICONERROR | MB_SYSTEMMODAL,
-                    );
-                }
-                return;
-            }
-        };
-
-        let mut file = match fs::File::create(&output_path) {
-            Ok(file) => file,
-            Err(e) => {
-                unsafe {
-                    MessageBoxW(
-                        None,
-                        PCWSTR(crate::utils::create_utf_string(format!("Failed to create file: {:?}", e)).as_ptr()),
-                        w!("Download Error"),
-                        MB_ICONERROR | MB_SYSTEMMODAL,
-                    );
-                }
-                return;
-            }
-        };
-
-        if let Err(e) = io::copy(&mut res.into_body().as_reader(), &mut file) {
-            panic!("Failed to download: {:?}", e)
         }
-        drop(file);
-        unsafe {
-            if let MESSAGEBOX_RESULT(6) = MessageBoxW(
+    };
+
+    let mut file = match fs::File::create(&output_path) {
+        Ok(file) => file,
+        Err(e) => {
+            eprintln!("Failed to create file: {:?}", e);
+            return;
+        }
+    };
+
+    if let Err(e) = io::copy(&mut res.into_body().as_reader(), &mut file) {
+        eprintln!("Failed to write to file: {:?}", e);
+        return;
+    }
+    drop(file);
+    unsafe {
+        if let IDYES = MessageBoxW(
+            None,
+            w!("A new version is available, update?"),
+            w!("Update available"),
+            MB_ICONQUESTION | MB_YESNO,
+        ) {
+            ShellExecuteW(
                 None,
-                w!("A new version is available, update?"),
-                w!("Update available"),
-                MB_ICONQUESTION | MB_YESNO,
-            ) {
-                ShellExecuteW(
-                    None,
-                    w!("open"),
-                    PCWSTR(crate::utils::create_utf_string(output_path.to_string_lossy()).as_ptr()),
-                    w!("/q"),
-                    None,
-                    SW_NORMAL,
-                );
-                process::exit(0);
-            }
+                w!("open"),
+                PCWSTR(crate::utils::create_utf_string(output_path.to_string_lossy()).as_ptr()),
+                w!("/q"),
+                None,
+                SW_NORMAL,
+            );
+            process::exit(0);
         }
-    });
+    }
 }
 
 pub fn installer_cleanup() -> io::Result<()> {
@@ -109,11 +148,8 @@ pub fn installer_cleanup() -> io::Result<()> {
 }
 
 pub fn set_panic_hook() -> io::Result<()> {
-    let exe_path = std::env::current_exe()?;
-    let log_dir = exe_path
-        .parent()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "No parent directory"))?;
-    let log_file_path = log_dir.join("crash_log.txt");
+    let current_dir = env::current_dir()?;
+    let log_file_path = current_dir.join("crash_log.txt");
 
     std::panic::set_hook(Box::new(move |panic_info| {
         let crash_message = format!(
@@ -136,7 +172,7 @@ pub fn set_panic_hook() -> io::Result<()> {
             std::backtrace::Backtrace::force_capture()
         );
 
-        std::fs::write(&log_file_path, &crash_message).ok();
+        fs::write(&log_file_path, &crash_message).ok();
 
         unsafe {
             let result = MessageBoxW(
@@ -174,7 +210,7 @@ pub fn register_instance() {
         CreateMutexW(
             None,
             false,
-            PCWSTR(create_utf_string(constants::INSTANCE_MUTEX_NAME).as_ptr()),
+            PCWSTR(create_utf_string(constants::INSTANCE_MUTEX).as_ptr()),
         )
         .ok();
 
@@ -183,7 +219,7 @@ pub fn register_instance() {
             let data = env::args().skip(1).collect::<Vec<String>>().join(" ");
 
             if data.is_empty() && FindWindowW(w!("krunker_webview_subwindow"), PCWSTR::null()).is_err() {
-                std::process::exit(0);
+                process::exit(0);
             }
             let data_bytes = data.as_bytes();
             let copy_data = COPYDATASTRUCT {
@@ -206,7 +242,7 @@ pub fn register_instance() {
                     Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
                 );
             }
-            std::process::exit(0);
+            process::exit(0);
         }
     }
 }

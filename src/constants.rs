@@ -1,6 +1,11 @@
+use windows::Win32::UI::WindowsAndMessaging::WM_USER;
+
 pub const DISCORD_CLIENT_ID: &str = "1366441319890948136";
 pub const UPDATE_URL: &str = "https://api.github.com/repos/slavcp/glorp/releases/latest";
-pub const INSTANCE_MUTEX_NAME: &str = "Global\\7e0f405e-fe65-493a-acf0-9719b85697cd";
+pub const JS_VERSION_URL: &str = "https://raw.githubusercontent.com/slavcp/glorp/master/target/bundle_version";
+pub const JS_BUNDLE_URL: &str = "https://raw.githubusercontent.com/slavcp/glorp/master/target/bundle.js";
+pub const INSTANCE_MUTEX: &str = "Global\\7e0f405e-fe65-493a-acf0-9719b85697cd";
+pub const WM_MINOR_UPDATE_READY: u32 = WM_USER + 5;
 
 pub const DEFAULT_BLOCKLIST: &str = r#"[
 	"*://*.pollfish.com/*",

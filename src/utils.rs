@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
-
+use std::{fs, path::*};
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
@@ -10,6 +10,39 @@ use windows::{
     },
     core::*,
 };
+
+pub struct UnsafeSend<T> {
+    val: T,
+}
+
+impl<T> UnsafeSend<T> {
+    pub fn new(val: T) -> Self {
+        Self { val }
+    }
+
+    pub fn take(self) -> T {
+        self.val
+    }
+}
+use webview2_com::Microsoft::Web::WebView2::Win32::*;
+
+unsafe impl<T> Send for UnsafeSend<T> {}
+
+pub trait EnvironmentRef {
+    fn env_ref(&self) -> &ICoreWebView2Environment;
+}
+
+impl EnvironmentRef for ICoreWebView2Environment {
+    fn env_ref(&self) -> &ICoreWebView2Environment {
+        self
+    }
+}
+
+impl EnvironmentRef for UnsafeSend<ICoreWebView2Environment> {
+    fn env_ref(&self) -> &ICoreWebView2Environment {
+        &self.val
+    }
+}
 
 pub fn create_utf_string(string: impl AsRef<str>) -> Vec<u16> {
     let mut string_utf: Vec<u16> = string.as_ref().encode_utf16().collect();
@@ -98,35 +131,11 @@ pub fn set_cpu_throttling(webview: &ICoreWebView2, value: f32) {
     }
 }
 
-pub struct UnsafeSend<T> {
-    val: T,
-}
+pub fn atomic_write(path: &impl AsRef<Path>, data: &impl std::convert::AsRef<[u8]>) -> std::io::Result<()> {
+    let path = path.as_ref();
+    let tmp_path = path.with_extension("tmp");
+    fs::write(&tmp_path, data)?;
 
-impl<T> UnsafeSend<T> {
-    pub fn new(val: T) -> Self {
-        Self { val }
-    }
-
-    pub fn take(self) -> T {
-        self.val
-    }
-}
-use webview2_com::Microsoft::Web::WebView2::Win32::*;
-
-unsafe impl<T> Send for UnsafeSend<T> {}
-
-pub trait EnvironmentRef {
-    fn env_ref(&self) -> &ICoreWebView2Environment;
-}
-
-impl EnvironmentRef for ICoreWebView2Environment {
-    fn env_ref(&self) -> &ICoreWebView2Environment {
-        self
-    }
-}
-
-impl EnvironmentRef for UnsafeSend<ICoreWebView2Environment> {
-    fn env_ref(&self) -> &ICoreWebView2Environment {
-        &self.val
-    }
+    fs::rename(tmp_path, path)?;
+    Ok(())
 }

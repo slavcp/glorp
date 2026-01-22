@@ -311,13 +311,12 @@ pub fn create_webview2(
             provided_env
         } else {
             let (etx, erx) = std::sync::mpsc::channel();
-            let mut current_exe = std::env::current_exe().unwrap();
-            current_exe.pop();
-
+            let mut current_dir = std::env::current_exe().unwrap();
+            current_dir.pop();
             let result = CreateCoreWebView2EnvironmentCompletedHandler::wait_for_async_operation(
                 Box::new(move |environment_created_handler| {
                     CreateCoreWebView2EnvironmentWithOptions(
-                        PCWSTR(utils::create_utf_string(current_exe.to_string_lossy() + "\\\\WebView2").as_ptr()),
+                        PCWSTR(utils::create_utf_string(current_dir.to_string_lossy() + "\\\\WebView2").as_ptr()),
                         PCWSTR(
                             utils::create_utf_string(std::env::var("USERPROFILE").unwrap() + "\\\\Documents\\\\glorp")
                                 .as_ptr(),

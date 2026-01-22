@@ -1,7 +1,11 @@
-use once_cell::sync::Lazy;
-use std::mem::transmute;
-use std::sync::atomic::{AtomicBool, AtomicPtr, AtomicU32};
-use std::sync::mpsc::{Sender, channel};
+use std::{
+    mem::transmute,
+    sync::{
+        LazyLock,
+        atomic::{AtomicBool, AtomicPtr, AtomicU32},
+        mpsc::{Sender, channel},
+    },
+};
 use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
 use windows::Win32::{
@@ -42,7 +46,7 @@ static SPACE_UP: INPUT = INPUT {
     },
 };
 
-static SCROLL_SENDER: Lazy<Sender<()>> = Lazy::new(|| {
+static SCROLL_SENDER: LazyLock<Sender<()>> = LazyLock::new(|| {
     let (tx, rx) = channel();
     std::thread::spawn(move || {
         while rx.recv().is_ok() {
