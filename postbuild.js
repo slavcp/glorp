@@ -17,13 +17,8 @@ function copyDirAll(source, destination) {
 		const sourcePath = path.join(source, entry.name);
 		const destPath = path.join(destination, entry.name);
 
-		if (entry.isDirectory()) {
-			copyDirAll(sourcePath, destPath);
-		} else {
-			if (!fs.existsSync(destPath)) {
-				fs.copyFileSync(sourcePath, destPath);
-			}
-		}
+		if (entry.isDirectory()) copyDirAll(sourcePath, destPath);
+		else if (!fs.existsSync(destPath)) fs.copyFileSync(sourcePath, destPath);
 	}
 }
 
@@ -39,17 +34,13 @@ try {
 
 	for (const mapping of dllMappings) {
 		const sourceDllPath = path.join(targetDir, mapping.source);
-		if (fs.existsSync(sourceDllPath)) {
-			fs.copyFileSync(sourceDllPath, path.join(targetWebview2Dir, mapping.target));
-		}
+		if (fs.existsSync(sourceDllPath)) fs.copyFileSync(sourceDllPath, path.join(targetWebview2Dir, mapping.target));
 	}
 
 	const vcruntimePath = path.join(targetDir, "vcruntime140_1.dll");
 	if (!fs.existsSync(vcruntimePath)) {
 		const resourcesVcruntimePath = path.join(process.cwd(), "resources", "vcruntime140_1.dll");
-		if (fs.existsSync(resourcesVcruntimePath)) {
-			fs.copyFileSync(resourcesVcruntimePath, vcruntimePath);
-		}
+		if (fs.existsSync(resourcesVcruntimePath)) fs.copyFileSync(resourcesVcruntimePath, vcruntimePath);
 	}
 } catch (error) {
 	console.error("cannot copy", error);
