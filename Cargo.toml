@@ -53,7 +53,7 @@ serde = { version = "1.0.*", features = ["derive"], default-features = false }
 regex = { version = "1.12.*", features = ["std", "perf", "perf-dfa-full", "unicode-perl"], default-features = false }
 semver = "1.0.*"
 serde_json = "1.0.*"
-discord-rich-presence = "1.0.*"
+discord-rich-presence = "1.1.*"
 ping-rs = "0.1.*"
 dns-lookup = "3.0.*"
 
