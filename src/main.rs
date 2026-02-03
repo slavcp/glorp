@@ -221,7 +221,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
 
     let mut args = modules::flaglist::load();
     if CONFIG.lock().unwrap().get("uncapFps").unwrap_or(true) {
-        args.push_str("--disable-frame-rate-limit")
+        args.push_str(" --disable-frame-rate-limit");
     }
 
     let start_mode = CONFIG
