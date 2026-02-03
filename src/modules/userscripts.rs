@@ -13,8 +13,7 @@ use crate::utils;
 fn parse_metadata(content: &mut String) {
     if let Some(metadata_block) = METADATA_REGEX.find(content) {
         let metadata = metadata_block.as_str();
-
-        if metadata.contains("// @run-at document-end") {
+        if !metadata.contains("// @run-at document-start") {
             *content = format!(
                 "document.addEventListener('DOMContentLoaded', function() {{\n{}\n}});",
                 content
