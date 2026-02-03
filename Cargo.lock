@@ -194,7 +194,7 @@ dependencies = [
 
 [[package]]
 name = "glorp"
-version = "0.8.3"
+version = "0.8.4"
 dependencies = [
  "discord-rich-presence",
  "dns-lookup",
@@ -268,9 +268,9 @@ checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "minhook"
-version = "0.7.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5acd7e968e65ab60414f3028004ba7910cfe9cde685a4357ae346d0bbdc53aa4"
+checksum = "455e088cb1600ffa5f1524c9702c9eeb0ba3604e0f4932efa165b99973272a8d"
 dependencies = [
  "cc",
  "tracing",

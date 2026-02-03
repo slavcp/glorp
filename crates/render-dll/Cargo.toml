@@ -14,4 +14,4 @@ windows = { version = "0.61.*", features = [
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D11",
 ]}
-minhook = "0.7.*"
+minhook = "0.9.*"
