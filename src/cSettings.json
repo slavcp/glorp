@@ -79,14 +79,6 @@
 		"defaultValue": false,
 		"needsRestart": true
 	},
-	"betterChat": {
-		"name": "Better Chat",
-		"id": "betterChat",
-		"description": "Groups the team and all chat into a single channel; press tab to switch where you send yours",
-		"type": "checkbox",
-		"category": "Game",
-		"defaultValue": true
-	},
 	"hpEnemyCounter": {
 		"name": "Hardpoint Enemy counter",
 		"id": "hpEnemyCounter",
@@ -122,6 +114,14 @@
 		"id": "menuTimer",
 		"type": "checkbox",
 		"category": "UI",
+		"defaultValue": true
+	},
+	"betterChat": {
+		"name": "Better Chat",
+		"id": "betterChat",
+		"description": "Groups the team and all chat into a single channel; press tab to switch where you send yours",
+		"type": "checkbox",
+		"category": "Game",
 		"defaultValue": true
 	},
 	"cleanUI": {
@@ -172,7 +172,7 @@
 		"type": "checkbox",
 		"category": "Tweaks",
 		"defaultValue": true,
-		"needsRestart": true
+		"needsRefresh": true
 	},
 	"throttle": {
 		"name": "CPU Throttling",

@@ -165,6 +165,7 @@ class SettingsManager {
 			tempHTML += `<div class='settName' ${setting.description ? `title="${setting.description}"` : ""}>
 								${setting.name}
 								${setting.needsRestart ? ' <span style="color: #eb5656" title="Requires Restart">*</span>' : ""}
+								${setting.needsRefresh ? ' <span style="color: #3244a8" title="Requires Refresh">*</span>' : ""}
 								${setting.html}</div>`;
 		}
 
