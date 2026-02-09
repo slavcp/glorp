@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{io::Read, sync::LazyLock};
+use std::{env, fs, io::Read, sync::LazyLock};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
 static METADATA_REGEX: LazyLock<Regex> =
@@ -37,12 +37,12 @@ fn parse(mut content: String) -> String {
 
 pub fn load(webview: &ICoreWebView2, social: bool) -> Result<()> {
     let scripts_dir = if social {
-        std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts\\social"
+        env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts\\social"
     } else {
-        std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts"
+        env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\scripts"
     };
 
-    if let Ok(entries) = std::fs::read_dir(scripts_dir) {
+    if let Ok(entries) = fs::read_dir(scripts_dir) {
         for entry in entries.flatten() {
             if !match entry.path().extension() {
                 Some(ext) => ext.eq_ignore_ascii_case("js"),
@@ -51,7 +51,7 @@ pub fn load(webview: &ICoreWebView2, social: bool) -> Result<()> {
                 continue;
             }
 
-            let mut file = std::fs::File::open(entry.path())?;
+            let mut file = fs::File::open(entry.path())?;
             let mut content = String::new();
             file.read_to_string(&mut content)?;
 

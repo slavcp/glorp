@@ -6,7 +6,7 @@ window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 
 (async () => {
-	window.glorpClient = await new Promise((resolve) => {
+	window.glorp = await new Promise((resolve) => {
 		window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
 		window.chrome.webview.postMessage("get-info");
 	});
@@ -21,14 +21,25 @@ document.addEventListener(
 		baseCSS.innerHTML = styles;
 		document.head.append(baseCSS);
 
-		const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
-		HTMLCanvasElement.prototype.addEventListener = function (type, listener, options) {
-			if (type === "wheel")
-				window.glorpClient.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
-			return originalAddEventListener.call(this, type, listener, options);
-		};
+		hook(HTMLCanvasElement, "addEventListener", (args) => {
+			const [type, listener] = args;
+			if (type === "wheel") window.glorp.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
 
-		if (window.glorpClient?.settings?.data?.cleanUI) {
+			if (type === "mousemove" || type === "drag") return;
+		});
+
+		hook(HTMLCanvasElement, "requestPointerLock", function (args, original) {
+			window.chrome.webview.postMessage("drag, false");
+			window.chrome.webview.postMessage("throttle, game");
+
+			return original.call(this, { ...args[0], unadjustedMovement: window.glorp?.settings?.data?.rawInput });
+		});
+
+		document.addEventListener("pointerlockchange", () => {
+			if (!document.pointerLockElement) window.chrome.webview.postMessage("throttle, menu");
+		});
+
+		if (window.glorp?.settings?.data?.cleanUI) {
 			import("./components/clean.css").then((css) => {
 				const cleanCSS = document.createElement("style");
 				cleanCSS.id = "cleanUICSS";
@@ -37,22 +48,10 @@ document.addEventListener(
 			});
 		}
 
-		if (window.glorpClient?.settings?.data?.rawInput) {
-			const originalRequestPointerLock = HTMLCanvasElement.prototype.requestPointerLock;
-			HTMLCanvasElement.prototype.requestPointerLock = function (options) {
-				return originalRequestPointerLock.call(this, {
-					...options,
-					unadjustedMovement: true,
-				});
-			};
-		}
-
-		if (window.glorpClient?.settings?.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorp?.settings?.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
 	},
 	{ once: true },
 );
-
-document.addEventListener("pointerlockchange", () => window.checkPointerLock());
 
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
@@ -80,13 +79,13 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/args.js");
 		import("./modules/fixes.js");
 		import("./modules/rankProgress.js");
-		if (window.glorpClient?.settings.data?.betterChat) import("./modules/betterChat.js");
-		if (window.glorpClient?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
-		if (window.glorpClient?.settings.data?.accountManager) import("./modules/accountManager.js");
-		if (window.glorpClient?.settings.data?.showPing) import("./modules/showPing.js");
-		if (window.glorpClient?.settings.data?.realPing) import("./modules/realPing.js");
+		if (window.glorp?.settings.data?.betterChat) import("./modules/betterChat.js");
+		if (window.glorp?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
+		if (window.glorp?.settings.data?.accountManager) import("./modules/accountManager.js");
+		if (window.glorp?.settings.data?.showPing) import("./modules/showPing.js");
+		if (window.glorp?.settings.data?.realPing) import("./modules/realPing.js");
 
-		if (window.glorpClient?.settings.data?.hideBundles) {
+		if (window.glorp?.settings.data?.hideBundles) {
 			const origBundlePopup = window.bundlePopup;
 			window.bundlePopup = (...args) => {
 				const windowHolder = document.querySelector("#windowHolder");
@@ -100,11 +99,11 @@ Object.defineProperty(window, "gameLoaded", {
 		}
 
 		setTimeout(() => {
-			if (sessionStorage.getItem("justLaunched") === "true" && window.glorpClient?.launchArgs)
-				window.glorpClient.parseArgs(window.glorpClient.launchArgs);
+			if (sessionStorage.getItem("justLaunched") === "true" && window.glorp?.launchArgs)
+				window.glorp.parseArgs(window.glorp.launchArgs);
 		}, 2000);
 
-		if (window.glorpClient?.settings.data?.autoSpec) {
+		if (window.glorp?.settings.data?.autoSpec) {
 			const trySetSpect = () => {
 				const activity = window.getGameActivity();
 				if (activity.map === null) {
@@ -116,7 +115,7 @@ Object.defineProperty(window, "gameLoaded", {
 			trySetSpect();
 		}
 
-		if (window.glorpClient?.settings.data?.discordRPC) {
+		if (window.glorp?.settings.data?.discordRPC) {
 			window.chrome.webview.addEventListener("message", (event) => {
 				if (event.data !== "game-updated") return;
 				setTimeout(() => {
@@ -126,14 +125,14 @@ Object.defineProperty(window, "gameLoaded", {
 			});
 		}
 
-		if (window.glorpClient?.settings.data?.textSelect) {
+		if (window.glorp?.settings.data?.textSelect) {
 			const textSelectCSS = document.createElement("style");
 			textSelectCSS.id = "textSelectCSS";
 			textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
 			document.head.append(textSelectCSS);
 		}
 
-		if (window.glorpClient?.settings.data?.menuTimer) {
+		if (window.glorp?.settings.data?.menuTimer) {
 			import("./components/menuTimer.css").then((module) => {
 				const menuTimerCSS = document.createElement("style");
 				menuTimerCSS.id = "menuTimerCSS";

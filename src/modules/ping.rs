@@ -1,6 +1,7 @@
 use std::{
     net::{IpAddr, Ipv4Addr},
     sync::{LazyLock, Mutex},
+    time,
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::core::*;
@@ -49,7 +50,7 @@ pub fn load(window: &ICoreWebView2) {
 pub fn ping(webview: &ICoreWebView2) {
     let result = ping_rs::send_ping(
         &LAST_CONNECTED_LOBBY.lock().unwrap(),
-        std::time::Duration::from_secs(1),
+        time::Duration::from_secs(1),
         Default::default(),
         Some(&ping_rs::PingOptions {
             ttl: 128,

@@ -1,6 +1,9 @@
-window.checkPointerLock = () => {
-	const pointerLock = document.pointerLockElement !== null;
-	window.chrome.webview.postMessage(`pointer-lock, ${pointerLock}`);
+window.hook = (target, method, wrapper) => {
+	const original = target.prototype[method];
+	target.prototype[method] = function (...args) {
+		const result = wrapper.call(this, args, original);
+		return result === undefined ? original.apply(this, args) : result;
+	};
 };
 
 window.waitForElement = (selector) => {

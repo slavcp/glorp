@@ -6,7 +6,7 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-			"complexity": { "noImportantStyles": "off" },
+			"complexity": { "noImportantStyles": "off", "useArrowFunction": "off" },
 			"a11y": { "useGenericFontNames": "off" }
 		}
 	},

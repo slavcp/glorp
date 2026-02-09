@@ -1,17 +1,10 @@
-window.checkPointerLock(); // enable the cpu throttle after the game loads
-
-// sometimes pointerlockchange doesnt trigger (??)
-// best i can do is check every few seconds to make sure it doesnt
-const windowHolder = document.querySelector("#windowHolder");
-setInterval(() => {
-	if (windowHolder.style.display !== "none") return;
-	window.checkPointerLock();
-}, 3000);
+window.chrome.webview.postMessage("drag, false");
+window.chrome.webview.postMessage("throttle, menu");
 
 // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
 const originalExportSettings = window.exportSettings;
 window.exportSettings = () => {
-	window.glorpClient.showNotification("Settings exported to Downloads!", false, 3);
+	window.glorp.showNotification("Settings exported to Downloads!", false, 3);
 	return originalExportSettings();
 };
 
@@ -22,9 +15,12 @@ const originalshowWindow = window.showWindow;
 window.showWindow = (...args) => {
 	const number = args[0];
 	switch (number) {
+		case 1:
+			window.chrome.webview.postMessage("drag, true");
+			break;
 		case 3:
 		case 53:
-			window.chrome.webview.postMessage("pointer-lock, true");
+			window.chrome.webview.postMessage("throttle, game");
 			break;
 		case 15:
 		case 26:
@@ -40,7 +36,7 @@ window.showWindow = (...args) => {
 		case 51:
 		case 16:
 		case 34:
-			window.chrome.webview.postMessage("pointer-lock, false");
+			window.chrome.webview.postMessage("throttle, menu");
 			break;
 	}
 	return originalshowWindow.apply(this, args);
@@ -48,6 +44,7 @@ window.showWindow = (...args) => {
 
 const originalclosWind = window.closWind;
 window.closWind = (...args) => {
-	window.chrome.webview.postMessage("pointer-lock, false");
+	window.chrome.webview.postMessage("throttle, menu");
+	window.chrome.webview.postMessage("drag, false");
 	return originalclosWind.apply(this, args);
 };

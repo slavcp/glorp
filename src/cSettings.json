@@ -161,7 +161,7 @@
 		"id": "showChangelog",
 		"type": "checkbox",
 		"button": "Show Now",
-		"buttonAction": "window.glorpClient.showChangelogPopup(window.glorpClient.version)",
+		"buttonAction": "window.glorp.showChangelogPopup(window.glorp.version)",
 		"category": "UI",
 		"defaultValue": true
 	},

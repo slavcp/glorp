@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, env, fs, path::PathBuf};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::{
     Win32::{
@@ -13,7 +13,7 @@ use crate::utils;
 fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2) -> Option<HashMap<String, IStream>> {
     let mut swaps = HashMap::new();
 
-    for entry in std::fs::read_dir(&swap_dir).ok()? {
+    for entry in fs::read_dir(&swap_dir).ok()? {
         let entry = entry.ok()?;
         let path = entry.path();
         let file_type = entry.file_type().ok()?;
@@ -45,7 +45,7 @@ fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2) ->
                 }
             }
             unsafe {
-                let file_content = std::fs::read(entry.path()).unwrap();
+                let file_content = fs::read(entry.path()).unwrap();
                 let stream = CreateStreamOnHGlobal(HGLOBAL::default(), true).unwrap();
                 stream
                     .Write(file_content.as_ptr() as *const _, file_content.len() as u32, None)
@@ -59,8 +59,8 @@ fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2) ->
 }
 
 pub fn load(window: &ICoreWebView2) -> HashMap<String, IStream> {
-    let swap_dir = PathBuf::from(std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper");
-    std::fs::create_dir_all(&swap_dir).unwrap_or_default();
+    let swap_dir = PathBuf::from(env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\swapper");
+    fs::create_dir_all(&swap_dir).unwrap_or_default();
     let swaps = recurse_swap(swap_dir.clone(), swap_dir, window);
     swaps.unwrap()
 }

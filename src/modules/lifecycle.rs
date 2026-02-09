@@ -4,7 +4,7 @@ use crate::{
     utils::{self, create_utf_string},
 };
 
-use std::{env, fs, io, io::*, process};
+use std::{backtrace, env, ffi::c_void, fs, io, io::Read, panic, process, result};
 use windows::{
     Win32::Foundation::*,
     Win32::System::{DataExchange::COPYDATASTRUCT, Threading::CreateMutexW},
@@ -36,7 +36,7 @@ pub fn read_js_bundle() -> io::Result<String> {
     Err(io::Error::other("file not found, resorting to included js"))
 }
 
-fn string_download(url: &str) -> std::result::Result<String, ureq::Error> {
+fn string_download(url: &str) -> result::Result<String, ureq::Error> {
     let response = ureq::get(url).call()?;
     let mut buf = String::new();
     response.into_body().as_reader().read_to_string(&mut buf)?;
@@ -161,7 +161,7 @@ pub fn set_panic_hook() -> io::Result<()> {
     let current_dir = env::current_dir()?;
     let log_file_path = current_dir.join("crash_log.txt");
 
-    std::panic::set_hook(Box::new(move |panic_info| {
+    panic::set_hook(Box::new(move |panic_info| {
         let crash_message = format!(
             "Location: {}\n\
             Message: {}\n\
@@ -179,7 +179,7 @@ pub fn set_panic_hook() -> io::Result<()> {
                 .map(|s| s.as_str())
                 .or_else(|| panic_info.payload().downcast_ref::<&str>().copied())
                 .unwrap_or("<unknown>"),
-            std::backtrace::Backtrace::force_capture()
+            backtrace::Backtrace::force_capture()
         );
 
         fs::write(&log_file_path, &crash_message).ok();
@@ -235,7 +235,7 @@ pub fn register_instance() {
             let copy_data = COPYDATASTRUCT {
                 dwData: 0,
                 cbData: data_bytes.len() as u32,
-                lpData: data_bytes.as_ptr() as *mut std::ffi::c_void,
+                lpData: data_bytes.as_ptr() as *mut c_void,
             };
             if let Ok(hwnd) = FindWindowExW(None, None, w!("krunker_webview"), PCWSTR::null()) {
                 SendMessageW(

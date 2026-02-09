@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::*, io::*};
+use std::{collections::HashSet, env, fs, io::Write};
 
 use crate::constants;
 
@@ -20,8 +20,8 @@ pub fn load() -> String {
 }"#;
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_FLAGS).unwrap();
-    let flaglist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_flags.json";
-    let mut flaglist_file = if let Ok(flaglist_file) = OpenOptions::new()
+    let flaglist_path: String = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_flags.json";
+    let mut flaglist_file = if let Ok(flaglist_file) = fs::OpenOptions::new()
         .write(true)
         .read(true)
         .create(true)
@@ -38,7 +38,7 @@ pub fn load() -> String {
         flaglist_file.write_all(example_flags.as_bytes()).ok();
     }
 
-    let flaglist_string = if let Ok(flaglist_string) = std::fs::read_to_string(&flaglist_path) {
+    let flaglist_string = if let Ok(flaglist_string) = fs::read_to_string(&flaglist_path) {
         flaglist_string
     } else {
         eprintln!("can't read user flags file");

@@ -7,8 +7,8 @@
 		"package": "pnpm run build && wix build ./resources/installer_script.wxs -ext WixToolset.Util.wixext -o target/glorp-setup-x86_64.msi"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.3.13",
-		"esbuild": "^0.27.2"
+		"@biomejs/biome": "^2.3.14",
+		"esbuild": "^0.27.3"
 	},
 	"dependencies": {
 		"marked": "^17.0.1"

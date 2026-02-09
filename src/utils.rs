@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
-use std::{fs, path::*};
+use std::{convert, fs, io, mem, path::*};
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
@@ -96,7 +96,7 @@ pub fn kill(wanted_process_name: &str) {
     unsafe {
         let current_pid = GetCurrentProcessId();
         let mut entry = PROCESSENTRY32W {
-            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            dwSize: mem::size_of::<PROCESSENTRY32W>() as u32,
             ..Default::default()
         };
 
@@ -131,7 +131,7 @@ pub fn set_cpu_throttling(webview: &ICoreWebView2, value: f32) {
     }
 }
 
-pub fn atomic_write(path: &impl AsRef<Path>, data: &impl std::convert::AsRef<[u8]>) -> std::io::Result<()> {
+pub fn atomic_write(path: &impl AsRef<Path>, data: &impl convert::AsRef<[u8]>) -> io::Result<()> {
     let path = path.as_ref();
     let tmp_path = path.with_extension("tmp");
     fs::write(&tmp_path, data)?;

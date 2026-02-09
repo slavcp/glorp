@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::fs::*;
-use std::io::*;
+
+use std::{collections::HashMap, env, fs, fs::*, io::*};
 #[derive(Deserialize)]
 struct SettingInfo {
     #[serde(default)]
@@ -27,7 +26,7 @@ impl Config {
                 .map(|(key, info)| (key.clone(), info.default_value.clone()))
                 .collect()
         }
-        let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
+        let client_dir: String = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
         let settings_path: String = client_dir + "\\settings.json";
         let defaults = load_defaults();
 
@@ -79,8 +78,8 @@ impl Config {
     }
 
     pub fn save(&self) {
-        let settings_path = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\settings.json";
+        let settings_path = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\settings.json";
         let settings_string = serde_json::to_string_pretty(&self.data).unwrap();
-        std::fs::write(settings_path, settings_string).ok();
+        fs::write(settings_path, settings_string).ok();
     }
 }

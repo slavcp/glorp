@@ -9,7 +9,7 @@ class AccountManager {
 		this.container = document.createElement("div");
 		this.accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 
-		window.glorpClient.settings.toggleAccountManager = (enabled) => this.toggle(enabled);
+		window.glorp.settings.toggleAccountManager = (enabled) => this.toggle(enabled);
 
 		this.toggle(true);
 	}
@@ -97,11 +97,11 @@ class AccountManager {
 		this.removeWindow();
 		window.loginOrRegister();
 
-		setTimeout(() => {
+		queueMicrotask(() => {
 			if (document.querySelector(".auth-toggle-btn").textContent.includes("username"))
 				document.querySelector(".auth-toggle-btn").click();
 
-			setTimeout(() => {
+			queueMicrotask(() => {
 				const nameInput = document.querySelector("#accName");
 				const passInput = document.querySelector("#accPass");
 				nameInput.value = this.decode(account.username);
@@ -110,8 +110,8 @@ class AccountManager {
 				nameInput.dispatchEvent(new Event("input", { bubbles: true }));
 				passInput.dispatchEvent(new Event("input", { bubbles: true }));
 				document.querySelector(".io-button").click();
-			}, 1);
-		}, 1);
+			});
+		});
 	}
 
 	resetForm() {

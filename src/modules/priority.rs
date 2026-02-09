@@ -1,3 +1,4 @@
+use std::mem;
 use windows::Win32::{
     Foundation::*,
     System::{Diagnostics::ToolHelp::*, Threading::*},
@@ -15,7 +16,7 @@ pub fn set(level: &str) {
     unsafe {
         let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).unwrap();
         let mut entry = PROCESSENTRY32W {
-            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+            dwSize: mem::size_of::<PROCESSENTRY32W>() as u32,
             ..Default::default()
         };
 

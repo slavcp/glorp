@@ -20,7 +20,7 @@ class HpEnemyCounter {
 			}
 		};
 
-		window.glorpClient.settings.toggleHpEnemyCounter = (enabled) => this.toggle(enabled);
+		window.glorp.settings.toggleHpEnemyCounter = (enabled) => this.toggle(enabled);
 		this.toggle(true);
 	}
 	toggle(enabled) {

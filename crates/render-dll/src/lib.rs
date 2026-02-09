@@ -1,8 +1,11 @@
 use minhook::MinHook;
 use std::{
+    cell,
     collections::HashMap,
     ffi::c_void,
+    mem,
     sync::{LazyLock, RwLock},
+    thread,
 };
 use windows::Win32::{
     Foundation::*,
@@ -106,8 +109,8 @@ fn attach() {
         MinHook::enable_all_hooks().unwrap_or_else(|e| debug_print(format!("cant enable hooks: {:?}", e)));
         #[allow(clippy::missing_transmute_annotations)]
         {
-            ORIGINAL_CREATE_SWAPCHAIN = std::mem::transmute(original_create_swapchain);
-            ORIGINAL_PRESENT = std::mem::transmute(original_present);
+            ORIGINAL_CREATE_SWAPCHAIN = mem::transmute(original_create_swapchain);
+            ORIGINAL_PRESENT = mem::transmute(original_present);
         }
     }
 }
@@ -150,7 +153,7 @@ unsafe extern "system" fn create_swapchain_hk(
                 }
 
                 // don't release
-                std::mem::forget(swap_chain2);
+                mem::forget(swap_chain2);
             }
             result
         }
@@ -169,7 +172,7 @@ unsafe extern "system" fn present_hk(
     p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
 ) -> HRESULT {
     thread_local! {
-        static INITIALIZED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) } ;
+        static INITIALIZED: cell::Cell<bool> = const { cell::Cell::new(false) } ;
     }
     if !INITIALIZED.get() {
         let mut task_index = 0u32;
@@ -196,7 +199,7 @@ unsafe extern "system" fn present_hk(
 #[unsafe(no_mangle)]
 extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
     if call_reason == DLL_PROCESS_ATTACH {
-        std::thread::spawn(|| {
+        thread::spawn(|| {
             attach();
         });
     }

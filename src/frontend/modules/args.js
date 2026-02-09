@@ -1,6 +1,6 @@
 const automateCompHost = async (params) => {
 	window.openHostWindow(false, 1);
-	await window.waitForElement(".hostTb0");
+	await waitForElement(".hostTb0");
 	let mapCheckbox = null;
 	mapCheckbox = document.querySelector(`#${params.mapId}`);
 
@@ -21,12 +21,12 @@ const automateCompHost = async (params) => {
 	}
 	windows[7].switchTab(2);
 
-	const team1Input = await window.waitForElement("#customSnameTeam1");
+	const team1Input = await waitForElement("#customSnameTeam1");
 	team1Input.value = params.team1Name;
-	const team2Input = await window.waitForElement("#customSnameTeam2");
+	const team2Input = await waitForElement("#customSnameTeam2");
 	team2Input.value = params.team2Name;
 
-	const teamSizeSelect = await window.waitForElement("#customStmSize");
+	const teamSizeSelect = await waitForElement("#customStmSize");
 
 	const teamSizeMap = {
 		"1v1": "0",
@@ -39,7 +39,7 @@ const automateCompHost = async (params) => {
 	teamSizeSelect.value = finalTeamSize;
 	if (params.webhook) {
 		try {
-			const webhookInput = await window.waitForElement("#customSwebhook");
+			const webhookInput = await waitForElement("#customSwebhook");
 			webhookInput.value = decodeURIComponent(params.webhook);
 		} catch {
 			/* */
@@ -48,7 +48,7 @@ const automateCompHost = async (params) => {
 	window.createPrivateRoom();
 };
 
-window.glorpClient.parseArgs = (args) => {
+window.glorp.parseArgs = (args) => {
 	args = args.split(" ");
 	for (const arg of args) {
 		if (arg.includes("action=host-comp")) {
@@ -60,5 +60,5 @@ window.glorpClient.parseArgs = (args) => {
 
 window.chrome.webview.addEventListener("message", (event) => {
 	if (!event.data.args) return;
-	window.glorpClient.parseArgs(event.data.args);
+	window.glorp.parseArgs(event.data.args);
 });

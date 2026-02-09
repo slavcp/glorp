@@ -1,17 +1,19 @@
 use std::{
+    mem,
     mem::transmute,
+    ptr, sync,
     sync::{
         LazyLock,
         atomic::{AtomicBool, AtomicPtr, AtomicU32},
         mpsc::{Sender, channel},
     },
+    thread,
 };
-use windows::Win32::UI::Accessibility::*;
 use windows::Win32::UI::Input::*;
 use windows::Win32::{
     Foundation::*,
     System::{Diagnostics::Debug::*, SystemServices::*, Threading::*},
-    UI::{Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
+    UI::{Accessibility::*, Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
 };
 use windows::core::*;
 
@@ -48,12 +50,12 @@ static SPACE_UP: INPUT = INPUT {
 
 static SCROLL_SENDER: LazyLock<Sender<()>> = LazyLock::new(|| {
     let (tx, rx) = channel();
-    std::thread::spawn(move || {
+    thread::spawn(move || {
         while rx.recv().is_ok() {
             unsafe {
-                SendInput(&[SPACE_DOWN], std::mem::size_of::<INPUT>() as i32);
+                SendInput(&[SPACE_DOWN], mem::size_of::<INPUT>() as i32);
                 Sleep(5);
-                SendInput(&[SPACE_UP], std::mem::size_of::<INPUT>() as i32);
+                SendInput(&[SPACE_UP], mem::size_of::<INPUT>() as i32);
             }
         }
     });
@@ -63,9 +65,9 @@ static SCROLL_SENDER: LazyLock<Sender<()>> = LazyLock::new(|| {
 static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
 
-static LOCK_STATUS: AtomicBool = AtomicBool::new(false);
-static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
-static HOOK_HANDLE: AtomicPtr<HWINEVENTHOOK> = AtomicPtr::new(std::ptr::null_mut());
+static DRAG_STATUS: AtomicBool = AtomicBool::new(false);
+static WINDOW_HANDLE: AtomicPtr<HWND> = AtomicPtr::new(ptr::null_mut());
+static HOOK_HANDLE: AtomicPtr<HWINEVENTHOOK> = AtomicPtr::new(ptr::null_mut());
 
 struct ChromeWindows {
     chrome_window: HWND,
@@ -129,14 +131,14 @@ static THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 fn detach() {
     unsafe {
-        let hook_handle = HOOK_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+        let hook_handle = HOOK_HANDLE.load(sync::atomic::Ordering::Relaxed);
         if !hook_handle.is_null() {
             let _ = UnhookWinEvent(*hook_handle);
             drop(Box::from_raw(hook_handle));
         }
 
         //  terminate the message loop otherwise launching just crashes if webview2 is still running
-        let thread_id = THREAD_ID.load(std::sync::atomic::Ordering::Relaxed);
+        let thread_id = THREAD_ID.load(sync::atomic::Ordering::Relaxed);
         if thread_id != 0 {
             PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0)).ok();
         }
@@ -147,26 +149,26 @@ fn attach() {
     unsafe {
         let parent = FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap();
         let handle_ptr = Box::into_raw(Box::new(parent)); // store on the heap so it stays alive
-        WINDOW_HANDLE.store(handle_ptr, std::sync::atomic::Ordering::Relaxed);
+        WINDOW_HANDLE.store(handle_ptr, sync::atomic::Ordering::Relaxed);
         let chrome_windows = ChromeWindows::get(parent);
         chrome_windows.set_window_procs();
 
         // thread to check if the parent window has disappeared
-        std::thread::spawn(move || {
+        thread::spawn(move || {
             loop {
-                let current_parent_handle_ptr = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                let current_parent_handle_ptr = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
 
                 if !IsWindow(Some(*current_parent_handle_ptr)).as_bool() {
                     let new_parent = FindWindowW(w!("krunker_webview"), PCWSTR::null());
 
                     if let Ok(new_parent) = new_parent {
-                        let old_handle_ptr = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                        let old_handle_ptr = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
                         if !old_handle_ptr.is_null() {
-                            std::mem::drop(Box::from_raw(old_handle_ptr));
+                            mem::drop(Box::from_raw(old_handle_ptr));
                         }
 
                         let new_handle_ptr = Box::into_raw(Box::new(new_parent));
-                        WINDOW_HANDLE.store(new_handle_ptr, std::sync::atomic::Ordering::Relaxed);
+                        WINDOW_HANDLE.store(new_handle_ptr, sync::atomic::Ordering::Relaxed);
 
                         let new_chrome_windows = ChromeWindows::get(new_parent);
                         new_chrome_windows.set_window_procs();
@@ -177,8 +179,8 @@ fn attach() {
             }
         });
 
-        std::thread::spawn(move || {
-            THREAD_ID.store(GetCurrentThreadId(), std::sync::atomic::Ordering::Relaxed);
+        thread::spawn(move || {
+            THREAD_ID.store(GetCurrentThreadId(), sync::atomic::Ordering::Relaxed);
             let mut msg: MSG = MSG::default();
             // check whenever a window is created if it has the attribute Chrome.WindowTranslucent (the one that warns about pointer lock) and if it does, destroy it
             let hook = SetWinEventHook(
@@ -191,7 +193,7 @@ fn attach() {
                 WINEVENT_OUTOFCONTEXT,
             );
             let hook_ptr = Box::into_raw(Box::new(hook));
-            HOOK_HANDLE.store(hook_ptr, std::sync::atomic::Ordering::Relaxed);
+            HOOK_HANDLE.store(hook_ptr, sync::atomic::Ordering::Relaxed);
 
             loop {
                 if GetMessageW(&mut msg, None, 0, 0).into() {
@@ -236,14 +238,15 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
             }
             // when you press esc chromium puts a few seconds of delay before the pointer can get locked again as a security measure
             WM_KEYDOWN | WM_KEYUP => {
-                if wparam.0 == VK_ESCAPE.0 as usize && LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                if wparam.0 == VK_ESCAPE.0 as usize && DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     // glorp.exe (not the webview)
-                    let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                    let glorp = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
                     SetFocus(Some(*glorp)).ok();
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => CallWindowProcW(
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN
+            | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => CallWindowProcW(
                 PREV_WNDPROC_1,
                 window,
                 message,
@@ -251,7 +254,7 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                 lparam,
             ),
             WM_MOUSEMOVE => {
-                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     return CallWindowProcW(
                         PREV_WNDPROC_1,
                         window,
@@ -272,7 +275,7 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                     RID_INPUT,
                     Some(buffer.as_mut_ptr() as _),
                     &mut size,
-                    std::mem::size_of::<RAWINPUTHEADER>() as u32,
+                    mem::size_of::<RAWINPUTHEADER>() as u32,
                 );
 
                 let raw_input = buffer.as_mut_ptr() as *mut RAWINPUT;
@@ -294,17 +297,17 @@ unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WP
         match message {
             WM_USER => {
                 // 1 = change proc to wnd_proc_widget_rampboost
-                // 2 or 0 = pointer lock status
+                // 2 or 0 = allow-drag status
                 if wparam.0 == 1 {
                     SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
                 } else {
-                    LOCK_STATUS.store(wparam.0 == 2, std::sync::atomic::Ordering::Relaxed);
+                    DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
                 }
                 LRESULT(1)
             }
             WM_MOUSEWHEEL => {
-                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
-                    let glorp = WINDOW_HANDLE.load(std::sync::atomic::Ordering::Relaxed);
+                if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
+                    let glorp = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
                     // send the message to the glorp window, from where it gets sent as a js event
                     // best fix i could find for the fps dropping when scrolling whilst still keeping scroll behaviour intact
                     PostMessageW(Some(*glorp), message, wparam, lparam).ok();
@@ -327,14 +330,14 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
     unsafe {
         match message {
             WM_MOUSEWHEEL => {
-                if LOCK_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     SCROLL_SENDER.send(()).ok();
                     return LRESULT(1);
                 }
                 CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
             }
             WM_USER => {
-                LOCK_STATUS.store(wparam.0 == 2, std::sync::atomic::Ordering::Relaxed);
+                DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
                 LRESULT(1)
             }
             _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam),

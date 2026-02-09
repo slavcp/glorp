@@ -25,7 +25,7 @@ class BetterChat {
 			this.styles.innerHTML = css.default;
 		});
 
-		window.glorpClient.settings.toggleBetterChat = (enabled) => this.toggle(enabled);
+		window.glorp.settings.toggleBetterChat = (enabled) => this.toggle(enabled);
 		this.initDom();
 		this.observer = new MutationObserver((mutations) => this.parseMessages(mutations));
 		this.toggle(true);

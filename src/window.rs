@@ -1,6 +1,10 @@
-use crate::create_main_window;
-use crate::utils;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::{create_main_window, utils};
+use std::{
+    env,
+    ffi::c_void,
+    process, slice, sync,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 use webview2_com::{Error, Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
     Win32::{
@@ -245,7 +249,7 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
             None,
             None,
             Some(hinstance),
-            Some((is_subwindow as isize) as *mut std::ffi::c_void),
+            Some((is_subwindow as isize) as *mut c_void),
         )
         .unwrap();
 
@@ -310,15 +314,15 @@ pub fn create_webview2(
         let env = if let Some(provided_env) = provided_env {
             provided_env
         } else {
-            let (etx, erx) = std::sync::mpsc::channel();
-            let mut current_dir = std::env::current_exe().unwrap();
+            let (etx, erx) = sync::mpsc::channel();
+            let mut current_dir = env::current_exe().unwrap();
             current_dir.pop();
             let result = CreateCoreWebView2EnvironmentCompletedHandler::wait_for_async_operation(
                 Box::new(move |environment_created_handler| {
                     CreateCoreWebView2EnvironmentWithOptions(
                         PCWSTR(utils::create_utf_string(current_dir.to_string_lossy() + "\\\\WebView2").as_ptr()),
                         PCWSTR(
-                            utils::create_utf_string(std::env::var("USERPROFILE").unwrap() + "\\\\Documents\\\\glorp")
+                            utils::create_utf_string(env::var("USERPROFILE").unwrap() + "\\\\Documents\\\\glorp")
                                 .as_ptr(),
                         ),
                         &ICoreWebView2EnvironmentOptions::from(options),
@@ -343,7 +347,7 @@ pub fn create_webview2(
 
         let env_ = env.clone();
         let controller = {
-            let (tx, rx) = std::sync::mpsc::channel();
+            let (tx, rx) = sync::mpsc::channel();
 
             CreateCoreWebView2ControllerCompletedHandler::wait_for_async_operation(
                 Box::new(move |handler| {
@@ -364,17 +368,17 @@ pub fn create_webview2(
             .unwrap_or_else(|e| {
                 eprintln!("crash {}", e);
                 utils::kill("msedgewebview2.exe");
-                let args: Vec<String> = std::env::args().collect();
+                let args: Vec<String> = env::args().collect();
                 let arg_present = args.iter().any(|arg| arg == "crash");
 
                 if !arg_present {
-                    let current_exe = std::env::current_exe().unwrap();
-                    let mut command = std::process::Command::new(&current_exe);
+                    let current_exe = env::current_exe().unwrap();
+                    let mut command = process::Command::new(&current_exe);
                     command.arg("crash");
                     command.spawn().ok();
                 }
 
-                std::process::exit(0);
+                process::exit(0);
             });
             rx.recv().unwrap()
         };
@@ -449,14 +453,13 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 }
             }
             WM_MOUSEWHEEL => {
-                let delta = utils::HIWORD(wparam.0) as i32;
-                let scroll_amount = (delta as f32 / WHEEL_DELTA as f32) * 80.0;
-
+                let delta = (utils::HIWORD(wparam.0) as i16) as i32;
+                let scroll_amount = delta as f32 / WHEEL_DELTA as f32;
                 window
                     .webview
                     .ExecuteScript(
                         PCWSTR(
-                            utils::create_utf_string(format!("window.glorpClient.handleMouseWheel({})", scroll_amount))
+                            utils::create_utf_string(format!("window.glorp.handleMouseWheel({})", scroll_amount))
                                 .as_ptr(),
                         ),
                         None,
@@ -493,15 +496,13 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
             WM_COPYDATA => {
                 let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
                 let cds = &*cds_ptr;
-                let data: &[u8] = std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
+                let data: &[u8] = slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
                 if let Ok(mut string) = String::from_utf8(data.to_vec()) {
                     string = serde_json::to_string(&string).unwrap_or_else(|_| String::new());
                     window
                         .webview
                         .ExecuteScript(
-                            PCWSTR(
-                                utils::create_utf_string(format!("window.glorpClient.parseArgs({})", string)).as_ptr(),
-                            ),
+                            PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs({})", string)).as_ptr()),
                             None,
                         )
                         .ok();
@@ -554,15 +555,12 @@ unsafe extern "system" fn wnd_proc_subwindow(hwnd: HWND, msg: u32, wparam: WPARA
                 let window = create_main_window(Some(window.env.clone()));
                 let cds_ptr = lparam.0 as *mut COPYDATASTRUCT;
                 let cds = &*cds_ptr;
-                let data = std::slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
+                let data = slice::from_raw_parts(cds.lpData as *const u8, cds.cbData as usize);
                 if let Ok(string) = String::from_utf8(data.to_vec()) {
                     window
                         .webview
                         .ExecuteScript(
-                            PCWSTR(
-                                utils::create_utf_string(format!("window.glorpClient.parseArgs('{}')", string))
-                                    .as_ptr(),
-                            ),
+                            PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs('{}')", string)).as_ptr()),
                             None,
                         )
                         .ok();

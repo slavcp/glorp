@@ -5,7 +5,7 @@ class RealPing {
 		this.interval = null;
 		this.listener = null;
 
-		window.glorpClient.settings.toggleRealPing = (enabled) => this.toggle(enabled);
+		window.glorp.settings.toggleRealPing = (enabled) => this.toggle(enabled);
 		this.toggle(true);
 	}
 
@@ -19,8 +19,8 @@ class RealPing {
 
 	async toggle(enabled) {
 		[this.ingamePing, this.menuPing] = await Promise.all([
-			window.waitForElement("#pingText"),
-			window.waitForElement("#menuPingText"),
+			waitForElement("#pingText"),
+			waitForElement("#menuPingText"),
 		]);
 		if (enabled) {
 			this.applyPingDisplay(this.ingamePing);

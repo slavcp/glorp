@@ -9,7 +9,7 @@ fn main() {
         eprintln!("{}", e)
     };
 
-    let toml_content = std::fs::read_to_string("Cargo.toml").unwrap();
+    let toml_content = fs::read_to_string("Cargo.toml").unwrap();
     let toml: toml::Value = toml::from_str(&toml_content).unwrap();
     let js_bundle_version = toml["package"]["metadata"]["js_bundle_version"].as_str().unwrap();
 

@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::*, io::*};
+use std::{collections::HashSet, env, fs, io::Write};
 
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
@@ -36,8 +36,8 @@ pub fn load(webview_window: &ICoreWebView2) {
 }"#;
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_BLOCKLIST).unwrap();
-    let blocklist_path: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_blocklist.json";
-    let mut blocklist_file = if let Ok(file) = OpenOptions::new()
+    let blocklist_path: String = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_blocklist.json";
+    let mut blocklist_file = if let Ok(file) = fs::OpenOptions::new()
         .write(true)
         .read(true)
         .create(true)
@@ -55,7 +55,7 @@ pub fn load(webview_window: &ICoreWebView2) {
         blocklist_file.write_all(example_blocklist.as_bytes()).ok();
     }
 
-    let blocklist_string = if let Ok(blocklist_string) = std::fs::read_to_string(&blocklist_path) {
+    let blocklist_string = if let Ok(blocklist_string) = fs::read_to_string(&blocklist_path) {
         blocklist_string
     } else {
         eprintln!("can't read user blocklist file");

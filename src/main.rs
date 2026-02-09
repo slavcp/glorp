@@ -2,7 +2,9 @@
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use std::{
     collections::HashMap,
+    env, fs, io, path, process, result, sync,
     sync::{LazyLock, Mutex},
+    thread, time,
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
@@ -26,32 +28,32 @@ mod modules {
     pub mod userscripts;
 }
 
-static LAUNCH_ARGS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(std::env::args().skip(1).collect()));
+static LAUNCH_ARGS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(env::args().skip(1).collect()));
 static CONFIG: LazyLock<Mutex<config::Config>> = LazyLock::new(|| Mutex::new(config::Config::load()));
 static JS_VERSION: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new("0.0.0".to_string()));
 static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
 static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
 
-fn init_fs() -> std::result::Result<(), std::io::Error> {
-    let user_profile = std::path::PathBuf::from(std::env::var("USERPROFILE").unwrap());
+fn init_fs() -> result::Result<(), io::Error> {
+    let user_profile = path::PathBuf::from(env::var("USERPROFILE").unwrap());
     let client_dir = user_profile.join("Documents").join("glorp");
     let swap_dir = client_dir.join("swapper");
     let scripts_dir = client_dir.join("scripts").join("social");
     let flaglist_path = client_dir.join("user_flags.json");
     let blocklist_path = client_dir.join("user_blocklist.json");
 
-    let resources_dir = std::env::current_exe().unwrap().parent().unwrap().join("resources");
+    let resources_dir = env::current_exe().unwrap().parent().unwrap().join("resources");
 
-    std::fs::create_dir_all(&swap_dir)?;
-    std::fs::create_dir_all(&scripts_dir)?;
-    std::fs::create_dir_all(&resources_dir)?;
+    fs::create_dir_all(&swap_dir)?;
+    fs::create_dir_all(&scripts_dir)?;
+    fs::create_dir_all(&resources_dir)?;
 
-    if !std::path::Path::new(&flaglist_path).exists() {
-        std::fs::write(&flaglist_path, constants::DEFAULT_FLAGS)?;
+    if !path::Path::new(&flaglist_path).exists() {
+        fs::write(&flaglist_path, constants::DEFAULT_FLAGS)?;
     }
-    if !std::path::Path::new(&blocklist_path).exists() {
-        std::fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST)?;
+    if !path::Path::new(&blocklist_path).exists() {
+        fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST)?;
     }
     Ok(())
 }
@@ -201,18 +203,18 @@ fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: 
 }
 
 pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Window {
-    let mut webview2_folder: std::path::PathBuf = std::env::current_exe().unwrap();
+    let mut webview2_folder: path::PathBuf = env::current_exe().unwrap();
     webview2_folder.pop();
     webview2_folder = webview2_folder.join("WebView2");
 
     if CONFIG.lock().unwrap().get("hardFlip").unwrap_or(true) {
-        std::fs::rename(
+        fs::rename(
             webview2_folder.join("OLD_vk_swiftshader.dll"),
             webview2_folder.join("vk_swiftshader.dll"),
         )
         .ok();
     } else {
-        std::fs::rename(
+        fs::rename(
             webview2_folder.join("vk_swiftshader.dll"),
             webview2_folder.join("OLD_vk_swiftshader.dll"),
         )
@@ -298,8 +300,8 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
         }
 
         if CONFIG.lock().unwrap().get("rampBoost").unwrap_or(false) {
-            std::thread::spawn(|| {
-                std::thread::sleep(std::time::Duration::from_millis(6000));
+            thread::spawn(|| {
+                thread::sleep(time::Duration::from_millis(6000));
                 PostMessageW(
                     Some(utils::find_child_window_by_class(
                         FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
@@ -361,41 +363,41 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
                                 .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr()))
                                 .ok();
                         }
-                        Some(&"pointer-lock") => {
+                        Some(&"drag") => {
                             let value = parts[1].parse::<bool>().unwrap_or(false);
-                            // WM_USER with wparam = 0 (unlocked) or 2 (locked)
+                            const ENABLED: usize = 2;
+                            const DISABLED: usize = 0;
                             PostMessageW(
                                 main_window.widget_wnd,
                                 WM_USER,
-                                WPARAM(if value { 2 } else { 0 }),
+                                WPARAM(if value { DISABLED } else { ENABLED }),
                                 LPARAM(0),
                             )
                             .ok();
-                            if value {
-                                utils::set_cpu_throttling(
-                                    &webview,
-                                    CONFIG.lock().unwrap().get::<f32>("throttle").unwrap_or(1.0),
-                                );
-                            } else {
-                                utils::set_cpu_throttling(
-                                    &webview,
-                                    CONFIG.lock().unwrap().get::<f32>("inMenuThrottle").unwrap_or(2.0),
-                                );
-                            }
+                        }
+                        Some(&"throttle") => {
+                            let status = parts[1].parse::<String>().unwrap_or(String::from("game"));
+                            let setting = if status == "game" { "throttle" } else { "inMenuThrottle" };
+                            utils::set_cpu_throttling(
+                                &webview,
+                                CONFIG.lock().unwrap().get::<f32>(setting).unwrap_or(1.0),
+                            );
                         }
                         Some(&"close") => {
                             PostQuitMessage(0);
                         }
                         Some(&"open") => {
-                            let client_dir: String = std::env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
+                            let client_dir = path::PathBuf::from(env::var("USERPROFILE").unwrap())
+                                .join("Documents")
+                                .join("glorp");
                             let path_to_open = match parts[1] {
-                                "blocklist" => Some(std::path::PathBuf::from(&client_dir).join("user_blocklist.json")),
-                                "swapper" => Some(std::path::PathBuf::from(&client_dir).join("swapper")),
-                                "userscripts" => Some(std::path::PathBuf::from(&client_dir).join("scripts")),
+                                "blocklist" => Some(&client_dir.join("user_blocklist.json")),
+                                "swapper" => Some(&client_dir.join("swapper")),
+                                "userscripts" => Some(&client_dir.join("scripts")),
                                 _ => None,
                             };
                             if let Some(path) = path_to_open {
-                                std::process::Command::new("explorer.exe").arg(&path).spawn().ok();
+                                process::Command::new("explorer.exe").arg(path).spawn().ok();
                             }
                         }
                         Some(&"rpc-update") => {
@@ -466,12 +468,12 @@ fn main() {
     }
 
     let window = create_main_window(None);
-    let (_tx, rx) = std::sync::mpsc::channel::<String>();
+    let (_tx, rx) = sync::mpsc::channel::<String>();
     #[cfg(feature = "packaged")]
     {
         let main_thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
         if CONFIG.lock().unwrap().get("checkUpdates").unwrap_or(true) {
-            std::thread::spawn(move || {
+            thread::spawn(move || {
                 modules::lifecycle::check_major_update();
                 if let Some(new_js) = modules::lifecycle::check_minor_update() {
                     _tx.send(new_js).ok();

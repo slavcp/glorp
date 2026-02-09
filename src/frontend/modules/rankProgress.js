@@ -178,9 +178,7 @@ class RankProgress {
 			const range = nextRank.elo - currentRank.elo;
 			const gained = currentElo - currentRank.elo;
 			progress = (gained / range) * 100;
-		} else {
-			progress = 100;
-		}
+		} else progress = 100;
 
 		return {
 			currentRank,
