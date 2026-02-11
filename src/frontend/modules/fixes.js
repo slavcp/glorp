@@ -14,10 +14,8 @@ window.exportSettings = () => {
 const originalshowWindow = window.showWindow;
 window.showWindow = (...args) => {
 	const number = args[0];
+	window.chrome.webview.postMessage("drag, true");
 	switch (number) {
-		case 1:
-			window.chrome.webview.postMessage("drag, true");
-			break;
 		case 3:
 		case 53:
 			window.chrome.webview.postMessage("drag, false");
@@ -37,7 +35,6 @@ window.showWindow = (...args) => {
 		case 51:
 		case 16:
 		case 34:
-			window.chrome.webview.postMessage("drag, true");
 			window.chrome.webview.postMessage("throttle, menu");
 			break;
 	}
