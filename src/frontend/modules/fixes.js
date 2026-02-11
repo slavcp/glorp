@@ -14,7 +14,6 @@ window.exportSettings = () => {
 const originalshowWindow = window.showWindow;
 window.showWindow = (...args) => {
 	const number = args[0];
-	window.chrome.webview.postMessage("drag, true");
 	switch (number) {
 		case 3:
 		case 53:
@@ -44,6 +43,5 @@ window.showWindow = (...args) => {
 const originalclosWind = window.closWind;
 window.closWind = (...args) => {
 	window.chrome.webview.postMessage("throttle, menu");
-	window.chrome.webview.postMessage("drag, false");
 	return originalclosWind.apply(this, args);
 };
