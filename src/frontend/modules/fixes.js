@@ -1,4 +1,4 @@
-window.chrome.webview.postMessage("drag, false");
+window.chrome.webview.postMessage("drag, true");
 window.chrome.webview.postMessage("throttle, menu");
 
 // trick for hiding "PRESS ESC TO EXIT POINTER LOCK" also breaks the default notification for downloads
@@ -42,6 +42,7 @@ window.showWindow = (...args) => {
 
 const originalclosWind = window.closWind;
 window.closWind = (...args) => {
+	window.chrome.webview.postMessage("drag, true");
 	window.chrome.webview.postMessage("throttle, menu");
 	return originalclosWind.apply(this, args);
 };

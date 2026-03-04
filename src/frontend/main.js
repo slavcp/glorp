@@ -38,8 +38,8 @@ document.addEventListener(
 		document.addEventListener("pointerlockchange", () => {
 			if (!document.pointerLockElement) {
 				window.chrome.webview.postMessage("drag, true");
-				window.chrome.webview.postMessage("throttle, menu")
-			};
+				window.chrome.webview.postMessage("throttle, menu");
+			}
 		});
 
 		if (window.glorp?.settings?.data?.cleanUI) {
