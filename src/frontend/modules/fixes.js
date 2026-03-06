@@ -17,7 +17,6 @@ window.showWindow = (...args) => {
 	switch (number) {
 		case 3:
 		case 53:
-			window.chrome.webview.postMessage("drag, false");
 			window.chrome.webview.postMessage("throttle, game");
 			break;
 		case 15:
