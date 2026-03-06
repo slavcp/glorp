@@ -111,15 +111,24 @@ impl Window {
                 GetWindowRect(self.hwnd, &mut rect).ok();
                 self.state.position = Position::from(rect);
 
+                let h_monitor = MonitorFromWindow(self.hwnd, MONITOR_DEFAULTTONEAREST);
+
+                let mut monitor_info = MONITORINFO {
+                    cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+                    ..Default::default()
+                };
+
+                let _ = GetMonitorInfoW(h_monitor, &mut monitor_info);
+
                 SetWindowLongPtrW(self.hwnd, GWL_STYLE, (WS_VISIBLE.0) as _);
 
                 SetWindowPos(
                     self.hwnd,
                     Some(HWND_TOP),
-                    0,
-                    0,
-                    GetSystemMetrics(SM_CXSCREEN),
-                    GetSystemMetrics(SM_CYSCREEN),
+                    monitor_info.rcMonitor.left,
+                    monitor_info.rcMonitor.top,
+                    monitor_info.rcMonitor.right - monitor_info.rcMonitor.left,
+                    monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED,
                 )
                 .ok();
@@ -202,7 +211,7 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
             };
         }
 
-        let state: WindowState = {
+        let mut state: WindowState = {
             //fallback
             let mut creation_state = WindowState {
                 fullscreen: true,
@@ -237,15 +246,43 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
             creation_state
         };
 
+        let rect = RECT {
+            left: state.position.left,
+            top: state.position.top,
+            right: state.position.right,
+            bottom: state.position.bottom,
+        };
+
+        // check if its on another monitor or off-screen
+        let h_monitor = MonitorFromRect(&rect, MONITOR_DEFAULTTONULL);
+        let (x, y, width, height) = if h_monitor.is_invalid() {
+            state.fullscreen = false;
+            (CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT)
+        } else {
+            let mut monitor = MONITORINFO {
+                cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+                ..Default::default()
+            };
+            let _ = GetMonitorInfoW(h_monitor, &mut monitor);
+
+            let w = rect.right - rect.left;
+            let h = rect.bottom - rect.top;
+
+            let clamped_x = rect.left.clamp(monitor.rcWork.left, monitor.rcWork.right - w);
+            let clamped_y = rect.top.clamp(monitor.rcWork.top, monitor.rcWork.bottom - h);
+
+            (clamped_x, clamped_y, w, h)
+        };
+
         let hwnd: HWND = CreateWindowExW(
             WINDOW_EX_STYLE::default(),
             class_name,
             w!("glorp"),
             WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-            state.position.left,
-            state.position.top,
-            state.position.right - state.position.left,
-            state.position.bottom - state.position.top,
+            x,
+            y,
+            width,
+            height,
             None,
             None,
             Some(hinstance),
