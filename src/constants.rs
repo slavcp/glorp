@@ -45,6 +45,7 @@ pub const DEFAULT_BLOCKLIST: &str = r#"[
   "*://user-assets.krunker.io/60585/*",
   "*://fran-cdn.frvr.com/prebid*",
   "*://cdn.frvr.com/fran/prebid*",
+  "*://krunker.io/libs/anzu.js*",
   "*://user-assets.krunker.io/61822/model.obj*",
   "*://user-assets.krunker.io/61818/model.obj*",
   "*://user-assets.krunker.io/61814/model.obj*",
