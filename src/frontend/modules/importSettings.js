@@ -5,7 +5,7 @@ const settings = {
 	Keybinds: localStorage.getItem("glorp_Keybinds") === "true" || localStorage.getItem("glorp_Keybinds") === null,
 	Sensitivity:
 		localStorage.getItem("glorp_Sensitivity") === "true" || localStorage.getItem("glorp_Sensitivity") === null,
-	Sound: localStorage.getItem("glorp_Sound") === "true" || localStorage.getItem("Glorp_Sound") === null,
+	Sound: localStorage.getItem("glorp_Sound") === "true" || localStorage.getItem("glorp_Sound") === null,
 };
 
 let html = "";
