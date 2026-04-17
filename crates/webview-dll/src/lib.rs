@@ -1,3 +1,5 @@
+#![allow(clippy::fn_to_numeric_cast)]
+
 use std::{
     mem,
     mem::transmute,
@@ -290,7 +292,6 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
     }
 }
 
-#[allow(clippy::fn_to_numeric_cast)]
 #[unsafe(no_mangle)]
 unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
@@ -305,7 +306,7 @@ unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WP
                 }
                 LRESULT(1)
             }
-            WM_MOUSEWHEEL => {
+            WM_MOUSEWHEEL | WM_MOUSEHWHEEL | WM_POINTERWHEEL | WM_POINTERHWHEEL => {
                 if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     let glorp = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
                     // send the message to the glorp window, from where it gets sent as a js event
@@ -329,7 +330,7 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
 ) -> LRESULT {
     unsafe {
         match message {
-            WM_MOUSEWHEEL => {
+            WM_MOUSEWHEEL | WM_MOUSEHWHEEL | WM_POINTERWHEEL | WM_POINTERHWHEEL => {
                 if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     SCROLL_SENDER.send(()).ok();
                     return LRESULT(1);
@@ -337,7 +338,13 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
                 CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam)
             }
             WM_USER => {
-                DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
+                // 3 = change proc to wnd_proc_widget
+                // 2 or 0 = allow-drag status
+                if wparam.0 == 3 {
+                    SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as isize);
+                } else {
+                    DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
+                }
                 LRESULT(1)
             }
             _ => CallWindowProcW(PREV_WNDPROC_2, window, message, wparam, lparam),

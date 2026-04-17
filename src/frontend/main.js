@@ -82,11 +82,29 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/args.js");
 		import("./modules/fixes.js");
 		import("./modules/rankProgress.js");
+		import("./modules/importSettings.js");
+		if (window.glorp?.settings.data?.hsSound) import("./modules/hsSound.js");
 		if (window.glorp?.settings.data?.betterChat) import("./modules/betterChat.js");
 		if (window.glorp?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
 		if (window.glorp?.settings.data?.accountManager) import("./modules/accountManager.js");
 		if (window.glorp?.settings.data?.showPing) import("./modules/showPing.js");
 		if (window.glorp?.settings.data?.realPing) import("./modules/realPing.js");
+
+		if (window.glorp?.settings.data?.rampBoost && !window.checkCompMode()) {
+			window.chrome.webview.postMessage("toggle-rboost, true");
+
+			const gameUpdateListener = (event) => {
+				if (event.data === "game-updated")
+					setTimeout(() => {
+						if (window.checkCompMode()) {
+							window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+							window.chrome.webview.postMessage("toggle-rboost, false");
+						}
+					}, 2000);
+			};
+
+			window.chrome.webview.addEventListener("message", gameUpdateListener);
+		}
 
 		if (window.glorp?.settings.data?.hideBundles) {
 			const origBundlePopup = window.bundlePopup;

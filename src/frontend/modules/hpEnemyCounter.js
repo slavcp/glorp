@@ -16,17 +16,25 @@ class HpEnemyCounter {
 		this.pointCounter = null;
 		this.gameUpdateListener = (event) => {
 			if (event.data === "game-updated") {
-				setTimeout(() => this.checkComp(), 2000);
+				setTimeout(() => {
+					if (window.checkCompMode()) {
+						window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+
+						this.setupDisplay();
+					}
+				}, 2000);
 			}
 		};
-
 		window.glorp.settings.toggleHpEnemyCounter = (enabled) => this.toggle(enabled);
 		this.toggle(true);
 	}
 	toggle(enabled) {
 		if (enabled) {
 			window.chrome.webview.addEventListener("message", this.gameUpdateListener);
-			this.checkComp();
+			if (window.checkCompMode()) {
+				window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+				this.setupDisplay();
+			}
 		} else {
 			window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 			this.numberDisplay.remove();
@@ -47,14 +55,6 @@ class HpEnemyCounter {
 				}
 				this.enemyOBJ = currentEnemyOBJ;
 			}
-		}
-	};
-
-	checkComp = () => {
-		if (document.querySelector(".cmpTmHed")) {
-			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
-
-			this.setupDisplay();
 		}
 	};
 

@@ -21,6 +21,10 @@
 	margin-bottom: -50px;
 }
 
+#uiBase.onMenu #chatInputHolder {
+	transition: none;
+}
+
 #uiBase.onGame #chatInputHolder {
 	opacity: 0;
 	transform: translateY(50px);

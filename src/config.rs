@@ -30,6 +30,10 @@ impl Config {
         let settings_path: String = client_dir + "\\settings.json";
         let defaults = load_defaults();
 
+        if let Some(parent) = std::path::Path::new(&settings_path).parent() {
+            fs::create_dir_all(parent).expect("Failed to create settings directory");
+        }
+
         // recursively create dir
         let mut settings_file = OpenOptions::new()
             .write(true)

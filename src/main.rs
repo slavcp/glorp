@@ -1,18 +1,16 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
+use crate::{modules::userscripts, window::WindowState};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use std::{
     collections::HashMap,
     env, fs, io, path, process, result, sync,
     sync::{LazyLock, Mutex},
-    thread, time,
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
 use windows::{
     Win32::{Foundation::*, System::Com::*, UI::WindowsAndMessaging::*},
     core::*,
 };
-
-use crate::{modules::userscripts, window::WindowState};
 
 mod config;
 mod constants;
@@ -299,22 +297,6 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             modules::ping::load(&main_window.webview);
         }
 
-        if CONFIG.lock().unwrap().get("rampBoost").unwrap_or(false) {
-            thread::spawn(|| {
-                thread::sleep(time::Duration::from_millis(6000));
-                PostMessageW(
-                    Some(utils::find_child_window_by_class(
-                        FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
-                        "Chrome_RenderWidgetHostHWND",
-                    )),
-                    WM_USER,
-                    WPARAM(1),
-                    LPARAM(0),
-                )
-                .ok();
-            });
-        }
-
         main_window
             .webview
             .add_WebMessageReceived(
@@ -413,6 +395,21 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
                                 }
                             }
                         }
+                        Some(&"toggle-rboost") => {
+                            let value = parts[1].parse::<bool>().unwrap_or(false);
+                            const ENABLED: usize = 1;
+                            const DISABLED: usize = 3;
+                            PostMessageW(
+                                Some(utils::find_child_window_by_class(
+                                    FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
+                                    "Chrome_RenderWidgetHostHWND",
+                                )),
+                                WM_USER,
+                                WPARAM(if value { ENABLED } else { DISABLED }),
+                                LPARAM(0),
+                            )
+                            .ok();
+                        }
                         Some(&"ping") => {
                             modules::ping::ping(&webview);
                         }
@@ -473,7 +470,7 @@ fn main() {
     {
         let main_thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
         if CONFIG.lock().unwrap().get("checkUpdates").unwrap_or(true) {
-            thread::spawn(move || {
+            std::thread::spawn(move || {
                 modules::lifecycle::check_major_update();
                 if let Some(new_js) = modules::lifecycle::check_minor_update() {
                     _tx.send(new_js).ok();

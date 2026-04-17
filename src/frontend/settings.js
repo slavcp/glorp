@@ -29,6 +29,11 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 	}
 
 	switch (id) {
+		case "rampBoost":
+			if (value) {
+				if (!window.checkCompMode()) window.chrome.webview.postMessage("toggle-rboost, true");
+			} else window.chrome.webview.postMessage("toggle-rboost, false");
+			break;
 		case "exitButton":
 			document.querySelector("#clientExit").style.display = `${value ? "flex" : "none"}`;
 			break;

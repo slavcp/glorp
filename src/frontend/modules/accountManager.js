@@ -15,7 +15,15 @@ class AccountManager {
 	}
 
 	gameUpdateListener = (event) => {
-		if (event.data === "game-updated") setTimeout(() => this.checkComp(), 2000);
+		if (event.data === "game-updated")
+			setTimeout(() => {
+				if (window.checkCompMode()) {
+					window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+					this.button.style.cssText =
+						"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
+					document.querySelector("#compBtnLst").append(this.button);
+				}
+			}, 2000);
 	};
 
 	toggle(enabled) {
@@ -23,7 +31,12 @@ class AccountManager {
 			window.chrome.webview.addEventListener("message", this.gameUpdateListener);
 			document.querySelector("#signedOutHeaderBar")?.append(this.button);
 			this.button.addEventListener("click", this.createMenu);
-			this.checkComp();
+			if (window.checkCompMode()) {
+				window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+				this.button.style.cssText =
+					"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
+				document.querySelector("#compBtnLst").append(this.button);
+			}
 		} else {
 			window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
 			this.button.removeEventListener("click", this.createMenu);
@@ -173,16 +186,6 @@ class AccountManager {
 			}
 		}
 	};
-
-	checkComp() {
-		if (document.querySelector(".cmpTmHed")) {
-			if (this.gameUpdateListener) window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
-
-			this.button.style.cssText =
-				"display: block; padding: 14px 24px 22px; bottom: 0; right: 0; z-index: 9; font-size: 21px !important; position: absolute;";
-			document.querySelector("#compBtnLst").append(this.button);
-		}
-	}
 }
 
 new AccountManager();
