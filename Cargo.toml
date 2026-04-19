@@ -6,7 +6,7 @@ authors = ["slav"]
 edition = "2024"
 
 [package.metadata]
-js_bundle_version = "0.1.4"
+js_bundle_version = "0.1.5"
 
 [workspace]
 members = ["crates/*"]
