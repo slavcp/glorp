@@ -268,8 +268,13 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
             let w = rect.right - rect.left;
             let h = rect.bottom - rect.top;
 
-            let clamped_x = rect.left.clamp(monitor.rcWork.left, monitor.rcWork.right - w);
-            let clamped_y = rect.top.clamp(monitor.rcWork.top, monitor.rcWork.bottom - h);
+            let clamped_x = rect
+                .left
+                .clamp(monitor.rcWork.left, monitor.rcWork.left.max(monitor.rcWork.right - w));
+
+            let clamped_y = rect
+                .top
+                .clamp(monitor.rcWork.top, monitor.rcWork.top.max(monitor.rcWork.bottom - h));
 
             (clamped_x, clamped_y, w, h)
         };
