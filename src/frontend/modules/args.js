@@ -9,16 +9,13 @@ const automateCompHost = async (params) => {
 		const targetNameElement = Array.from(allMapNameElements).find(
 			(el) => el.innerText.trim().toLowerCase() === params.mapId.toLowerCase(),
 		);
-		if (targetNameElement) {
-			mapCheckbox = targetNameElement.parentElement.querySelector('input[type="checkbox"]');
-		}
+		if (targetNameElement) mapCheckbox = targetNameElement.parentElement.querySelector('input[type="checkbox"]');
 	}
 
 	if (!mapCheckbox) return;
 
-	if (!mapCheckbox.checked) {
-		mapCheckbox.click();
-	}
+	if (!mapCheckbox.checked) mapCheckbox.click();
+
 	windows[7].switchTab(2);
 
 	const team1Input = await waitForElement("#customSnameTeam1");
@@ -34,6 +31,20 @@ const automateCompHost = async (params) => {
 		"3v3": "2",
 		"4v4": "3",
 	};
+
+	if (params.team1Players) {
+		const compRosterT1 = await waitForElement("#compRosterT1");
+		compRosterT1.value = params.team1Players;
+	}
+	if (params.team2Players) {
+		const compRosterT2 = await waitForElement("#compRosterT2");
+		compRosterT2.value = params.team2Players;
+	}
+
+	if (params.spectators) {
+		const compSpectators = await waitForElement("#compRosterSpecs");
+		compSpectators.value = params.spectators;
+	}
 
 	const finalTeamSize = teamSizeMap[params.teamSize] || params.teamSize;
 	teamSizeSelect.value = finalTeamSize;
