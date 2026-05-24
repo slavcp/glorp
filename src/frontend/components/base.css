@@ -88,3 +88,8 @@ div #setHed_local,
 	cursor: not-allowed;
 	opacity: 1 !important;
 }
+
+#clientExit {
+	display: flex;
+	flex-direction: row;
+}

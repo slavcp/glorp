@@ -74,6 +74,13 @@ Object.defineProperty(window, "gameLoaded", {
 		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
 		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
 
+		// apply onclick listener on the exit client prompt
+		document.querySelector("#menuBtnExit").addEventListener("onclick", () => {
+			document.querySelector("#confirmBtn").onclick = () => {
+				window.closeClient();
+			};
+		});
+
 		import("./notifications.js");
 		import("./settings.js");
 		import("./modules/changelog.js");
