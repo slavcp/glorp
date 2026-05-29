@@ -54,9 +54,24 @@ document.addEventListener(
 	{ once: true },
 );
 
+const RedirectFromClipboard = async () => {
+	try {
+		const clipboardText = (await navigator.clipboard.readText()).trim();
+		if (!clipboardText.startsWith("https://krunker.io/?game=")) {
+			return;
+		} else {
+			await navigator.clipboard.writeText("");
+			window.location.href = clipboardText;
+		}
+	} catch {
+		//nobody cares
+	}
+};
+
 Object.defineProperty(window, "gameLoaded", {
 	set(value) {
 		if (!value) return;
+		RedirectFromClipboard();
 		window.chrome.webview.postMessage("game-updated");
 		if (!initialLoad) return;
 		if (sessionStorage.getItem("justLaunched") === null) sessionStorage.setItem("justLaunched", true);
