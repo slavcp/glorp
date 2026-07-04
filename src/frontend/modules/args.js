@@ -46,6 +46,9 @@ const automateCompHost = async (params) => {
 		compSpectators.value = params.spectators;
 	}
 
+	const customSspecSlots = await waitForElement("#customSspecSlots");
+	customSspecSlots.value = 4;
+
 	const gunMap = [
 		"ak",
 		"sniper",
