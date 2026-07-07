@@ -64,6 +64,7 @@ pub const DEFAULT_FLAGS: &str = r#"[
   "--disable-gpu-sandbox",
   "--ignore-gpu-blocklist",
   "--enable-gpu-rasterization",
+  "--enable-webgl-draft-extensions",
   "--enable-zero-copy",
   "--enable-waitable-swap-chain",
   "--enable-unsafe-webgpu",

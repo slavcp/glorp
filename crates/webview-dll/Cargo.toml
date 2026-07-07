@@ -8,4 +8,7 @@ name = "webview"
 crate-type = ["cdylib"]
 
 [dependencies]
-windows = { version = "0.62", features = ["Win32_UI_Accessibility"] }
+windows = { version = "0.62", features = [
+    "Win32_UI_Accessibility",
+    "Win32_System_Performance",
+] }

@@ -87,7 +87,8 @@ Object.defineProperty(window, "gameLoaded", {
 		if (window.glorp?.settings.data?.accountManager) import("./modules/accountManager.js");
 		if (window.glorp?.settings.data?.showPing) import("./modules/showPing.js");
 		if (window.glorp?.settings.data?.realPing) import("./modules/realPing.js");
-		if (window.glorp?.settings?.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorp?.settings.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorp?.settings.data?.renderFps) import("./modules/renderFps.js");
 
 		if (window.glorp?.settings.data?.rampBoost && !window.checkCompMode()) {
 			window.chrome.webview.postMessage("toggle-rboost, true");

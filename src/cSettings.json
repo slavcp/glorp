@@ -115,6 +115,15 @@
 		"category": "UI",
 		"defaultValue": true
 	},
+	"renderStats": {
+		"name": "Render Fps",
+		"description": "makes fps counter show how many times an image is presented to the screen, not how many times the game loop runs \n",
+		"id": "renderStats",
+		"type": "checkbox",
+		"category": "UI",
+		"defaultValue": false,
+		"needsRestart": true
+	},
 	"menuTimer": {
 		"name": "Menu Timer",
 		"id": "menuTimer",

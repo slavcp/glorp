@@ -3,9 +3,14 @@ use crate::{constants, handlers, modules, utils, window};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use std::{
     env, fs, io, path, result,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
+use windows::Win32::Foundation::*;
+use windows::Win32::System::Memory::*;
 use windows::core::*;
 
 pub fn init_fs() -> result::Result<(), io::Error> {
@@ -31,10 +36,37 @@ pub fn init_fs() -> result::Result<(), io::Error> {
     Ok(())
 }
 
+#[repr(C)]
+pub(crate) struct SharedStats {
+    pub(crate) frame_ns: u64,
+    pub(crate) fps: u64,
+}
+
+pub(crate) static SHARED_STATS_PTR: AtomicU64 = AtomicU64::new(0);
+
 pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Window {
     let mut webview2_folder: path::PathBuf = env::current_exe().unwrap();
     webview2_folder.pop();
     webview2_folder = webview2_folder.join("WebView2");
+
+    if config_bool("renderStats", false) {
+        unsafe {
+            if let Ok(mapping) = CreateFileMappingW(
+                INVALID_HANDLE_VALUE,
+                None,
+                PAGE_READWRITE,
+                0,
+                24,
+                w!("GlorpFrameTiming"),
+            ) {
+                let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
+                if !view.Value.is_null() {
+                    std::ptr::write_bytes(view.Value as *mut u8, 0, 24);
+                    SHARED_STATS_PTR.store(view.Value as u64, Ordering::SeqCst);
+                }
+            }
+        }
+    }
 
     let mut args = modules::flaglist::load();
     if config_bool("uncapFps", true) {

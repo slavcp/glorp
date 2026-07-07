@@ -4,7 +4,10 @@ use std::{
     collections::HashMap,
     ffi::c_void,
     mem,
-    sync::{LazyLock, RwLock},
+    sync::{
+        LazyLock, RwLock,
+        atomic::{AtomicU64, Ordering},
+    },
     thread,
 };
 use windows::Win32::{
@@ -14,9 +17,15 @@ use windows::Win32::{
         Direct3D11::*,
         Dxgi::{Common::*, *},
     },
-    System::{Diagnostics::Debug::*, SystemServices::DLL_PROCESS_ATTACH, Threading::*},
+    System::{Diagnostics::Debug::*, Memory::*, SystemServices::DLL_PROCESS_ATTACH, Threading::*},
 };
 use windows::core::*;
+
+#[repr(C)]
+struct SharedState {
+    frame_ns: u64,
+    fps: u64,
+}
 
 fn debug_print<T: AsRef<str>>(msg: T) {
     let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
@@ -79,9 +88,16 @@ static mut ORIGINAL_PRESENT: Option<
 > = None;
 
 static WAIT_HANDLE: LazyLock<RwLock<HashMap<usize, usize>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 
 fn attach() {
     unsafe {
+        if let Ok(mapping) = OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, w!("GlorpFrameTiming")) {
+            let ptr = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
+            if !ptr.Value.is_null() {
+                SHARED_MEM_PTR.store(ptr.Value as u64, Ordering::SeqCst);
+            }
+        }
         let (factory, swap_chain) = get_idxgi().unwrap_or_else(|e| {
             debug_print(format!("Failed to get factory and swap chain: {:?}", e));
             panic!("Failed to get factory and swap chain");
@@ -167,14 +183,49 @@ unsafe extern "system" fn present_hk(
     mut present_flags: DXGI_PRESENT,
     p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
 ) -> HRESULT {
+    let ptr = SHARED_MEM_PTR.load(Ordering::SeqCst);
+    if ptr == 0 {
+        unsafe {
+            let original_present = ORIGINAL_PRESENT.unwrap();
+            return original_present(p_this, sync_interval, present_flags, p_present_parameters);
+        }
+    }
+
     thread_local! {
-        static INITIALIZED: cell::Cell<bool> = const { cell::Cell::new(false) } ;
+        static INITIALIZED: cell::Cell<bool> = const { cell::Cell::new(false) };
+        static LAST_PRESENT: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
+        static FRAME_NS_EMA: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static LAST_REPORTED_MOVE_QPC: cell::Cell<i64> = const { cell::Cell::new(0) };
     }
     if !INITIALIZED.get() {
         let mut task_index = 0u32;
         unsafe { AvSetMmThreadCharacteristicsW(w!("Games"), &mut task_index) };
         INITIALIZED.set(true);
     }
+
+    LAST_PRESENT.with(|last| {
+        let now = std::time::Instant::now();
+        if let Some(prev) = last.get() {
+            let frame_ns = now.duration_since(prev).as_nanos() as u64;
+            FRAME_NS_EMA.with(|avg| {
+                let next = if avg.get() == 0 {
+                    frame_ns
+                } else {
+                    (avg.get() * 31 + frame_ns) / 32
+                };
+                avg.set(next);
+                unsafe {
+                    let shared = &mut *(ptr as *mut SharedState);
+                    let fps = 1_000_000_000 / next;
+
+                    shared.frame_ns = next;
+                    shared.fps = fps;
+                }
+            });
+        }
+
+        last.set(Some(now));
+    });
 
     unsafe {
         let handle_opt = WAIT_HANDLE.read().unwrap().get(&(p_this as usize)).copied();

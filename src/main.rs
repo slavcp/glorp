@@ -1,7 +1,7 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
 use std::{
     env, sync,
-    sync::{LazyLock, Mutex},
+    sync::{LazyLock, Mutex, atomic::Ordering},
 };
 use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 
@@ -58,6 +58,12 @@ fn main() {
             });
         }
     }
+    if utils::config_bool("renderStats", false) {
+        unsafe {
+            SetTimer(None, 1, 250, None);
+        }
+    }
+    let mut last_render_stats: Option<(u64, u64)> = None;
     let mut msg: MSG = MSG::default();
     loop {
         let has_msg = unsafe { GetMessageW(&mut msg, None, 0, 0).as_bool() };
@@ -82,6 +88,32 @@ fn main() {
                     .webview
                     .AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(js_content).as_ptr()), None)
                     .ok();
+            }
+        }
+        if msg.message == WM_TIMER {
+            let ptr = app::SHARED_STATS_PTR.load(Ordering::SeqCst);
+            if ptr != 0 {
+                let (frame_ns, fps) = unsafe {
+                    let shared = &*(ptr as *const app::SharedStats);
+                    (shared.frame_ns, shared.fps)
+                };
+
+                // Current state tracks (fps, frame_ns)
+                let current = (fps, frame_ns);
+
+                if fps > 0 && last_render_stats != Some(current) {
+                    last_render_stats = Some(current);
+
+                    println!("render stats: fps={}", fps);
+
+                    let payload = format!("{{\"fpsInfo\":{}}}", fps);
+                    unsafe {
+                        window
+                            .webview
+                            .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(payload).as_ptr()))
+                            .ok();
+                    }
+                }
             }
         }
         unsafe {

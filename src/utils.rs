@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-#![allow(dead_code)]
 use crate::CONFIG;
 use std::{
     convert, env, fs, io, mem,
@@ -15,22 +14,44 @@ use windows::{
     core::*,
 };
 
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UnsafeSend<T> {
     val: T,
 }
 
+unsafe impl<T> Send for UnsafeSend<T> {}
+unsafe impl<T> Sync for UnsafeSend<T> {}
+
 impl<T> UnsafeSend<T> {
-    pub fn new(val: T) -> Self {
+    #[inline]
+    pub const fn new(val: T) -> Self {
         Self { val }
     }
 
+    #[inline]
     pub fn take(self) -> T {
         self.val
     }
 }
-use webview2_com::Microsoft::Web::WebView2::Win32::*;
 
-unsafe impl<T> Send for UnsafeSend<T> {}
+impl<T> std::ops::Deref for UnsafeSend<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.val
+    }
+}
+
+impl<T> std::ops::DerefMut for UnsafeSend<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.val
+    }
+}
+
+use webview2_com::Microsoft::Web::WebView2::Win32::*;
 
 pub trait EnvironmentRef {
     fn env_ref(&self) -> &ICoreWebView2Environment;
