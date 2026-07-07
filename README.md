@@ -34,11 +34,11 @@ Consider using the CPU Throttler in such scenario
 ## Building
 
 - Prerequisites:
-  - [Rust **Nightly** & Cargo](https://rustup.rs/)
+  - [Rust & Cargo](https://rustup.rs/)
   - [Microsoft Visual C++](https://visualstudio.microsoft.com/downloads/)
   - [Node](https://nodejs.org/)
   - [pnpm](https://pnpm.io/installation)
-  - [WiX **(if packaging)**](https://github.com/wixtoolset/wix/releases)
+  - [WiX 6 **(if packaging)**](https://github.com/wixtoolset/wix/releases)
 
 1. `git clone https://github.com/slavcp/glorp.git`
 2. `cd glorp`

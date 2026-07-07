@@ -1,21 +1,9 @@
 #![cfg_attr(feature = "packaged", windows_subsystem = "windows")]
-use crate::modules::userscripts;
-use crate::window::WindowState;
-use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use std::{
-    collections::HashMap,
-    env, fs, io, path, process, result, sync,
-    sync::{LazyLock, Mutex},
+    env, sync,
+    sync::{LazyLock, Mutex, atomic::Ordering},
 };
-use webview2_com::{Microsoft::Web::WebView2::Win32::*, *};
-use windows::{
-    Win32::{
-        Foundation::{LPARAM, WPARAM},
-        System::Com::IStream,
-        UI::WindowsAndMessaging::*,
-    },
-    core::*,
-};
+use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 
 mod app;
 mod config;
@@ -38,454 +26,8 @@ static CONFIG: LazyLock<Mutex<config::Config>> = LazyLock::new(|| Mutex::new(con
 static JS_VERSION: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new("0.0.0".to_string()));
 static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
-static mut TOKEN: *mut i64 = &mut 0i64 as *mut i64;
-
-#[allow(dead_code)]
-fn init_fs() -> result::Result<(), io::Error> {
-    let user_profile = path::PathBuf::from(env::var("USERPROFILE").unwrap());
-    let client_dir = user_profile.join("Documents").join("glorp");
-    let swap_dir = client_dir.join("swapper");
-    let scripts_dir = client_dir.join("scripts").join("social");
-    let flaglist_path = client_dir.join("user_flags.json");
-    let blocklist_path = client_dir.join("user_blocklist.json");
-
-    let resources_dir = env::current_exe().unwrap().parent().unwrap().join("resources");
-
-    fs::create_dir_all(&swap_dir)?;
-    fs::create_dir_all(&scripts_dir)?;
-    fs::create_dir_all(&resources_dir)?;
-
-    if !path::Path::new(&flaglist_path).exists() {
-        fs::write(&flaglist_path, constants::DEFAULT_FLAGS)?;
-    }
-    if !path::Path::new(&blocklist_path).exists() {
-        fs::write(&blocklist_path, constants::DEFAULT_BLOCKLIST)?;
-    }
-    Ok(())
-}
-
-fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapper: &T) {
-    let env: &ICoreWebView2Environment = env_wrapper.env_ref();
-    unsafe {
-        webview
-            .add_PermissionRequested(
-                &PermissionRequestedEventHandler::create(Box::new(
-                    move |_, args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
-                        args.unwrap().SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW).ok();
-                        Ok(())
-                    },
-                )),
-                TOKEN,
-            )
-            .ok();
-
-        let env_ = env.clone();
-
-        if CONFIG.lock().unwrap().get("blocklist").unwrap_or(true) {
-            modules::blocklist::load(webview);
-        };
-        let mut swaps: HashMap<String, IStream> = HashMap::new();
-
-        if CONFIG.lock().unwrap().get("swapper").unwrap_or(true) {
-            swaps = modules::swapper::load(webview)
-        };
-
-        webview
-            .add_WebResourceRequested(
-                &WebResourceRequestedEventHandler::create(Box::new(move |webview, args| {
-                    let Some(args) = args else {
-                        return Ok(());
-                    };
-                    let request: ICoreWebView2WebResourceRequest = args.Request()?;
-                    let mut uri = PWSTR::null();
-                    request.Uri(&mut uri)?;
-                    let uri = take_pwstr(uri);
-
-                    if uri.contains("krunker.io") {
-                        if uri.contains("game-info") || uri.contains("lobby-ranked") {
-                            webview.unwrap().PostWebMessageAsString(w!("game-updated")).ok();
-                            return Ok(());
-                        }
-                        let filename: &str = uri
-                            .split("krunker.io/")
-                            .nth(1)
-                            .and_then(|s| s.split('?').next())
-                            .unwrap_or("");
-
-                        let stream = swaps.get(filename);
-                        if let Some(stream) = stream {
-                            let response = env_.CreateWebResourceResponse(
-                                stream,
-                                200,
-                                w!("OK"),
-                                w!("Access-Control-Allow-Origin: *"),
-                            )?;
-                            args.SetResponse(Some(&response))?;
-
-                            return Ok(());
-                        }
-                    }
-                    // other cases MUST be from the blocklist
-                    request.SetUri(PCWSTR::null())?;
-
-                    Ok(())
-                })),
-                TOKEN,
-            )
-            .ok();
-
-        let env_ = env.clone();
-
-        webview
-            .add_NewWindowRequested(
-                &NewWindowRequestedEventHandler::create(Box::new(move |_, args| {
-                    let Some(args) = args else {
-                        return Ok(());
-                    };
-                    let features = args.WindowFeatures()?;
-                    let mut has_position: BOOL = false.into();
-                    let _ = features.HasPosition(&mut has_position);
-                    let mut has_size: BOOL = false.into();
-                    let _ = features.HasSize(&mut has_size);
-                    let mut window_state = None;
-                    if has_position.as_bool() && has_size.as_bool() {
-                        let mut left = 0;
-                        let mut top = 0;
-                        let mut width = 0;
-                        let mut height = 0;
-                        let _ = features.Left(&mut left);
-                        let _ = features.Top(&mut top);
-                        let _ = features.Width(&mut width);
-                        let _ = features.Height(&mut height);
-                        window_state = Some(WindowState {
-                            fullscreen: false,
-                            position: window::Position {
-                                left: left as i32,
-                                top: top as i32,
-                                right: left as i32 + width as i32,
-                                bottom: top as i32 + height as i32,
-                            },
-                        });
-                    }
-
-                    let deferral = args.GetDeferral()?;
-                    args.SetHandled(true).unwrap();
-                    let (hwnd, window_state) = window::create_window("Custom", true, window_state);
-                    let mut uri = PWSTR::null();
-                    let _ = args.Uri(&mut uri);
-                    let uri = take_pwstr(uri);
-                    let args = utils::UnsafeSend::new(args);
-                    let deferral = utils::UnsafeSend::new(deferral);
-                    // man
-                    let env_for_creation = env_.clone();
-                    let env_for_handler = utils::UnsafeSend::new(env_.clone());
-                    window::create_core_webview2_controller_async(
-                        hwnd,
-                        env_for_creation,
-                        window_state,
-                        move |controller| {
-                            let controller = controller.unwrap();
-                            let webview = controller.CoreWebView2().unwrap();
-                            if uri.contains("krunker.io/social.html")
-                                && CONFIG.lock().unwrap().get("userscripts").unwrap_or(false)
-                                && let Err(e) = userscripts::load(&webview, true)
-                            {
-                                println!("can't load userscripts on social window {}", e);
-                            }
-
-                            args.take().SetNewWindow(&webview).unwrap();
-                            set_handlers(&webview, &env_for_handler);
-
-                            deferral.take().Complete().ok();
-                        },
-                    );
-
-                    Ok(())
-                })),
-                TOKEN,
-            )
-            .ok();
-    }
-}
-
-pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Window {
-    let mut webview2_folder: path::PathBuf = env::current_exe().unwrap();
-    webview2_folder.pop();
-    webview2_folder = webview2_folder.join("WebView2");
-
-    if CONFIG.lock().unwrap().get("hardFlip").unwrap_or(true) {
-        fs::rename(
-            webview2_folder.join("OLD_vk_swiftshader.dll"),
-            webview2_folder.join("vk_swiftshader.dll"),
-        )
-        .ok();
-    } else {
-        fs::rename(
-            webview2_folder.join("vk_swiftshader.dll"),
-            webview2_folder.join("OLD_vk_swiftshader.dll"),
-        )
-        .ok();
-    }
-
-    let mut args = modules::flaglist::load();
-    if CONFIG.lock().unwrap().get("uncapFps").unwrap_or(true) {
-        args.push_str(" --disable-frame-rate-limit");
-    }
-
-    let start_mode = CONFIG
-        .lock()
-        .unwrap()
-        .get::<String>("startMode")
-        .unwrap_or_else(|| String::from("Remember Previous"));
-
-    let state = if start_mode == "Remember Previous" {
-        crate::CONFIG.lock().unwrap().get::<window::WindowState>("lastPosition")
-    } else {
-        None
-    };
-
-    let mut main_window = window::Window::new_core(&start_mode, args, env, state);
-
-    let discord_client: Mutex<Option<DiscordIpcClient>> = Mutex::new(None);
-    if CONFIG.lock().unwrap().get("discordRPC").unwrap_or(false) {
-        let mut client = DiscordIpcClient::new(constants::DISCORD_CLIENT_ID);
-        client.connect().ok();
-        *discord_client.lock().unwrap() = Some(client);
-    }
-
-    modules::priority::set(
-        CONFIG
-            .lock()
-            .unwrap()
-            .get::<String>("webviewPriority")
-            .unwrap_or(String::from("Normal"))
-            .as_str(),
-    );
-
-    if CONFIG.lock().unwrap().get("userscripts").unwrap_or(false)
-        && let Err(e) = userscripts::load(&main_window.webview, false)
-    {
-        eprintln!("Failed to load userscripts: {}", e);
-    }
-
-    let main_window_ = main_window.clone();
-
-    #[allow(unused_mut)]
-    let mut buf = include_str!("../target/bundle.js").to_string();
-
-    #[cfg(feature = "packaged")]
-    if let Ok(buffer) = modules::lifecycle::read_js_bundle() {
-        buf = buffer;
-    }
-
-    // > memory safe language
-    // unsafe
-    unsafe {
-        main_window
-            .webview
-            .AddScriptToExecuteOnDocumentCreated(
-                PCWSTR(utils::create_utf_string(buf).as_ptr()),
-                &AddScriptToExecuteOnDocumentCreatedCompletedHandler::create(Box::new(move |_, id| {
-                    *SCRIPT_ID.lock().unwrap() = id;
-                    Ok(())
-                })),
-            )
-            .ok();
-        set_handlers(&main_window.webview, &main_window.env);
-
-        main_window
-            .webview
-            .AddWebResourceRequestedFilter(
-                PCWSTR(utils::create_utf_string("*://matchmaker.krunker.io/game-info*").as_ptr()),
-                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-            )
-            .ok();
-
-        if CONFIG.lock().unwrap().get("realPing").unwrap_or(false) {
-            modules::ping::load(&main_window.webview);
-        }
-
-        main_window
-            .webview
-            .add_WebMessageReceived(
-                &WebMessageReceivedEventHandler::create(Box::new(move |webview, args| {
-                    let Some(webview) = webview else {
-                        return Ok(());
-                    };
-                    let Some(args) = args else {
-                        return Ok(());
-                    };
-                    let mut message = PWSTR::null();
-                    args.TryGetWebMessageAsString(&mut message).ok();
-                    let message_string = take_pwstr(message);
-
-                    if message_string.trim_start().starts_with('{') {
-                        if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(&message_string) {
-                            if json_value.get("command").and_then(|c| c.as_str()) == Some("fps-stats") {
-                                // FPS stats are now handled internally by the ImGui window via shared memory
-                            }
-                        }
-                        return Ok(());
-                    }
-
-                    let parts: Vec<&str> = message_string.split(", ").map(|s| s.trim()).collect();
-                    match parts.first() {
-                        Some(&"set-config") => {
-                            let setting = parts[1];
-                            let value = if let Ok(bool_val) = parts[2].parse::<bool>() {
-                                serde_json::Value::Bool(bool_val)
-                            } else if let Ok(int_val) = parts[2].parse::<i64>() {
-                                serde_json::Value::Number(serde_json::Number::from(int_val))
-                            } else if let Ok(float_val) = parts[2].parse::<f64>() {
-                                serde_json::Value::Number(
-                                    serde_json::Number::from_f64((float_val * 100.0).round() / 100.0).unwrap(),
-                                )
-                            } else {
-                                serde_json::Value::String(parts[2].to_string())
-                            };
-                            CONFIG.lock().unwrap().set(setting, value);
-                        }
-                        Some(&"get-info") => {
-                            let version = env!("CARGO_PKG_VERSION");
-                            let mut info_map = serde_json::Map::new();
-                            info_map.insert("settings".to_string(), serde_json::json!(&*CONFIG.lock().unwrap()));
-                            info_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
-                            if !LAUNCH_ARGS.lock().unwrap().is_empty() {
-                                info_map.insert(
-                                    "launchArgs".to_string(),
-                                    serde_json::Value::String(LAUNCH_ARGS.lock().unwrap().join(" ")),
-                                );
-                            }
-
-                            let info_json = serde_json::to_string_pretty(&info_map).unwrap();
-
-                            webview
-                                .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr()))
-                                .ok();
-                        }
-                        Some(&"drag") => {
-                            let value = parts[1].parse::<bool>().unwrap_or(false);
-                            const ENABLED: usize = 2;
-                            const DISABLED: usize = 0;
-                            PostMessageW(
-                                main_window.widget_wnd,
-                                WM_USER,
-                                WPARAM(if value { DISABLED } else { ENABLED }),
-                                LPARAM(0),
-                            )
-                            .ok();
-                        }
-                        Some(&"throttle") => {
-                            let status = parts[1].parse::<String>().unwrap_or(String::from("game"));
-                            let setting = if status == "game" { "throttle" } else { "inMenuThrottle" };
-                            utils::set_cpu_throttling(
-                                &webview,
-                                CONFIG.lock().unwrap().get::<f32>(setting).unwrap_or(1.0),
-                            );
-                        }
-                        Some(&"close") => {
-                            PostQuitMessage(0);
-                        }
-                        Some(&"open") => {
-                            let client_dir = path::PathBuf::from(env::var("USERPROFILE").unwrap())
-                                .join("Documents")
-                                .join("glorp");
-                            let path_to_open = match parts[1] {
-                                "blocklist" => Some(&client_dir.join("user_blocklist.json")),
-                                "swapper" => Some(&client_dir.join("swapper")),
-                                "userscripts" => Some(&client_dir.join("scripts")),
-                                _ => None,
-                            };
-                            if let Some(path) = path_to_open {
-                                process::Command::new("explorer.exe").arg(path).spawn().ok();
-                            }
-                        }
-                        Some(&"rpc-update") => {
-                            let state = format!("{} on {}", parts[1], parts[2]);
-                            if let Some(client) = &mut *discord_client.lock().unwrap() {
-                                let activity = activity::Activity::new()
-                                    .details("Krunker")
-                                    .state(&state)
-                                    .assets(activity::Assets::new());
-
-                                if let Err(e) = client.set_activity(activity) {
-                                    eprintln!("Failed to set rpc activity: {}", e);
-                                }
-                            }
-                        }
-                        #[cfg(debug_assertions)]
-                        Some(&"fps-stats") => {
-                            // FPS stats are now handled internally by the ImGui window via shared memory
-                        }
-                        Some(&"toggle-rboost") => {
-                            let value = parts[1].parse::<bool>().unwrap_or(false);
-                            const ENABLED: usize = 1;
-                            const DISABLED: usize = 3;
-                            PostMessageW(
-                                Some(utils::find_child_window_by_class(
-                                    FindWindowW(w!("krunker_webview"), PCWSTR::null()).unwrap(),
-                                    "Chrome_RenderWidgetHostHWND",
-                                )),
-                                WM_USER,
-                                WPARAM(if value { ENABLED } else { DISABLED }),
-                                LPARAM(0),
-                            )
-                            .ok();
-                        }
-                        Some(&"ping") => {
-                            modules::ping::ping(&webview);
-                        }
-                        Some(&"fps") => {
-                            if let Some(fps) = read_fps_data() {
-                                webview
-                                    .PostWebMessageAsJson(PCWSTR(
-                                        crate::utils::create_utf_string(format!("{{\"fpsInfo\":{}}}", fps)).as_ptr(),
-                                    ))
-                                    .ok();
-                            }
-                        }
-                        _ => {}
-                    }
-
-                    Ok(())
-                })),
-                TOKEN,
-            )
-            .ok();
-
-        main_window.webview.Navigate(w!("https://krunker.io")).ok();
-
-        main_window
-            .controller
-            .clone()
-            .add_AcceleratorKeyPressed(
-                &AcceleratorKeyPressedEventHandler::create(Box::new(move |_, args| {
-                    let Some(args) = args else {
-                        return Ok(());
-                    };
-
-                    let mut key_event_kind = COREWEBVIEW2_KEY_EVENT_KIND::default();
-                    args.KeyEventKind(&mut key_event_kind)?;
-                    if key_event_kind != COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN {
-                        return Ok(());
-                    }
-                    let mut pressed_key: u32 = 0;
-                    args.VirtualKey(&mut pressed_key)?;
-
-                    main_window.handle_accelerator_key(pressed_key as u16);
-                    Ok(())
-                })),
-                TOKEN,
-            )
-            .ok();
-    };
-
-    main_window_
-}
-
 fn main() {
     modules::lifecycle::register_instance();
-
     #[cfg(feature = "packaged")]
     {
         modules::lifecycle::set_panic_hook().ok();
@@ -496,7 +38,7 @@ fn main() {
         eprintln!("failed to set all the files in place {}", e);
     }
 
-    let window = create_main_window(None);
+    let window = app::create_main_window(None);
     let (_tx, rx) = sync::mpsc::channel::<String>();
     #[cfg(feature = "packaged")]
     {
@@ -516,6 +58,12 @@ fn main() {
             });
         }
     }
+    if utils::config_bool("renderStats", false) {
+        unsafe {
+            SetTimer(None, 1, 250, None);
+        }
+    }
+    let mut last_render_stats: Option<(u64, u64)> = None;
     let mut msg: MSG = MSG::default();
     loop {
         let has_msg = unsafe { GetMessageW(&mut msg, None, 0, 0).as_bool() };
@@ -542,6 +90,32 @@ fn main() {
                     .ok();
             }
         }
+        if msg.message == WM_TIMER {
+            let ptr = app::SHARED_STATS_PTR.load(Ordering::SeqCst);
+            if ptr != 0 {
+                let (frame_ns, fps) = unsafe {
+                    let shared = &*(ptr as *const app::SharedStats);
+                    (shared.frame_ns, shared.fps)
+                };
+
+                // Current state tracks (fps, frame_ns)
+                let current = (fps, frame_ns);
+
+                if fps > 0 && last_render_stats != Some(current) {
+                    last_render_stats = Some(current);
+
+                    println!("render stats: fps={}", fps);
+
+                    let payload = format!("{{\"fpsInfo\":{}}}", fps);
+                    unsafe {
+                        window
+                            .webview
+                            .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(payload).as_ptr()))
+                            .ok();
+                    }
+                }
+            }
+        }
         unsafe {
             DispatchMessageW(&msg);
         }
@@ -549,29 +123,4 @@ fn main() {
     // code here runs after window is closed
 
     CONFIG.lock().unwrap().save();
-}
-
-pub fn read_fps_data() -> Option<u32> {
-    unsafe {
-        let mapping = windows::Win32::System::Memory::OpenFileMappingA(
-            windows::Win32::System::Memory::FILE_MAP_READ.0,
-            false,
-            s!("GlorpFrameTiming"),
-        )
-        .ok()?;
-        let ptr = windows::Win32::System::Memory::MapViewOfFile(
-            mapping,
-            windows::Win32::System::Memory::FILE_MAP_READ,
-            0,
-            0,
-            64,
-        );
-        if ptr.Value.is_null() {
-            return None;
-        }
-        let frame_ns = *(ptr.Value as *const u64);
-        let frame_ms = frame_ns as f32 / 1_000_000.0;
-        let fps = 1000.0 / frame_ms.max(0.001);
-        Some(fps.round() as u32)
-    }
 }

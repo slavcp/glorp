@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-#![allow(dead_code)]
 use crate::CONFIG;
 use std::{
     convert, env, fs, io, mem,
@@ -9,12 +8,11 @@ use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
         Foundation::{HWND, LPARAM},
-        System::{Diagnostics::{Debug::OutputDebugStringW, ToolHelp::*}, Threading::*},
+        System::{Diagnostics::ToolHelp::*, Threading::*},
         UI::WindowsAndMessaging::*,
     },
     core::*,
 };
-
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -54,7 +52,6 @@ impl<T> std::ops::DerefMut for UnsafeSend<T> {
 }
 
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
-
 
 pub trait EnvironmentRef {
     fn env_ref(&self) -> &ICoreWebView2Environment;
@@ -183,9 +180,4 @@ pub fn atomic_write(path: &impl AsRef<Path>, data: &impl convert::AsRef<[u8]>) -
 
     fs::rename(tmp_path, path)?;
     Ok(())
-}
-
-pub fn debug_print<T: AsRef<str>>(msg: T) {
-    let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
