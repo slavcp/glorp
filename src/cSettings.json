@@ -5,7 +5,12 @@
 		"type": "select",
 		"category": "Main",
 		"defaultValue": "Remember Previous",
-		"options": ["Remember Previous", "Borderless Fullscreen", "Windowed", "Maximized"]
+		"options": [
+			"Remember Previous",
+			"Borderless Fullscreen",
+			"Windowed",
+			"Maximized"
+		]
 	},
 	"uncapFps": {
 		"name": "Uncap FPS",
@@ -69,6 +74,15 @@
 		"type": "checkbox",
 		"category": "Main",
 		"defaultValue": true
+	},
+	"clearCache": {
+		"name": "Clear Cache & Storage",
+		"description": "Clears local storage, browser cache, and web data for the client",
+		"id": "clearCache",
+		"type": "none",
+		"category": "Main",
+		"button": "Clear Now",
+		"buttonAction": "if(confirm('Are you sure you want to clear cache and local storage?')) { localStorage.clear(); sessionStorage.clear(); window.chrome.webview.postMessage('clear-cache'); }"
 	},
 	"rampBoost": {
 		"name": "Ramp Boosting",
@@ -230,7 +244,14 @@
 		"category": "Tweaks",
 		"defaultValue": "Normal",
 		"needsRestart": true,
-		"options": ["High", "Above Normal", "Normal", "Below Normal", "Low", "Idle"]
+		"options": [
+			"High",
+			"Above Normal",
+			"Normal",
+			"Below Normal",
+			"Low",
+			"Idle"
+		]
 	},
 	"hardFlip": {
 		"name": "Hook DXGI Swapchain Creation",

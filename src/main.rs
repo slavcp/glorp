@@ -60,7 +60,7 @@ fn main() {
     }
     if utils::config_bool("renderStats", false) {
         unsafe {
-            SetTimer(None, 1, 250, None);
+            SetTimer(None, 1, 100, None);
         }
     }
     let mut last_render_stats: Option<(u64, u64)> = None;

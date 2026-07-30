@@ -239,7 +239,7 @@ unsafe extern "system" fn present_hk(
 
         if let Some(h_raw) = handle_opt {
             let h = HANDLE(h_raw as *mut _);
-            let _ = WaitForSingleObjectEx(h, u32::MAX, true);
+            let _ = WaitForSingleObjectEx(h, 0, false);
         }
 
         // limiter
@@ -270,9 +270,11 @@ unsafe extern "system" fn present_hk(
             present_flags |= DXGI_PRESENT_ALLOW_TEARING;
         }
         let original_present = ORIGINAL_PRESENT.unwrap();
-        let hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
-        if hr.is_err() {
-            debug_print(format!("Present failed with tearing flag: {:#X}", hr.0));
+        let mut hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
+        if hr.is_err() && (present_flags.0 & DXGI_PRESENT_ALLOW_TEARING.0) != 0 {
+            debug_print(format!("Present failed with tearing flag: {:#X}, retrying fallback", hr.0));
+            let fallback_flags = DXGI_PRESENT(present_flags.0 & !DXGI_PRESENT_ALLOW_TEARING.0);
+            hr = original_present(p_this, sync_interval, fallback_flags, p_present_parameters);
         }
 
         hr
