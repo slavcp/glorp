@@ -257,21 +257,34 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
             }
             WM_INPUT => {
                 let raw_input_handle = HRAWINPUT(lparam.0 as _);
-                let mut buffer: [u8; 48] = [0; 48];
-                let mut size = 48;
+                let mut size: u32 = 0;
 
                 GetRawInputData(
                     raw_input_handle,
                     RID_INPUT,
-                    Some(buffer.as_mut_ptr() as _),
+                    None,
                     &mut size,
                     mem::size_of::<RAWINPUTHEADER>() as u32,
                 );
 
-                let raw_input = buffer.as_mut_ptr() as *mut RAWINPUT;
-
-                if (*raw_input).data.mouse.Anonymous.Anonymous.usButtonFlags != 0 {
-                    return LRESULT(1);
+                if size > 0 {
+                    let mut buffer = vec![0u8; size as usize];
+                    if GetRawInputData(
+                        raw_input_handle,
+                        RID_INPUT,
+                        Some(buffer.as_mut_ptr() as _),
+                        &mut size,
+                        mem::size_of::<RAWINPUTHEADER>() as u32,
+                    ) != u32::MAX
+                    {
+                        let raw_input = buffer.as_ptr() as *const RAWINPUT;
+                        if (*raw_input).header.dwType == RIM_TYPEMOUSE.0
+                            && DRAG_STATUS.load(sync::atomic::Ordering::Relaxed)
+                            && (*raw_input).data.mouse.Anonymous.Anonymous.usButtonFlags != 0
+                        {
+                            return LRESULT(1);
+                        }
+                    }
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }

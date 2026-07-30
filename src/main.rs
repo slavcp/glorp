@@ -76,7 +76,7 @@ fn main() {
         if msg.message == constants::WM_MINOR_UPDATE_READY
             && let Ok(js_content) = rx.try_recv()
         {
-            println!("updating js, {}", &*SCRIPT_ID.lock().unwrap());
+            println!("updating js, {}", *SCRIPT_ID.lock().unwrap());
             unsafe {
                 window
                     .webview
