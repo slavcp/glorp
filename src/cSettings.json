@@ -189,6 +189,18 @@
 		"defaultValue": true,
 		"needsRefresh": true
 	},
+	"fpsLimit": {
+		"name": "FPS Limit",
+		"description": "Limits displayed frames. Set to 0 for unlimited.",
+		"id": "fpsLimit",
+		"type": "slider",
+		"category": "Tweaks",
+		"defaultValue": 0,
+		"min": 0,
+		"max": 1000,
+		"step": 1,
+		"needsRestart": true
+	},
 	"throttle": {
 		"name": "CPU Throttling",
 		"id": "throttle",

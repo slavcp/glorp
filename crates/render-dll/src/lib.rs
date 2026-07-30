@@ -21,10 +21,13 @@ use windows::Win32::{
 };
 use windows::core::*;
 
+// 24 bytes for SharedState
 #[repr(C)]
 struct SharedState {
-    frame_ns: u64,
-    fps: u64,
+    frame_ns: u64, // 8 bytes
+    fps: u64,      // 8 bytes
+    // another 8 bytes free
+    target_fps: u64, // 8 bytes
 }
 
 fn debug_print<T: AsRef<str>>(msg: T) {
@@ -93,6 +96,7 @@ static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 fn attach() {
     unsafe {
         if let Ok(mapping) = OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, w!("GlorpFrameTiming")) {
+            // 24 bytes for SharedState
             let ptr = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
             if !ptr.Value.is_null() {
                 SHARED_MEM_PTR.store(ptr.Value as u64, Ordering::SeqCst);
@@ -155,7 +159,7 @@ unsafe extern "system" fn create_swapchain_hk(
             let swap_chain = IDXGISwapChain1::from_raw(*ppswapchain);
             if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
                 swap_chain2
-                    .SetMaximumFrameLatency(1)
+                    .SetMaximumFrameLatency(2)
                     .unwrap_or_else(|e| debug_print(format!("Failed to set latency: {:?}", e)));
 
                 let waitable_obj = swap_chain2.GetFrameLatencyWaitableObject();
@@ -196,6 +200,9 @@ unsafe extern "system" fn present_hk(
         static LAST_PRESENT: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
         static FRAME_NS_EMA: cell::Cell<u64> = const { cell::Cell::new(0) };
         static LAST_REPORTED_MOVE_QPC: cell::Cell<i64> = const { cell::Cell::new(0) };
+
+        // pacing clock for the last frame, for fps limiter
+        static LIMIT_CLOCK: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
     }
     if !INITIALIZED.get() {
         let mut task_index = 0u32;
@@ -235,11 +242,40 @@ unsafe extern "system" fn present_hk(
             let _ = WaitForSingleObjectEx(h, u32::MAX, true);
         }
 
+        // limiter
+        let target_fps = (*(ptr as *const SharedState)).target_fps;
+        if target_fps > 0 {
+            let target_frame_time = std::time::Duration::from_nanos(1_000_000_000 / target_fps);
+            LIMIT_CLOCK.with(|last| {
+                let now = std::time::Instant::now();
+                if let Some(prev) = last.get() {
+                    let elapsed = now.duration_since(prev);
+                    if elapsed < target_frame_time {
+                        let remaining = target_frame_time - elapsed;
+                        // sleep for the bulk, spin the last ~1ms for accuracy
+                        if remaining > std::time::Duration::from_millis(2) {
+                            thread::sleep(remaining - std::time::Duration::from_millis(1));
+                        }
+                        while prev.elapsed() < target_frame_time {
+                            std::hint::spin_loop();
+                        }
+                    }
+                }
+                last.set(Some(std::time::Instant::now()));
+            });
+        }
+        // end of limiter
+
         if sync_interval == 0 {
             present_flags |= DXGI_PRESENT_ALLOW_TEARING;
         }
         let original_present = ORIGINAL_PRESENT.unwrap();
-        original_present(p_this, sync_interval, present_flags, p_present_parameters)
+        let hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
+        if hr.is_err() {
+            debug_print(format!("Present failed with tearing flag: {:#X}", hr.0));
+        }
+
+        hr
     }
 }
 
