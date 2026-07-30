@@ -198,8 +198,7 @@
 		"defaultValue": 0,
 		"min": 0,
 		"max": 1000,
-		"step": 1,
-		"needsRestart": true
+		"step": 1
 	},
 	"throttle": {
 		"name": "CPU Throttling",

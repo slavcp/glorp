@@ -230,6 +230,17 @@ pub fn handle_web_message(
                 .lock()
                 .unwrap()
                 .set(setting, parse_web_message_value(value));
+
+            if *setting == "fpsLimit" {
+                if let Ok(fps_limit) = value.parse::<u64>() {
+                    let ptr = crate::app::SHARED_STATS_PTR.load(std::sync::atomic::Ordering::SeqCst);
+                    if ptr != 0 {
+                        unsafe {
+                            (*(ptr as *mut crate::app::SharedStats)).target_fps = fps_limit;
+                        }
+                    }
+                }
+            }
         }
         ["get-info"] => {
             send_info(webview);

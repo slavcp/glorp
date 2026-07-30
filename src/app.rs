@@ -51,22 +51,20 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     webview2_folder = webview2_folder.join("WebView2");
 
     let fps_limit = crate::CONFIG.lock().unwrap().get::<u64>("fpsLimit").unwrap_or(0);
-    if config_bool("renderStats", false) || fps_limit > 0 {
-        unsafe {
-            if let Ok(mapping) = CreateFileMappingW(
-                INVALID_HANDLE_VALUE,
-                None,
-                PAGE_READWRITE,
-                0,
-                24,
-                w!("GlorpFrameTiming"),
-            ) {
-                let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
-                if !view.Value.is_null() {
-                    std::ptr::write_bytes(view.Value as *mut u8, 0, 24);
-                    (*(view.Value as *mut SharedStats)).target_fps = fps_limit;
-                    SHARED_STATS_PTR.store(view.Value as u64, Ordering::SeqCst);
-                }
+    unsafe {
+        if let Ok(mapping) = CreateFileMappingW(
+            INVALID_HANDLE_VALUE,
+            None,
+            PAGE_READWRITE,
+            0,
+            24,
+            w!("GlorpFrameTiming"),
+        ) {
+            let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
+            if !view.Value.is_null() {
+                std::ptr::write_bytes(view.Value as *mut u8, 0, 24);
+                (*(view.Value as *mut SharedStats)).target_fps = fps_limit;
+                SHARED_STATS_PTR.store(view.Value as u64, Ordering::SeqCst);
             }
         }
     }
