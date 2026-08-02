@@ -1,0 +1,145 @@
+name: release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Capture checked out commit
+        id: commit
+        shell: pwsh
+        run: |
+          $sha = (git rev-parse HEAD).Trim()
+          $shortSha = (git rev-parse --short HEAD).Trim()
+          Add-Content $env:GITHUB_OUTPUT "sha=$sha"
+          Add-Content $env:GITHUB_OUTPUT "short_sha=$shortSha"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WiX 6
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 6.0.2
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build installer
+        run: pnpm run package
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: glorp-setup-x86_64-msi-${{ github.sha }}
+          path: target/glorp-setup-x86_64.msi
+          retention-days: 7
+
+  release:
+    name: Draft release
+    runs-on: windows-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Read Cargo version
+        id: version
+        shell: pwsh
+        run: |
+          $versionLine = Select-String -Path Cargo.toml -Pattern '^\s*version\s*=\s*"([^"]+)"\s*$' | Select-Object -First 1
+          if (-not $versionLine) {
+            throw "Could not find package version in Cargo.toml"
+          }
+
+          $version = $versionLine.Matches[0].Groups[1].Value
+          Add-Content $env:GITHUB_OUTPUT "version=$version"
+
+      - name: Capture checked out commit
+        id: commit
+        shell: pwsh
+        run: |
+          $sha = (git rev-parse HEAD).Trim()
+          Add-Content $env:GITHUB_OUTPUT "sha=$sha"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WiX 6
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 6.0.2
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.dotnet\tools"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build installer
+        run: pnpm run package
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          target_commitish: ${{ steps.commit.outputs.sha }}
+          draft: true
+          generate_release_notes: true
+          files: target/glorp-setup-x86_64.msi
