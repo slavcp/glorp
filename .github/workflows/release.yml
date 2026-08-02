@@ -33,16 +33,16 @@ jobs:
           Add-Content $env:GITHUB_OUTPUT "sha=$sha"
           Add-Content $env:GITHUB_OUTPUT "short_sha=$shortSha"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.1.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -103,16 +103,16 @@ jobs:
           $sha = (git rev-parse HEAD).Trim()
           Add-Content $env:GITHUB_OUTPUT "sha=$sha"
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 11.1.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
