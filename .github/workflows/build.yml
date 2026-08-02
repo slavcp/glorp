@@ -1,18 +1,19 @@
-name: release
+name: build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [master]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: release
+  group: build
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Draft release
+  build:
+    name: Build installer
     runs-on: windows-latest
 
     steps:
@@ -23,18 +24,6 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Read Cargo version
-        id: version
-        shell: pwsh
-        run: |
-          $versionLine = Select-String -Path Cargo.toml -Pattern '^\s*version\s*=\s*"([^"]+)"\s*$' | Select-Object -First 1
-          if (-not $versionLine) {
-            throw "Could not find package version in Cargo.toml"
-          }
-
-          $version = $versionLine.Matches[0].Groups[1].Value
-          Add-Content $env:GITHUB_OUTPUT "version=$version"
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -44,6 +33,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: pnpm
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -66,11 +56,9 @@ jobs:
       - name: Build installer
         run: pnpm run package
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
-          draft: true
-          generate_release_notes: true
-          files: target/glorp-setup-x86_64.msi
+          name: glorp-setup-x86_64-msi-${{ github.sha }}
+          path: target/glorp-setup-x86_64.msi
+          retention-days: 7
