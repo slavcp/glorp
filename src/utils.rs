@@ -7,7 +7,7 @@ use std::{
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
-        Foundation::{HWND, LPARAM},
+        Foundation::{CloseHandle, HWND, LPARAM},
         System::{Diagnostics::ToolHelp::*, Threading::*},
         UI::WindowsAndMessaging::*,
     },
@@ -70,9 +70,11 @@ impl EnvironmentRef for UnsafeSend<ICoreWebView2Environment> {
 }
 
 pub fn create_utf_string(string: impl AsRef<str>) -> Vec<u16> {
-    let mut string_utf: Vec<u16> = string.as_ref().encode_utf16().collect();
-    string_utf.push(0);
-    string_utf
+    let s = string.as_ref();
+    let mut v = Vec::with_capacity(s.len() + 1);
+    v.extend(s.encode_utf16());
+    v.push(0);
+    v
 }
 
 pub fn LOWORD(l: usize) -> usize {
@@ -110,10 +112,17 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
             let target_class = (*data).1;
             let mut class_name: [u16; 256] = [0; 256];
 
-            let len = GetClassNameW(handle, &mut class_name) as usize;
-            let window_class = String::from_utf16_lossy(&class_name[..len]);
-
-            if window_class.contains(target_class) {
+            GetClassNameW(handle, &mut class_name);
+            let len = class_name.iter().position(|&c| c == 0).unwrap_or(256);
+            let class_slice = &class_name[..len];
+            let mut target_wide = [0u16; 64];
+            let mut target_len = 0;
+            for c in target_class.encode_utf16() {
+                target_wide[target_len] = c;
+                target_len += 1;
+            }
+            let target_slice = &target_wide[..target_len];
+            if class_slice.windows(target_len).any(|w| w == target_slice) {
                 (*data).0 = handle;
                 return BOOL(0);
             }
@@ -142,22 +151,32 @@ pub fn kill(wanted_process_name: &str) {
             ..Default::default()
         };
 
-        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0).unwrap();
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).unwrap();
+
+        let mut target_wide = [0u16; 64];
+        let mut target_len = 0;
+        for c in wanted_process_name.encode_utf16() {
+            target_wide[target_len] = c;
+            target_len += 1;
+        }
+        let target_slice = &target_wide[..target_len];
 
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
-                let process_name = String::from_utf16_lossy(&entry.szExeFile);
-                if process_name.contains(wanted_process_name)
+                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
+                if entry.szExeFile[..len].windows(target_len).any(|w| w == target_slice)
                     && entry.th32ProcessID != current_pid
                     && let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, entry.th32ProcessID)
                 {
                     TerminateProcess(process, 0).ok();
+                    CloseHandle(process).ok();
                 }
                 if Process32NextW(snapshot, &mut entry).is_err() {
                     break;
                 }
             }
         }
+        CloseHandle(snapshot).ok();
     }
 }
 

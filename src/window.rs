@@ -510,16 +510,18 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
 
             WM_DESTROY => {
                 window.controller.Close().ok();
-                drop(Box::from_raw(window_data_ptr));
-                let count = WINDOW_COUNT.fetch_sub(1, Ordering::SeqCst);
 
                 let mut rect = RECT::default();
                 GetWindowRect(hwnd, &mut rect).ok();
                 window.state.position = Position::from(rect);
                 let styles = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
                 window.state.fullscreen = (styles & WS_OVERLAPPEDWINDOW.0) == 0;
+                let state = window.state;
 
-                crate::CONFIG.lock().unwrap().set("lastPosition", window.state);
+                crate::CONFIG.lock().unwrap().set("lastPosition", state);
+
+                drop(Box::from_raw(window_data_ptr));
+                let count = WINDOW_COUNT.fetch_sub(1, Ordering::SeqCst);
 
                 if count == 1 {
                     PostQuitMessage(0);

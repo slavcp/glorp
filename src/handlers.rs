@@ -191,12 +191,14 @@ pub fn send_info(webview: &ICoreWebView2) {
         serde_json::json!(&*crate::CONFIG.lock().unwrap()),
     );
     info_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
-    if !crate::LAUNCH_ARGS.lock().unwrap().is_empty() {
+    let launch_args = crate::LAUNCH_ARGS.lock().unwrap();
+    if !launch_args.is_empty() {
         info_map.insert(
             "launchArgs".to_string(),
-            serde_json::Value::String(crate::LAUNCH_ARGS.lock().unwrap().join(" ")),
+            serde_json::Value::String(launch_args.join(" ")),
         );
     }
+    drop(launch_args);
 
     let info_json = serde_json::to_string_pretty(&info_map).unwrap();
     unsafe {

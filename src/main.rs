@@ -40,7 +40,7 @@ fn main() {
 
     let window = app::create_main_window(None);
     let (_tx, rx) = sync::mpsc::channel::<String>();
-    #[cfg(feature = "packaged")]
+    #[cfg(feature = "auto-update")]
     {
         use utils::config_bool;
         use windows::Win32::Foundation::{LPARAM, WPARAM};

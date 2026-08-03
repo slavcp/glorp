@@ -120,7 +120,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             buf = include_str!("../target/bundle.js").to_string();
         }
 
-        #[cfg(feature = "packaged")]
+        #[cfg(feature = "auto-update")]
         if let Ok(buffer) = modules::lifecycle::read_js_bundle() {
             buf = buffer;
         }

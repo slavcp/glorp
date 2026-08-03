@@ -19,11 +19,11 @@ incremental = true
 codegen-units = 1
 lto = true
 opt-level = 3
-debug-assertions = true
 strip = "symbols"
 
 [features]
 packaged = []
+auto-update = ["packaged"]
 editor-ignore = []
 
 [dependencies]

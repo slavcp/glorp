@@ -22,6 +22,7 @@
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="INSTALLFOLDER" Name="glorp">
         <Directory Id="WEBVIEW2FOLDER" Name="WebView2"/>
+        <Directory Id="RESOURCESFOLDER" Name="resources"/>
       </Directory>
     </StandardDirectory>
 
@@ -29,6 +30,7 @@
     <Feature Id="ProductFeature" Title="glorp" Level="1">
       <ComponentGroupRef Id="WebView2Components" />
       <ComponentGroupRef Id="GlorpComponents" />
+      <ComponentGroupRef Id="ResourcesComponents" />
     </Feature>
   </Package>
 
@@ -38,6 +40,14 @@
       <Files Include="WebView2Runtime\**" />
       <File Id="render.dll" Name="vk_swiftshader.dll" Source="target\x86_64-pc-windows-msvc\release\render.dll"/>
       <File Id="webview.dll" Name="XInput1_4.dll" Source="target\x86_64-pc-windows-msvc\release\webview.dll"/>
+    </ComponentGroup>
+
+    <ComponentGroup Id="ResourcesComponents" Directory="RESOURCESFOLDER">
+      <Component Id="BundleVersionComponent" Guid="e1f2a3b4-c5d6-4789-9012-3456789abcde">
+        <File Id="bundle_version" Name="bundle_version" Source="target\x86_64-pc-windows-msvc\release\resources\bundle_version" KeyPath="yes"/>
+        <File Id="bundle.js" Name="bundle.js" Source="target\x86_64-pc-windows-msvc\release\resources\bundle.js"/>
+        <RemoveFile Id="CleanInstallResources" Name="*" On="uninstall" Directory="RESOURCESFOLDER"/>
+      </Component>
     </ComponentGroup>
     <ComponentGroup Id="GlorpComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutableComponent" Guid="305c2cca-2e2d-4d5a-ac43-84a3be86d148">

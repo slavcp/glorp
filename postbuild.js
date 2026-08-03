@@ -42,6 +42,18 @@ try {
 		const resourcesVcruntimePath = path.join(process.cwd(), "resources", "vcruntime140_1.dll");
 		if (fs.existsSync(resourcesVcruntimePath)) fs.copyFileSync(resourcesVcruntimePath, vcruntimePath);
 	}
+
+	const targetResourcesDir = path.join(targetDir, "resources");
+	fs.mkdirSync(targetResourcesDir, { recursive: true });
+
+	const bundleVersionPath = path.join(process.cwd(), "target", "bundle_version");
+	if (fs.existsSync(bundleVersionPath)) {
+		fs.copyFileSync(bundleVersionPath, path.join(targetResourcesDir, "bundle_version"));
+	}
+	const bundleJsPath = path.join(process.cwd(), "target", "bundle.js");
+	if (fs.existsSync(bundleJsPath)) {
+		fs.copyFileSync(bundleJsPath, path.join(targetResourcesDir, "bundle.js"));
+	}
 } catch (error) {
 	console.error("cannot copy", error);
 }

@@ -4,7 +4,7 @@ use std::{
     ptr,
     sync::{
         self, LazyLock,
-        atomic::{AtomicBool, AtomicPtr, AtomicU32},
+        atomic::{AtomicBool, AtomicPtr, AtomicU32, AtomicUsize},
         mpsc::{Sender, channel},
     },
     thread,
@@ -62,7 +62,7 @@ static mut PREV_WNDPROC_2: WNDPROC = None;
 
 static DRAG_STATUS: AtomicBool = AtomicBool::new(false);
 static WINDOW_HANDLE: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
-static HOOK_HANDLE: AtomicPtr<HWINEVENTHOOK> = AtomicPtr::new(ptr::null_mut());
+static HOOK_HANDLE: AtomicUsize = AtomicUsize::new(0);
 
 struct ChromeWindows {
     chrome_window: HWND,
@@ -129,9 +129,9 @@ static THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 fn detach() {
     unsafe {
-        let hook_handle = HOOK_HANDLE.load(sync::atomic::Ordering::Relaxed);
-        if !hook_handle.is_null() {
-            let _ = UnhookWinEvent(*hook_handle);
+        let hook_raw = HOOK_HANDLE.load(sync::atomic::Ordering::Relaxed);
+        if hook_raw != 0 {
+            let _ = UnhookWinEvent(HWINEVENTHOOK(hook_raw as _));
         }
 
         //  terminate the message loop otherwise launching just crashes if webview2 is still running
@@ -182,8 +182,7 @@ fn attach() {
                 0,
                 WINEVENT_OUTOFCONTEXT,
             );
-            let hook_ptr = Box::into_raw(Box::new(hook));
-            HOOK_HANDLE.store(hook_ptr, sync::atomic::Ordering::Relaxed);
+            HOOK_HANDLE.store(hook.0 as usize, sync::atomic::Ordering::Relaxed);
 
             loop {
                 if GetMessageW(&mut msg, None, 0, 0).into() {
@@ -206,9 +205,25 @@ extern "system" fn find_child_window(handle: HWND, lparam: LPARAM) -> BOOL {
         let mut class_name: [u16; 256] = [0; 256];
         GetClassNameW(handle, &mut class_name);
 
-        let window_class = String::from_utf16_lossy(&class_name);
+        // let window_class = String::from_utf16_lossy(&class_name);
 
-        if window_class.contains(target_class) {
+        // if window_class.contains(target_class) {
+        //     (*data).0 = handle;
+        //     return BOOL(0);
+        // }
+
+        // no heap alloc for this. cuts a bit of memory
+        // even if there isnt much to begin with on glorps executable lol
+        let len = class_name.iter().position(|&c| c == 0).unwrap_or(256);
+        let class_slice = &class_name[..len];
+        let mut target_wide = [0u16; 64];
+        let mut target_len = 0;
+        for c in target_class.encode_utf16() {
+            target_wide[target_len] = c;
+            target_len += 1;
+        }
+        let target_slice = &target_wide[..target_len];
+        if class_slice.windows(target_len).any(|w| w == target_slice) {
             (*data).0 = handle;
             return BOOL(0);
         }
@@ -268,11 +283,13 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                 );
 
                 if size > 0 {
-                    let mut buffer = vec![0u8; size as usize];
+                    // let mut buffer = vec![0u8; size as usize];
+                    let mut buffer = [0u8; 48];
+                    let buf_ptr = buffer.as_mut_ptr() as *mut c_void;
                     if GetRawInputData(
                         raw_input_handle,
                         RID_INPUT,
-                        Some(buffer.as_mut_ptr() as _),
+                        Some(buf_ptr),
                         &mut size,
                         mem::size_of::<RAWINPUTHEADER>() as u32,
                     ) != u32::MAX
@@ -342,7 +359,7 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
                 // 3 = change proc to wnd_proc_widget
                 // 2 or 0 = allow-drag status
                 if wparam.0 == 3 {
-                    SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as *const () as isize);
+                    SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget as *const () as isize);
                 } else {
                     DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
                 }

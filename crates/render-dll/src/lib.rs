@@ -31,7 +31,10 @@ struct SharedState {
 }
 
 fn debug_print<T: AsRef<str>>(msg: T) {
-    let wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
+    let mut wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
+    // technically it works without it, but its good practice, lol
+    // afaict, it just looks weird on DebugView without the null terminator lol
+    wide.push(0);
     unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
 
@@ -99,7 +102,7 @@ fn attach() {
             // 24 bytes for SharedState
             let ptr = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
             if !ptr.Value.is_null() {
-                SHARED_MEM_PTR.store(ptr.Value as u64, Ordering::SeqCst);
+                SHARED_MEM_PTR.store(ptr.Value as u64, Ordering::Release);
             }
         }
         let (factory, swap_chain) = get_idxgi().unwrap_or_else(|e| {
@@ -159,7 +162,7 @@ unsafe extern "system" fn create_swapchain_hk(
             let swap_chain = IDXGISwapChain1::from_raw(*ppswapchain);
             if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
                 swap_chain2
-                    .SetMaximumFrameLatency(2)
+                    .SetMaximumFrameLatency(1)
                     .unwrap_or_else(|e| debug_print(format!("Failed to set latency: {:?}", e)));
 
                 let waitable_obj = swap_chain2.GetFrameLatencyWaitableObject();
@@ -187,7 +190,7 @@ unsafe extern "system" fn present_hk(
     mut present_flags: DXGI_PRESENT,
     p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
 ) -> HRESULT {
-    let ptr = SHARED_MEM_PTR.load(Ordering::SeqCst);
+    let ptr = SHARED_MEM_PTR.load(Ordering::Acquire);
     if ptr == 0 {
         unsafe {
             let original_present = ORIGINAL_PRESENT.unwrap();
@@ -203,6 +206,11 @@ unsafe extern "system" fn present_hk(
 
         // pacing clock for the last frame, for fps limiter
         static LIMIT_CLOCK: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
+
+        // cached waitable handle
+        // populated once per thread on first present
+        // no need reads per frame, just get from cache
+        static CACHED_WAIT_HANDLE: cell::Cell<Option<usize>> = const { cell::Cell::new(None) };
     }
     if !INITIALIZED.get() {
         let mut task_index = 0u32;
@@ -235,7 +243,17 @@ unsafe extern "system" fn present_hk(
     });
 
     unsafe {
-        let handle_opt = WAIT_HANDLE.read().unwrap().get(&(p_this as usize)).copied();
+        let handle_opt = CACHED_WAIT_HANDLE.with(|cached| {
+            if let Some(h) = cached.get() {
+                return Some(h);
+            }
+            // First call on this thread — pay the lock cost once
+            let h = WAIT_HANDLE.read().unwrap().get(&(p_this as usize)).copied();
+            if let Some(h) = h {
+                cached.set(Some(h));
+            }
+            h
+        });
 
         if let Some(h_raw) = handle_opt {
             let h = HANDLE(h_raw as *mut _);
@@ -272,7 +290,10 @@ unsafe extern "system" fn present_hk(
         let original_present = ORIGINAL_PRESENT.unwrap();
         let mut hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
         if hr.is_err() && (present_flags.0 & DXGI_PRESENT_ALLOW_TEARING.0) != 0 {
-            debug_print(format!("Present failed with tearing flag: {:#X}, retrying fallback", hr.0));
+            debug_print(format!(
+                "Present failed with tearing flag: {:#X}, retrying fallback",
+                hr.0
+            ));
             let fallback_flags = DXGI_PRESENT(present_flags.0 & !DXGI_PRESENT_ALLOW_TEARING.0);
             hr = original_present(p_this, sync_interval, fallback_flags, p_present_parameters);
         }

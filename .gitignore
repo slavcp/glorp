@@ -1,5 +1,3 @@
-/target/*
-!/target/bundle.js
-!/target/bundle_version
+/target/
 src/target
 /node_modules

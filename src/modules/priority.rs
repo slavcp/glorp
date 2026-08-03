@@ -23,12 +23,17 @@ pub fn set(level: &str) {
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
                 let pid = entry.th32ProcessID;
-                if String::from_utf16_lossy(&entry.szExeFile)
-                    .trim_matches('\0')
-                    .to_string()
-                    .to_lowercase()
-                    .contains("webview2")
-                    && let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid)
+                let len = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
+                const WEBVIEW2: [u16; 8] = [0x77, 0x65, 0x62, 0x76, 0x69, 0x65, 0x77, 0x32];
+                if entry.szExeFile[..len].windows(WEBVIEW2.len()).any(|w| {
+                    w.iter()
+                        .zip(WEBVIEW2.iter())
+                        .all(|(&a, &b)| (if (0x41..=0x5A).contains(&a) { a + 0x20 } else { a }) == b)
+                }) && let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid)
                 {
                     SetPriorityClass(handle, priority_class).ok();
                     CloseHandle(handle).ok();
