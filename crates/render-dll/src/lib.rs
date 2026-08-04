@@ -17,9 +17,11 @@ use windows::Win32::{
         Direct3D11::*,
         Dxgi::{Common::*, *},
     },
-    System::{Diagnostics::Debug::*, Memory::*, SystemServices::DLL_PROCESS_ATTACH, Threading::*},
+    System::{Diagnostics::Debug::*, Memory::*, SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH}, Threading::*},
 };
 use windows::core::*;
+
+mod capture;
 
 // 24 bytes for SharedState
 #[repr(C)]
@@ -30,7 +32,7 @@ struct SharedState {
     target_fps: u64, // 8 bytes
 }
 
-fn debug_print<T: AsRef<str>>(msg: T) {
+pub(crate) fn debug_print<T: AsRef<str>>(msg: T) {
     let mut wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
     // technically it works without it, but its good practice, lol
     // afaict, it just looks weird on DebugView without the null terminator lol
@@ -98,6 +100,7 @@ static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 
 fn attach() {
     unsafe {
+        capture::capture_init();
         if let Ok(mapping) = OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, w!("GlorpFrameTiming")) {
             // 24 bytes for SharedState
             let ptr = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
@@ -160,6 +163,10 @@ unsafe extern "system" fn create_swapchain_hk(
             panic!("h");
         } else {
             let swap_chain = IDXGISwapChain1::from_raw(*ppswapchain);
+            // Learn the real D3D11 device from this swap chain and hand it to the capture module
+            // (it invalidates any shared texture so it is re-created against this swap chain).
+            let device = swap_chain.GetDevice::<ID3D11Device>().ok();
+            capture::capture_on_swapchain(*ppswapchain, device);
             if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
                 swap_chain2
                     .SetMaximumFrameLatency(1)
@@ -298,6 +305,10 @@ unsafe extern "system" fn present_hk(
             hr = original_present(p_this, sync_interval, fallback_flags, p_present_parameters);
         }
 
+        // OBS capture (producer side): run after the original present so the back buffer is
+        // stable before the CopyResource — gated internally on READER_ACTIVE.
+        capture::capture_on_present(p_this);
+
         hr
     }
 }
@@ -308,5 +319,8 @@ extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
         thread::spawn(|| {
             attach();
         });
+    } else if call_reason == DLL_PROCESS_DETACH {
+        // Best-effort release of capture state (handles/COM objects).
+        capture::capture_cleanup();
     }
 }

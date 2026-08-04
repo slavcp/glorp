@@ -54,6 +54,42 @@ try {
 	if (fs.existsSync(bundleJsPath)) {
 		fs.copyFileSync(bundleJsPath, path.join(targetResourcesDir, "bundle.js"));
 	}
+
+	// ---- OBS plugin deployment (optional; skipped if OBS is not installed) ----
+	const programFiles = process.env.PROGRAMFILES || "C:\\Program Files";
+	const programFilesX86 = process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)";
+	const obsRoots = [
+		path.join(programFiles, "obs-studio"),
+		path.join(programFilesX86, "obs-studio"),
+	];
+	const obsPluginsDir = obsRoots
+		.map((root) => path.join(root, "obs-plugins", "64bit"))
+		.find((dir) => fs.existsSync(dir));
+
+	if (obsPluginsDir) {
+		const obsPluginSrc = path.join(targetDir, "obs_glorp_capture.dll");
+		if (fs.existsSync(obsPluginSrc)) {
+			const obsPluginDest = path.join(obsPluginsDir, "obs-glorp-capture.dll");
+			try {
+				fs.copyFileSync(obsPluginSrc, obsPluginDest);
+				console.log(`Deployed OBS plugin -> ${obsPluginDest}`);
+			} catch (err) {
+				// EPERM/EACCES here is almost always a non-elevated shell writing into Program
+				// Files, or OBS currently running (which locks the plugin DLL). Neither should
+				// fail the whole build, so report it and point at the manual fix.
+				console.warn(
+					"Could not deploy OBS plugin automatically (need admin rights, or OBS is open).\n" +
+					`\tClose OBS, then run as Administrator:\n` +
+					`\t  Copy-Item '${obsPluginSrc}' '${obsPluginDest}'`
+				);
+			}
+		} else {
+			console.warn("OBS detected, but obs_glorp_capture.dll was not built; skipping plugin deploy.");
+		}
+	} else {
+		console.log("OBS not detected at a standard location; skipping OBS plugin deployment.");
+	}
+
 } catch (error) {
 	console.error("cannot copy", error);
 }
