@@ -9,15 +9,11 @@
 #![allow(non_camel_case_types, dead_code)]
 
 use windows::{
-    core::*,
     Win32::{
         Foundation::*,
-        System::{
-            Diagnostics::ToolHelp::*,
-            Memory::*,
-            Threading::*,
-        },
+        System::{Diagnostics::ToolHelp::*, Memory::*, Threading::*},
     },
+    core::*,
 };
 
 pub const GLORP_CAPTURE_MAGIC: u32 = 0x5052_4347; // "GCRP"
@@ -96,8 +92,7 @@ fn name_matches(name: &[u16], expected: &str) -> bool {
 fn try_attach(pid: u32) -> Option<Session> {
     unsafe {
         let info_name = wide(&format!("GlorpCaptureInfo_{pid}"));
-        let mapping =
-            OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, PCWSTR(info_name.as_ptr())).ok()?;
+        let mapping = OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, PCWSTR(info_name.as_ptr())).ok()?;
         let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, INFO_SIZE);
         if view.Value.is_null() {
             let _ = CloseHandle(mapping);
@@ -115,9 +110,12 @@ fn try_attach(pid: u32) -> Option<Session> {
         // Frame event is optional for correctness (we poll frame_counter), so a failure here is
         // non-fatal — pass a null/invalid handle.
         let event_name = wide(&format!("GlorpCaptureFrame_{pid}"));
-        let frame_event =
-            OpenEventW(SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE), false, PCWSTR(event_name.as_ptr()))
-                .unwrap_or(HANDLE::default());
+        let frame_event = OpenEventW(
+            SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE),
+            false,
+            PCWSTR(event_name.as_ptr()),
+        )
+        .unwrap_or_default();
 
         Some(Session {
             pid,
@@ -145,19 +143,19 @@ pub fn process_exists(pid: u32) -> bool {
 /// control block.
 pub fn discover() -> Option<Session> {
     unsafe {
-        let snapshot =
-            CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).ok()?;
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0).ok()?;
         let mut pe: PROCESSENTRY32W = std::mem::zeroed();
         pe.dwSize = size_of::<PROCESSENTRY32W>() as u32;
 
         let mut ok = Process32FirstW(snapshot, &mut pe);
         while ok.is_ok() {
-            if name_matches(&pe.szExeFile, "msedgewebview2.exe") {
-                if let Some(s) = try_attach(pe.th32ProcessID) {
-                    let _ = CloseHandle(snapshot);
-                    return Some(s);
-                }
+            if name_matches(&pe.szExeFile, "msedgewebview2.exe")
+                && let Some(s) = try_attach(pe.th32ProcessID)
+            {
+                let _ = CloseHandle(snapshot);
+                return Some(s);
             }
+
             // dwSize must be reset before each next call.
             pe.dwSize = size_of::<PROCESSENTRY32W>() as u32;
             ok = Process32NextW(snapshot, &mut pe);

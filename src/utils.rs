@@ -8,7 +8,10 @@ use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
         Foundation::{CloseHandle, HWND, LPARAM},
-        System::{Diagnostics::ToolHelp::*, Threading::*},
+        System::{
+            Diagnostics::{Debug::OutputDebugStringW, ToolHelp::*},
+            Threading::*,
+        },
         UI::WindowsAndMessaging::*,
     },
     core::*,
@@ -163,7 +166,11 @@ pub fn kill(wanted_process_name: &str) {
 
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
-                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
+                let len = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
                 if entry.szExeFile[..len].windows(target_len).any(|w| w == target_slice)
                     && entry.th32ProcessID != current_pid
                     && let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, entry.th32ProcessID)
@@ -199,4 +206,10 @@ pub fn atomic_write(path: &impl AsRef<Path>, data: &impl convert::AsRef<[u8]>) -
 
     fs::rename(tmp_path, path)?;
     Ok(())
+}
+
+pub(crate) fn debug_print(message: impl AsRef<str>) {
+    let mut wide: Vec<u16> = message.as_ref().encode_utf16().collect();
+    wide.push(0);
+    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }

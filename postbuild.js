@@ -7,6 +7,7 @@ const buildType = args[0];
 const webview2RuntimeDir = path.join(process.cwd(), "resources", "WebView2Runtime");
 const targetDir = path.join(process.cwd(), "target", buildType);
 const targetWebview2Dir = path.join(process.cwd(), "target", buildType, "WebView2");
+const targetResourcesDir = path.join(targetDir, "resources");
 
 function copyDirAll(source, destination) {
 	fs.mkdirSync(destination, { recursive: true });
@@ -24,6 +25,7 @@ function copyDirAll(source, destination) {
 
 try {
 	fs.mkdirSync(targetWebview2Dir, { recursive: true });
+	fs.mkdirSync(targetResourcesDir, { recursive: true });
 
 	copyDirAll(webview2RuntimeDir, targetWebview2Dir);
 
@@ -34,7 +36,9 @@ try {
 
 	for (const mapping of dllMappings) {
 		const sourceDllPath = path.join(targetDir, mapping.source);
-		if (fs.existsSync(sourceDllPath)) fs.copyFileSync(sourceDllPath, path.join(targetWebview2Dir, mapping.target));
+		if (fs.existsSync(sourceDllPath)) {
+			fs.copyFileSync(sourceDllPath, path.join(targetWebview2Dir, mapping.target));
+		}
 	}
 
 	const vcruntimePath = path.join(targetDir, "vcruntime140_1.dll");
@@ -42,9 +46,6 @@ try {
 		const resourcesVcruntimePath = path.join(process.cwd(), "resources", "vcruntime140_1.dll");
 		if (fs.existsSync(resourcesVcruntimePath)) fs.copyFileSync(resourcesVcruntimePath, vcruntimePath);
 	}
-
-	const targetResourcesDir = path.join(targetDir, "resources");
-	fs.mkdirSync(targetResourcesDir, { recursive: true });
 
 	const bundleVersionPath = path.join(process.cwd(), "target", "bundle_version");
 	if (fs.existsSync(bundleVersionPath)) {
@@ -55,15 +56,12 @@ try {
 		fs.copyFileSync(bundleJsPath, path.join(targetResourcesDir, "bundle.js"));
 	}
 
-	// Keep the plugin with Glorp. It is installed into OBS only after the user opts in from
-	// the client settings; builds must not modify another application's installation.
 	const obsPluginSrc = path.join(targetDir, "obs_glorp_capture.dll");
 	if (fs.existsSync(obsPluginSrc)) {
 		fs.copyFileSync(obsPluginSrc, path.join(targetResourcesDir, "obs-glorp-capture.dll"));
 	} else {
 		console.warn("OBS plugin was not built; skipping bundled plugin copy.");
 	}
-
 } catch (error) {
 	console.error("cannot copy", error);
 }

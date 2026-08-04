@@ -121,7 +121,9 @@ impl ChromeWindows {
                 GWLP_WNDPROC,
                 wnd_proc_widget as *const () as isize,
             );
-            debug_print(format!("webview: installed render widget wndproc, previous={previous:#x}"));
+            debug_print(format!(
+                "webview: installed render widget wndproc, previous={previous:#x}"
+            ));
         }
     }
 
@@ -134,7 +136,10 @@ impl ChromeWindows {
                 Some(find_child_window),
                 LPARAM(&mut data as *mut (HWND, &str) as _),
             ) {
-                debug_print(format!("webview: EnumChildWindows failed parent={:?} class={class_name}", parent));
+                debug_print(format!(
+                    "webview: EnumChildWindows failed parent={:?} class={class_name}",
+                    parent
+                ));
             }
 
             data.0
@@ -216,7 +221,10 @@ fn attach() {
 
         thread::spawn(move || {
             THREAD_ID.store(GetCurrentThreadId(), sync::atomic::Ordering::Relaxed);
-            debug_print(format!("webview: WinEvent message thread started id={}", GetCurrentThreadId()));
+            debug_print(format!(
+                "webview: WinEvent message thread started id={}",
+                GetCurrentThreadId()
+            ));
             let mut msg: MSG = MSG::default();
             // check whenever a window is created if it has the attribute Chrome.WindowTranslucent (the one that warns about pointer lock) and if it does, destroy it
             let hook = SetWinEventHook(
@@ -320,39 +328,25 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
             WM_INPUT => {
-                let raw_input_handle = HRAWINPUT(lparam.0 as _);
-                let mut size: u32 = 0;
+                let mut buffer = std::mem::MaybeUninit::<RAWINPUT>::uninit();
+                let mut size = std::mem::size_of::<RAWINPUT>() as u32;
+                /*
+                2 syscalls to GetRawInputData per call is NOT what we want
+                we don't care about anything else other than denying any events that have a MB press, raw input behaviour itself is handled wv2
 
-                GetRawInputData(
-                    raw_input_handle,
+                */
+
+                if GetRawInputData(
+                    HRAWINPUT(lparam.0 as _),
                     RID_INPUT,
-                    None,
+                    Some(buffer.as_mut_ptr() as _),
                     &mut size,
                     mem::size_of::<RAWINPUTHEADER>() as u32,
-                );
+                ) != u32::MAX
+                {
+                    let raw = buffer.assume_init_mut();
 
-                if size > 0 {
-                    // let mut buffer = vec![0u8; size as usize];
-                    let mut buffer = [0u8; 48];
-                    let buf_ptr = buffer.as_mut_ptr() as *mut c_void;
-                    let read = GetRawInputData(
-                        raw_input_handle,
-                        RID_INPUT,
-                        Some(buf_ptr),
-                        &mut size,
-                        mem::size_of::<RAWINPUTHEADER>() as u32,
-                    );
-                    if read != u32::MAX {
-                        let raw_input = buffer.as_ptr() as *const RAWINPUT;
-                        if (*raw_input).header.dwType == RIM_TYPEMOUSE.0
-                            && DRAG_STATUS.load(sync::atomic::Ordering::Relaxed)
-                            && (*raw_input).data.mouse.Anonymous.Anonymous.usButtonFlags != 0
-                        {
-                            return LRESULT(1);
-                        }
-                    } else {
-                        debug_print(format!("webview: GetRawInputData failed expected_size={size}"));
-                    }
+                    raw.data.mouse.Anonymous.Anonymous.usButtonFlags = 0;
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }

@@ -26,15 +26,21 @@ pub fn set(level: &str) {
                 let len = entry
                     .szExeFile
                     .iter()
-                    .position(|&c| c == 0)
+                    .position(|&char| char == 0)
                     .unwrap_or(entry.szExeFile.len());
-                const WEBVIEW2: [u16; 8] = [0x77, 0x65, 0x62, 0x76, 0x69, 0x65, 0x77, 0x32];
-                if entry.szExeFile[..len].windows(WEBVIEW2.len()).any(|w| {
-                    w.iter()
-                        .zip(WEBVIEW2.iter())
-                        .all(|(&a, &b)| (if (0x41..=0x5A).contains(&a) { a + 0x20 } else { a }) == b)
-                }) && let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid)
-                {
+                let exe_slice = &entry.szExeFile[..len];
+
+                const TARGET: &[u16] = &[
+                    'w' as u16, 'e' as u16, 'b' as u16, 'v' as u16, 'i' as u16, 'e' as u16, 'w' as u16, '2' as u16,
+                ];
+
+                let contains_target = exe_slice.windows(TARGET.len()).any(|window| {
+                    window.iter().zip(TARGET.iter()).all(|(&process_char, &target_char)| {
+                        (process_char as u8).to_ascii_lowercase() == target_char as u8
+                    })
+                });
+
+                if contains_target && let Ok(handle) = OpenProcess(PROCESS_ALL_ACCESS, false, pid) {
                     SetPriorityClass(handle, priority_class).ok();
                     CloseHandle(handle).ok();
                 }

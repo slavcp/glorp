@@ -17,7 +17,12 @@ use windows::Win32::{
         Direct3D11::*,
         Dxgi::{Common::*, *},
     },
-    System::{Diagnostics::Debug::*, Memory::*, SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH}, Threading::*},
+    System::{
+        Diagnostics::Debug::*,
+        Memory::*,
+        SystemServices::{DLL_PROCESS_ATTACH, DLL_PROCESS_DETACH},
+        Threading::*,
+    },
 };
 use windows::core::*;
 
@@ -34,8 +39,6 @@ struct SharedState {
 
 pub(crate) fn debug_print<T: AsRef<str>>(msg: T) {
     let mut wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
-    // technically it works without it, but its good practice, lol
-    // afaict, it just looks weird on DebugView without the null terminator lol
     wide.push(0);
     unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
@@ -100,7 +103,9 @@ static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 static MISSING_TIMING_MAPPING_LOGGED: AtomicBool = AtomicBool::new(false);
 
 fn attach() {
-    debug_print(format!("render: attach started, pid={}", unsafe { GetCurrentProcessId() }));
+    debug_print(format!("render: attach started, pid={}", unsafe {
+        GetCurrentProcessId()
+    }));
     unsafe {
         capture::capture_init();
         match OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, w!("GlorpFrameTiming")) {
@@ -131,7 +136,9 @@ fn attach() {
             debug_print(format!("render: CreateSwapChainForComposition hook failed: {e:?}"));
             panic!("CreateSwapChainForComposition hook failed")
         });
-        debug_print(format!("render: swap-chain hook created, trampoline={original_create_swapchain:p}"));
+        debug_print(format!(
+            "render: swap-chain hook created, trampoline={original_create_swapchain:p}"
+        ));
 
         let original_present =
             MinHook::create_hook(swap_chain.vtable().Present1 as *mut c_void, present_hk as *mut c_void)
@@ -139,7 +146,9 @@ fn attach() {
                     debug_print(format!("render: Present1 hook failed: {e:?}"));
                     panic!("Present1 hook failed")
                 });
-        debug_print(format!("render: Present1 hook created, trampoline={original_present:p}"));
+        debug_print(format!(
+            "render: Present1 hook created, trampoline={original_present:p}"
+        ));
 
         match MinHook::enable_all_hooks() {
             Ok(()) => debug_print("render: all MinHook hooks enabled"),
@@ -237,7 +246,9 @@ unsafe extern "system" fn present_hk(
     let ptr = SHARED_MEM_PTR.load(Ordering::Acquire);
     if ptr == 0 {
         if !MISSING_TIMING_MAPPING_LOGGED.swap(true, Ordering::Relaxed) {
-            debug_print("render: Present1 running without GlorpFrameTiming mapping; timing, limiter, and capture path bypassed");
+            debug_print(
+                "render: Present1 running without GlorpFrameTiming mapping; timing, limiter, and capture path bypassed",
+            );
         }
         unsafe {
             let original_present = ORIGINAL_PRESENT.unwrap();
@@ -259,7 +270,6 @@ unsafe extern "system" fn present_hk(
 
         // cached waitable handle
         // populated once per thread on first present
-        // no need reads per frame, just get from cache
         static CACHED_WAIT_HANDLE: cell::Cell<Option<usize>> = const { cell::Cell::new(None) };
     }
     if !INITIALIZED.get() {
@@ -302,7 +312,7 @@ unsafe extern "system" fn present_hk(
         });
         if now.duration_since(diagnostic_start) >= std::time::Duration::from_secs(10) {
             let ema_ns = FRAME_NS_EMA.get();
-            let ema_fps = if ema_ns == 0 { 0 } else { 1_000_000_000 / ema_ns };
+            let ema_fps = 1_000_000_000u64.checked_div(ema_ns).unwrap_or(0);
             let target_fps = unsafe { (*(ptr as *const SharedState)).target_fps };
             let has_wait_handle = WAIT_HANDLE.read().unwrap().contains_key(&(p_this as usize));
             debug_print(format!(
@@ -325,11 +335,13 @@ unsafe extern "system" fn present_hk(
             if let Some(h) = cached.get() {
                 return Some(h);
             }
-            // First call on this thread — pay the lock cost once
+            // First call on this thread
             let h = WAIT_HANDLE.read().unwrap().get(&(p_this as usize)).copied();
             if let Some(h) = h {
                 cached.set(Some(h));
-                debug_print(format!("render: cached frame-latency wait handle={h:#x} swapchain={p_this:?}"));
+                debug_print(format!(
+                    "render: cached frame-latency wait handle={h:#x} swapchain={p_this:?}"
+                ));
             }
             h
         });
@@ -341,8 +353,8 @@ unsafe extern "system" fn present_hk(
 
         // limiter
         let target_fps = (*(ptr as *const SharedState)).target_fps;
-        if target_fps > 0 {
-            let target_frame_time = std::time::Duration::from_nanos(1_000_000_000 / target_fps);
+        if let Some(nanos) = 1_000_000_000u64.checked_div(target_fps) {
+            let target_frame_time = std::time::Duration::from_nanos(nanos);
             LIMIT_CLOCK.with(|last| {
                 let now = std::time::Instant::now();
                 if let Some(prev) = last.get() {
@@ -395,7 +407,6 @@ extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
         });
     } else if call_reason == DLL_PROCESS_DETACH {
         debug_print("render: DLL_PROCESS_DETACH, cleaning capture state");
-        // Best-effort release of capture state (handles/COM objects).
         capture::capture_cleanup();
     }
 }

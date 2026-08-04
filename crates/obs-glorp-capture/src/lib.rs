@@ -14,19 +14,19 @@
 mod capture;
 mod obsabi;
 
+use obsabi::{OBS, ObsApi, gs_effect_t, gs_texture_t, obs_data_t, obs_source_info, obs_source_t};
 use std::{
     ffi::{c_char, c_void},
     sync::atomic::{AtomicI8, Ordering},
     time::{Duration, Instant},
 };
-use obsabi::{OBS, ObsApi, gs_effect_t, gs_texture_t, obs_data_t, obs_source_info, obs_source_t};
 use windows::{
-    core::{Interface, PCWSTR},
     Win32::{
         Foundation::GENERIC_ALL,
         Graphics::Direct3D11::{ID3D11Device, ID3D11Device1, ID3D11Texture2D},
         System::Diagnostics::Debug::OutputDebugStringW,
     },
+    core::{Interface, PCWSTR},
 };
 
 const DISCOVER_RETRY: Duration = Duration::from_millis(500);
@@ -81,12 +81,13 @@ impl GlorpSource {
     }
 
     fn teardown_texture(&mut self) {
-        if let Some(api) = OBS.as_ref() {
-            if !self.gs_tex.is_null() {
-                unsafe { (api.gs_texture_destroy)(self.gs_tex) };
-                self.gs_tex = std::ptr::null_mut();
-            }
+        if let Some(api) = OBS.as_ref()
+            && !self.gs_tex.is_null()
+        {
+            unsafe { (api.gs_texture_destroy)(self.gs_tex) };
+            self.gs_tex = std::ptr::null_mut();
         }
+
         self.dxgi_tex = None;
         self.width = 0;
         self.height = 0;
@@ -112,14 +113,15 @@ impl GlorpSource {
                 return;
             }
             // Borrowed pointer — do NOT release what we don't own.
-            let Some(dev) = ID3D11Device::from_raw_borrowed(&dev_raw) else { return };
+            let Some(dev) = ID3D11Device::from_raw_borrowed(&dev_raw) else {
+                return;
+            };
             // OpenSharedResourceByName lives on ID3D11Device1 (runtime 11.1+, always available).
             let Ok(dev1) = dev.cast::<ID3D11Device1>() else { return };
 
             let name = format!("GlorpCaptureTex_{}", sess.pid);
             let name_w: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
-            let opened = dev1
-                .OpenSharedResourceByName::<_, ID3D11Texture2D>(PCWSTR(name_w.as_ptr()), GENERIC_ALL.0);
+            let opened = dev1.OpenSharedResourceByName::<_, ID3D11Texture2D>(PCWSTR(name_w.as_ptr()), GENERIC_ALL.0);
             drop(dev1); // release our QI reference
 
             let Ok(tex) = opened else {
@@ -288,4 +290,3 @@ pub extern "C" fn obs_module_set_pointer(_module: *mut c_void) {}
 pub extern "C" fn obs_module_ver() -> u32 {
     32 << 24 // LIBOBS_API_VER = 0x20000000 (major 32, minor 0, patch 0)
 }
-

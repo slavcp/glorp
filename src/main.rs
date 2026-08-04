@@ -3,10 +3,7 @@ use std::{
     env, sync,
     sync::{LazyLock, Mutex, atomic::Ordering},
 };
-use windows::{
-    Win32::{System::Diagnostics::Debug::OutputDebugStringW, UI::WindowsAndMessaging::*},
-    core::*,
-};
+use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
 
 mod app;
 mod config;
@@ -18,6 +15,7 @@ pub mod modules {
     pub mod blocklist;
     pub mod flaglist;
     pub mod lifecycle;
+    pub mod obs;
     pub mod ping;
     pub mod priority;
     pub mod swapper;
@@ -29,22 +27,12 @@ static CONFIG: LazyLock<Mutex<config::Config>> = LazyLock::new(|| Mutex::new(con
 static JS_VERSION: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new("0.0.0".to_string()));
 static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
-pub(crate) fn debug_print(message: impl AsRef<str>) {
-    let mut wide: Vec<u16> = message.as_ref().encode_utf16().collect();
-    wide.push(0);
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
-}
-
 fn main() {
-	let args: Vec<String> = env::args().collect();
-	if args.iter().any(|arg| arg == "--install-obs-plugin" || arg == "--uninstall-obs-plugin") {
-		let install = args.iter().any(|arg| arg == "--install-obs-plugin");
-		if let Err(error) = handlers::run_obs_plugin_operation(install) {
-			debug_print(format!("elevated OBS plugin operation failed: {error}"));
-		}
-		return;
-	}
-	modules::lifecycle::register_instance();
+    if modules::obs::handle_cli_flags() {
+        return;
+    }
+
+    modules::lifecycle::register_instance();
     #[cfg(feature = "packaged")]
     {
         modules::lifecycle::set_panic_hook().ok();
@@ -114,14 +102,10 @@ fn main() {
                     let shared = &*(ptr as *const app::SharedStats);
                     (shared.frame_ns, shared.fps)
                 };
-
-                // Current state tracks (fps, frame_ns)
                 let current = (fps, frame_ns);
 
                 if fps > 0 && last_render_stats != Some(current) {
                     last_render_stats = Some(current);
-
-                    println!("render stats: fps={}", fps);
 
                     let payload = format!("{{\"fpsInfo\":{}}}", fps);
                     unsafe {

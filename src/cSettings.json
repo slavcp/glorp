@@ -5,12 +5,7 @@
 		"type": "select",
 		"category": "Main",
 		"defaultValue": "Remember Previous",
-		"options": [
-			"Remember Previous",
-			"Borderless Fullscreen",
-			"Windowed",
-			"Maximized"
-		]
+		"options": ["Remember Previous", "Borderless Fullscreen", "Windowed", "Maximized"]
 	},
 	"uncapFps": {
 		"name": "Uncap FPS",
@@ -59,6 +54,14 @@
 		"category": "Main",
 		"defaultValue": true,
 		"needsRestart": true
+	},
+	"obsCapturePlugin": {
+		"name": "OBS Capture Plugin",
+		"id": "obsCapturePlugin",
+		"description": "Install the Glorp Capture source into OBS. This changes the OBS installation and may require administrator permission.",
+		"type": "checkbox",
+		"category": "Main",
+		"defaultValue": false
 	},
 	"discordRPC": {
 		"name": "Discord Rich Presence",
@@ -244,14 +247,7 @@
 		"category": "Tweaks",
 		"defaultValue": "Normal",
 		"needsRestart": true,
-		"options": [
-			"High",
-			"Above Normal",
-			"Normal",
-			"Below Normal",
-			"Low",
-			"Idle"
-		]
+		"options": ["High", "Above Normal", "Normal", "Below Normal", "Low", "Idle"]
 	},
 	"hardFlip": {
 		"name": "Hook DXGI Swapchain Creation",
@@ -261,13 +257,5 @@
 		"category": "Tweaks",
 		"defaultValue": true,
 		"needsRestart": true
-	},
-	"obsCapturePlugin": {
-		"name": "OBS Capture Plugin",
-		"id": "obsCapturePlugin",
-		"description": "Install the Glorp Capture source into OBS. This changes the OBS installation and may require administrator permission.",
-		"type": "checkbox",
-		"category": "OBS",
-		"defaultValue": false
 	}
 }

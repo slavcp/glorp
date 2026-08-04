@@ -1,20 +1,3 @@
-//! OBS shared-texture capture — producer side.
-//!
-//! Lives inside `render.dll` (injected into the **WebView2 GPU process** as `vk_swiftshader.dll`)
-//! and publishes the PID-scoped named objects documented in `docs/obs-shared-capture.md`:
-//!   - `GlorpCaptureInfo_<pid>`  : 64-byte control block (named file mapping)
-//!   - `GlorpCaptureFrame_<pid>` : auto-reset event, pulsed after each shared copy
-//!   - `GlorpCaptureTex_<pid>`   : named shared D3D11 texture (`CreateSharedHandle` name)
-//!
-//! Perf guard: nothing here runs or allocates when no reader is attached. Every present first
-//! checks the READER_ACTIVE bit in the control block; if it is clear (the common "not recording"
-//! case) we return immediately with zero capture work.
-//!
-//! Correctness note: the copy runs on the **real** swap-chain device's immediate context (the
-//! device obtained from the WebView2 composition swap chain), never the dummy device the hook
-//! vtable-bootstrap creates. The shared texture is a dedicated texture (not the live back buffer)
-//! so a reader can never synchronize against an active render.
-
 use std::{
     ffi::c_void,
     sync::{
@@ -23,7 +6,6 @@ use std::{
     },
 };
 use windows::{
-    core::*,
     Win32::{
         Foundation::*,
         Graphics::{
@@ -32,6 +14,7 @@ use windows::{
         },
         System::{Memory::*, Threading::*},
     },
+    core::*,
 };
 
 /// "GCRP" little-endian — validates the control block in the consumer.
@@ -190,14 +173,17 @@ pub fn capture_on_swapchain(_swapchain: *mut c_void, device: Option<ID3D11Device
     if INFO_PTR.load(Ordering::Acquire) == 0 {
         return;
     }
-    if let Ok(mut guard) = CAPTURE.lock() {
-        if let Some(c) = guard.as_mut() {
-            crate::debug_print(format!("capture: swap chain changed, device available: {}", device.is_some()));
-            c.release_shared();
-            if device.is_some() {
-                c.device = device;
-                c.context = None;
-            }
+    if let Ok(mut guard) = CAPTURE.lock()
+        && let Some(c) = guard.as_mut()
+    {
+        crate::debug_print(format!(
+            "capture: swap chain changed, device available: {}",
+            device.is_some()
+        ));
+        c.release_shared();
+        if device.is_some() {
+            c.device = device;
+            c.context = None;
         }
     }
 }
@@ -205,10 +191,12 @@ pub fn capture_on_swapchain(_swapchain: *mut c_void, device: Option<ID3D11Device
 /// Ensure a shared texture matching (`w`, `h`, `format`) exists on the real device, then publish
 /// dims/format in the control block. Currently holding the state lock.
 fn ensure_shared_tex(c: &mut Capture, w: u32, h: u32, format: u32) {
-    if let Some(_tex) = c.shared_tex.as_ref() {
-        if c.cached_w == w && c.cached_h == h && c.cached_format == format {
-            return;
-        }
+    if let Some(_tex) = c.shared_tex.as_ref()
+        && c.cached_w == w
+        && c.cached_h == h
+        && c.cached_format == format
+    {
+        return;
     }
 
     c.release_shared();
@@ -309,11 +297,11 @@ pub fn capture_on_present(swapchain: *mut c_void) {
         let fmt = desc.Format.0 as u32;
 
         // Device must be the real one; lazily fetch from the swap chain if not yet known.
-        if c.device.is_none() {
-            if let Ok(dev) = unsafe { sc.GetDevice::<ID3D11Device>() } {
-                c.device = Some(dev);
-                c.context = None;
-            }
+        if c.device.is_none()
+            && let Ok(dev) = unsafe { sc.GetDevice::<ID3D11Device>() }
+        {
+            c.device = Some(dev);
+            c.context = None;
         }
 
         // Ensure the dedicated shared texture exists / matches current dims & format. Called
@@ -324,10 +312,10 @@ pub fn capture_on_present(swapchain: *mut c_void) {
 
         let Some(device) = c.device.as_ref() else { return };
         let Some(shared) = c.shared_tex.as_ref() else { return };
-        if c.context.is_none() {
-            if let Ok(ctx) = unsafe { device.GetImmediateContext() } {
-                c.context = Some(ctx);
-            }
+        if c.context.is_none()
+            && let Ok(ctx) = unsafe { device.GetImmediateContext() }
+        {
+            c.context = Some(ctx);
         }
         let Some(context) = c.context.as_ref() else { return };
 

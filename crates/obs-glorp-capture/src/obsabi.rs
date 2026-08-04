@@ -1,8 +1,7 @@
-//! Minimal, hand-rolled bindings to the OBS (libobs) public C API surface we use.
+//! Minimal, bindings to the OBS (libobs) public C API surface.
 //!
 //! OBS ships **no import library and no installed headers**, so we resolve every function at
 //! runtime from the already-resident `obs.dll` via `GetProcAddress`. There is no link-time
-//! dependency on OBS, which keeps this crate buildable anywhere rustc + MSVC link.exe are.
 
 #![allow(non_camel_case_types, non_upper_case_globals, dead_code)]
 
@@ -12,8 +11,8 @@ use std::{
     sync::LazyLock,
 };
 use windows::{
-    core::*,
     Win32::{Foundation::*, System::LibraryLoader::*},
+    core::*,
 };
 
 // ---- constants (from obs.h / graphics.h) ----
@@ -45,8 +44,7 @@ pub struct obs_source_t {
 
 // ---- callback typedefs ----
 pub type GetNameFn = unsafe extern "C" fn(data: *mut c_void) -> *const c_char;
-pub type CreateFn =
-    unsafe extern "C" fn(settings: *mut obs_data_t, source: *mut obs_source_t) -> *mut c_void;
+pub type CreateFn = unsafe extern "C" fn(settings: *mut obs_data_t, source: *mut obs_source_t) -> *mut c_void;
 pub type DestroyFn = unsafe extern "C" fn(data: *mut c_void);
 pub type GetSizeFn = unsafe extern "C" fn(data: *mut c_void) -> u32;
 pub type VideoTickFn = unsafe extern "C" fn(data: *mut c_void, seconds: f32);
