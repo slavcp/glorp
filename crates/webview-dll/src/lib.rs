@@ -311,9 +311,11 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                     mem::size_of::<RAWINPUTHEADER>() as u32,
                 ) != u32::MAX
                 {
-                    let raw = buffer.assume_init_mut();
+                    let raw = buffer.assume_init_ref();
 
-                    raw.data.mouse.Anonymous.Anonymous.usButtonFlags = 0;
+                    if raw.data.mouse.Anonymous.Anonymous.usButtonFlags != 0 {
+                        return LRESULT(1);
+                    };
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
