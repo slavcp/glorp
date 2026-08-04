@@ -29,6 +29,13 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 	}
 
 	switch (id) {
+		case "obsCapturePlugin":
+			if (value && !confirm("Install the Glorp Capture plugin into OBS? OBS must be closed, and Windows may ask for administrator permission.")) {
+				document.querySelector("#obsCapturePlugin").checked = false;
+				return;
+			}
+			window.chrome.webview.postMessage(`obs-plugin, ${value}`);
+			break;
 		case "rampBoost":
 			if (value) {
 				if (!window.checkCompMode()) window.chrome.webview.postMessage("toggle-rboost, true");
@@ -101,6 +108,16 @@ class SettingsManager {
 			origGetSettings.call(this.settingsWindow, ...args).replace(/^<\/div>/, "") + this.getCSettings();
 
 		this.settingsWindow.getCSettings = () => this.getCSettings();
+		window.chrome.webview.addEventListener("message", (event) => {
+			const response = event.data;
+			if (!response || response.type !== "obs-plugin") return;
+			if (!response.ok) {
+				window.glorp.settings.data.obsCapturePlugin = false;
+				const checkbox = document.querySelector("#obsCapturePlugin");
+				if (checkbox) checkbox.checked = false;
+			}
+			window.glorp.showNotification(response.message, false, 5);
+		});
 	}
 
 	searchMatches(setting) {

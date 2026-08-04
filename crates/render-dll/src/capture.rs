@@ -187,6 +187,7 @@ pub fn capture_on_swapchain(_swapchain: *mut c_void, device: Option<ID3D11Device
     }
     if let Ok(mut guard) = CAPTURE.lock() {
         if let Some(c) = guard.as_mut() {
+            crate::debug_print(format!("capture: swap chain changed, device available: {}", device.is_some()));
             c.release_shared();
             if device.is_some() {
                 c.device = device;
@@ -248,6 +249,8 @@ fn ensure_shared_tex(c: &mut Capture, w: u32, h: u32, format: u32) {
     c.cached_w = w;
     c.cached_h = h;
     c.cached_format = format;
+
+    crate::debug_print(format!("capture: shared texture ready {w}x{h}, format {format}"));
 
     // Publish dims/format so the reader knows what to open.
     unsafe {
@@ -334,4 +337,3 @@ pub fn capture_cleanup() {
     }
     INFO_PTR.store(0, Ordering::Release);
 }
-

@@ -3,7 +3,10 @@ use std::{
     env, sync,
     sync::{LazyLock, Mutex, atomic::Ordering},
 };
-use windows::{Win32::UI::WindowsAndMessaging::*, core::*};
+use windows::{
+    Win32::{System::Diagnostics::Debug::OutputDebugStringW, UI::WindowsAndMessaging::*},
+    core::*,
+};
 
 mod app;
 mod config;
@@ -26,8 +29,22 @@ static CONFIG: LazyLock<Mutex<config::Config>> = LazyLock::new(|| Mutex::new(con
 static JS_VERSION: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new("0.0.0".to_string()));
 static SCRIPT_ID: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
+pub(crate) fn debug_print(message: impl AsRef<str>) {
+    let mut wide: Vec<u16> = message.as_ref().encode_utf16().collect();
+    wide.push(0);
+    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
+}
+
 fn main() {
-    modules::lifecycle::register_instance();
+	let args: Vec<String> = env::args().collect();
+	if args.iter().any(|arg| arg == "--install-obs-plugin" || arg == "--uninstall-obs-plugin") {
+		let install = args.iter().any(|arg| arg == "--install-obs-plugin");
+		if let Err(error) = handlers::run_obs_plugin_operation(install) {
+			debug_print(format!("elevated OBS plugin operation failed: {error}"));
+		}
+		return;
+	}
+	modules::lifecycle::register_instance();
     #[cfg(feature = "packaged")]
     {
         modules::lifecycle::set_panic_hook().ok();

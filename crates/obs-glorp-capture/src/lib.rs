@@ -146,6 +146,7 @@ unsafe extern "C" fn get_name(_data: *mut c_void) -> *const c_char {
 }
 
 unsafe extern "C" fn create(_settings: *mut obs_data_t, _source: *mut obs_source_t) -> *mut c_void {
+    debug_print("capture: source created");
     Box::into_raw(Box::new(GlorpSource::new())) as *mut c_void
 }
 
@@ -153,6 +154,7 @@ unsafe extern "C" fn destroy(data: *mut c_void) {
     if data.is_null() {
         return;
     }
+    debug_print("capture: source destroyed");
     let s = &mut *(data as *mut GlorpSource);
     if let Some(mut sess) = s.session.take() {
         capture::set_reader_active(&sess, false);
@@ -195,6 +197,7 @@ unsafe extern "C" fn video_tick(data: *mut c_void, _seconds: f32) {
         // If the GPU process itself is gone, tear everything down and re-discover under the new
         // PID. If it's merely paused (game minimized / frozen), keep showing the last frame.
         if s.last_attempt.elapsed() >= STALL_RETRY && !capture::process_exists(sess.pid) {
+            debug_print(format!("capture: producer process exited (pid {})", sess.pid));
             let mut old = s.session.take().unwrap();
             capture::set_reader_active(&old, false);
             old.close();
@@ -285,5 +288,4 @@ pub extern "C" fn obs_module_set_pointer(_module: *mut c_void) {}
 pub extern "C" fn obs_module_ver() -> u32 {
     32 << 24 // LIBOBS_API_VER = 0x20000000 (major 32, minor 0, patch 0)
 }
-
 

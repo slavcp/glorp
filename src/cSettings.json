@@ -261,5 +261,13 @@
 		"category": "Tweaks",
 		"defaultValue": true,
 		"needsRestart": true
+	},
+	"obsCapturePlugin": {
+		"name": "OBS Capture Plugin",
+		"id": "obsCapturePlugin",
+		"description": "Install the Glorp Capture source into OBS. This changes the OBS installation and may require administrator permission.",
+		"type": "checkbox",
+		"category": "OBS",
+		"defaultValue": false
 	}
 }

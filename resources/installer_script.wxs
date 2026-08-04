@@ -45,7 +45,8 @@
     <ComponentGroup Id="ResourcesComponents" Directory="RESOURCESFOLDER">
       <Component Id="BundleVersionComponent" Guid="e1f2a3b4-c5d6-4789-9012-3456789abcde">
         <File Id="bundle_version" Name="bundle_version" Source="target\x86_64-pc-windows-msvc\release\resources\bundle_version" KeyPath="yes"/>
-        <File Id="bundle.js" Name="bundle.js" Source="target\x86_64-pc-windows-msvc\release\resources\bundle.js"/>
+		<File Id="bundle.js" Name="bundle.js" Source="target\x86_64-pc-windows-msvc\release\resources\bundle.js"/>
+		<File Id="obs_glorp_capture_dll" Name="obs-glorp-capture.dll" Source="target\x86_64-pc-windows-msvc\release\resources\obs-glorp-capture.dll"/>
         <RemoveFile Id="CleanInstallResources" Name="*" On="uninstall" Directory="RESOURCESFOLDER"/>
       </Component>
     </ComponentGroup>

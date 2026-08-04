@@ -110,6 +110,8 @@ fn try_attach(pid: u32) -> Option<Session> {
             return None;
         }
 
+        super::debug_print(format!("capture: producer discovered (pid {pid})"));
+
         // Frame event is optional for correctness (we poll frame_counter), so a failure here is
         // non-fatal — pass a null/invalid handle.
         let event_name = wide(&format!("GlorpCaptureFrame_{pid}"));
@@ -162,5 +164,6 @@ pub fn discover() -> Option<Session> {
         }
         let _ = CloseHandle(snapshot);
     }
+    super::debug_print("capture: producer not found");
     None
 }
