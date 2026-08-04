@@ -24,16 +24,14 @@ pub fn parse_web_message_value(value: &str) -> serde_json::Value {
 }
 
 pub fn set_permission_requested_handler(webview: &ICoreWebView2, token: &mut i64) {
-    let handler = PermissionRequestedEventHandler::create(Box::new(
-        move |_, args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
-            if let Some(args) = args {
-                unsafe {
-                    args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW).ok();
-                }
+    let handler = PermissionRequestedEventHandler::create(Box::new(move |_, args: Option<ICoreWebView2PermissionRequestedEventArgs>| {
+        if let Some(args) = args {
+            unsafe {
+                args.SetState(COREWEBVIEW2_PERMISSION_STATE_ALLOW).ok();
             }
-            Ok(())
-        },
-    ));
+        }
+        Ok(())
+    }));
     unsafe {
         webview.add_PermissionRequested(&handler, token).ok();
     }
@@ -66,16 +64,10 @@ pub fn set_web_resource_requested_handler(webview: &ICoreWebView2, env: &ICoreWe
                 return Ok(());
             }
 
-            let filename: &str = uri
-                .split("krunker.io/")
-                .nth(1)
-                .and_then(|s| s.split('?').next())
-                .unwrap_or("");
+            let filename: &str = uri.split("krunker.io/").nth(1).and_then(|s| s.split('?').next()).unwrap_or("");
 
             if let Some(stream) = swaps.get(filename) {
-                let response = unsafe {
-                    env_clone.CreateWebResourceResponse(stream, 200, w!("OK"), w!("Access-Control-Allow-Origin: *"))?
-                };
+                let response = unsafe { env_clone.CreateWebResourceResponse(stream, 200, w!("OK"), w!("Access-Control-Allow-Origin: *"))? };
                 unsafe { args.SetResponse(Some(&response))? };
                 return Ok(());
             }
@@ -186,25 +178,17 @@ pub fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapp
 pub fn send_info(webview: &ICoreWebView2) {
     let version = env!("CARGO_PKG_VERSION");
     let mut info_map = serde_json::Map::new();
-    info_map.insert(
-        "settings".to_string(),
-        serde_json::json!(&*crate::CONFIG.lock().unwrap()),
-    );
+    info_map.insert("settings".to_string(), serde_json::json!(&*crate::CONFIG.lock().unwrap()));
     info_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
     let launch_args = crate::LAUNCH_ARGS.lock().unwrap();
     if !launch_args.is_empty() {
-        info_map.insert(
-            "launchArgs".to_string(),
-            serde_json::Value::String(launch_args.join(" ")),
-        );
+        info_map.insert("launchArgs".to_string(), serde_json::Value::String(launch_args.join(" ")));
     }
     drop(launch_args);
 
     let info_json = serde_json::to_string_pretty(&info_map).unwrap();
     unsafe {
-        webview
-            .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr()))
-            .ok();
+        webview.PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr())).ok();
     }
 }
 
@@ -229,10 +213,7 @@ pub fn handle_web_message(
 
     match parts.as_slice() {
         ["set-config", setting, value] => {
-            crate::CONFIG
-                .lock()
-                .unwrap()
-                .set(setting, parse_web_message_value(value));
+            crate::CONFIG.lock().unwrap().set(setting, parse_web_message_value(value));
 
             if *setting == "fpsLimit"
                 && let Ok(fps_limit) = value.parse::<u64>()
@@ -260,39 +241,20 @@ pub fn handle_web_message(
             const DISABLED: usize = 0;
             let value = value.parse::<bool>().unwrap_or(false);
             unsafe {
-                PostMessageW(
-                    main_window.widget_wnd,
-                    WM_USER,
-                    WPARAM(if value { DISABLED } else { ENABLED }),
-                    LPARAM(0),
-                )
-                .ok();
+                PostMessageW(main_window.widget_wnd, WM_USER, WPARAM(if value { DISABLED } else { ENABLED }), LPARAM(0)).ok();
             }
         }
         ["throttle", status] => {
-            let setting = if *status == "game" {
-                "throttle"
-            } else {
-                "inMenuThrottle"
-            };
-            utils::set_cpu_throttling(
-                webview,
-                crate::CONFIG.lock().unwrap().get::<f32>(setting).unwrap_or(1.0),
-            );
+            let setting = if *status == "game" { "throttle" } else { "inMenuThrottle" };
+            utils::set_cpu_throttling(webview, crate::CONFIG.lock().unwrap().get::<f32>(setting).unwrap_or(1.0));
         }
         ["close"] => unsafe {
             PostQuitMessage(0);
         },
         ["clear-cache"] => unsafe {
+            webview.CallDevToolsProtocolMethod(w!("Network.clearBrowserCache"), w!("{}"), None).ok();
             webview
-                .CallDevToolsProtocolMethod(w!("Network.clearBrowserCache"), w!("{}"), None)
-                .ok();
-            webview
-                .CallDevToolsProtocolMethod(
-                    w!("Storage.clearDataForOrigin"),
-                    w!("{\"origin\": \"*\", \"storageTypes\": \"all\"}"),
-                    None,
-                )
+                .CallDevToolsProtocolMethod(w!("Storage.clearDataForOrigin"), w!("{\"origin\": \"*\", \"storageTypes\": \"all\"}"), None)
                 .ok();
             webview.Reload().ok();
         },
@@ -302,10 +264,7 @@ pub fn handle_web_message(
         ["rpc-update", part1, part2] => {
             let state = format!("{} on {}", part1, part2);
             if let Some(client) = &mut *discord_client.lock().unwrap() {
-                let activity = activity::Activity::new()
-                    .details("Krunker")
-                    .state(&state)
-                    .assets(activity::Assets::new());
+                let activity = activity::Activity::new().details("Krunker").state(&state).assets(activity::Assets::new());
                 if let Err(e) = client.set_activity(activity) {
                     eprintln!("Failed to set rpc activity: {}", e);
                 }

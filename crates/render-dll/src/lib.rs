@@ -89,23 +89,18 @@ fn get_idxgi() -> Result<(IDXGIFactory2, IDXGISwapChain1)> {
 }
 
 #[allow(clippy::type_complexity)]
-static mut ORIGINAL_CREATE_SWAPCHAIN: Option<
-    unsafe fn(*mut c_void, *mut c_void, *const DXGI_SWAP_CHAIN_DESC1, *mut c_void, *mut *mut c_void) -> HRESULT,
-> = None;
+static mut ORIGINAL_CREATE_SWAPCHAIN: Option<unsafe fn(*mut c_void, *mut c_void, *const DXGI_SWAP_CHAIN_DESC1, *mut c_void, *mut *mut c_void) -> HRESULT> =
+    None;
 
 #[allow(clippy::type_complexity)]
-static mut ORIGINAL_PRESENT: Option<
-    unsafe fn(*mut c_void, u32, DXGI_PRESENT, *const DXGI_PRESENT_PARAMETERS) -> HRESULT,
-> = None;
+static mut ORIGINAL_PRESENT: Option<unsafe fn(*mut c_void, u32, DXGI_PRESENT, *const DXGI_PRESENT_PARAMETERS) -> HRESULT> = None;
 
 static WAIT_HANDLE: LazyLock<RwLock<HashMap<usize, usize>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 static MISSING_TIMING_MAPPING_LOGGED: AtomicBool = AtomicBool::new(false);
 
 fn attach() {
-    debug_print(format!("render: attach started, pid={}", unsafe {
-        GetCurrentProcessId()
-    }));
+    debug_print(format!("render: attach started, pid={}", unsafe { GetCurrentProcessId() }));
     unsafe {
         capture::capture_init();
         match OpenFileMappingW(FILE_MAP_ALL_ACCESS.0, false, w!("GlorpFrameTiming")) {
@@ -136,19 +131,13 @@ fn attach() {
             debug_print(format!("render: CreateSwapChainForComposition hook failed: {e:?}"));
             panic!("CreateSwapChainForComposition hook failed")
         });
-        debug_print(format!(
-            "render: swap-chain hook created, trampoline={original_create_swapchain:p}"
-        ));
+        debug_print(format!("render: swap-chain hook created, trampoline={original_create_swapchain:p}"));
 
-        let original_present =
-            MinHook::create_hook(swap_chain.vtable().Present1 as *mut c_void, present_hk as *mut c_void)
-                .unwrap_or_else(|e| {
-                    debug_print(format!("render: Present1 hook failed: {e:?}"));
-                    panic!("Present1 hook failed")
-                });
-        debug_print(format!(
-            "render: Present1 hook created, trampoline={original_present:p}"
-        ));
+        let original_present = MinHook::create_hook(swap_chain.vtable().Present1 as *mut c_void, present_hk as *mut c_void).unwrap_or_else(|e| {
+            debug_print(format!("render: Present1 hook failed: {e:?}"));
+            panic!("Present1 hook failed")
+        });
+        debug_print(format!("render: Present1 hook created, trampoline={original_present:p}"));
 
         match MinHook::enable_all_hooks() {
             Ok(()) => debug_print("render: all MinHook hooks enabled"),
@@ -185,8 +174,7 @@ unsafe extern "system" fn create_swapchain_hk(
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // discard crashes
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
         // desc.Scaling = DXGI_SCALING_NONE; // this crashes
-        desc.Flags =
-            (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0 | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0) as u32;
+        desc.Flags = (DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0 | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT.0) as u32;
 
         let original_fn = ORIGINAL_CREATE_SWAPCHAIN.unwrap();
 
@@ -246,9 +234,7 @@ unsafe extern "system" fn present_hk(
     let ptr = SHARED_MEM_PTR.load(Ordering::Acquire);
     if ptr == 0 {
         if !MISSING_TIMING_MAPPING_LOGGED.swap(true, Ordering::Relaxed) {
-            debug_print(
-                "render: Present1 running without GlorpFrameTiming mapping; timing, limiter, and capture path bypassed",
-            );
+            debug_print("render: Present1 running without GlorpFrameTiming mapping; timing, limiter, and capture path bypassed");
         }
         unsafe {
             let original_present = ORIGINAL_PRESENT.unwrap();
@@ -288,11 +274,7 @@ unsafe extern "system" fn present_hk(
             let frame_ns = now.duration_since(prev).as_nanos() as u64;
             DIAGNOSTIC_MAX_FRAME_NS.set(DIAGNOSTIC_MAX_FRAME_NS.get().max(frame_ns));
             FRAME_NS_EMA.with(|avg| {
-                let next = if avg.get() == 0 {
-                    frame_ns
-                } else {
-                    (avg.get() * 31 + frame_ns) / 32
-                };
+                let next = if avg.get() == 0 { frame_ns } else { (avg.get() * 31 + frame_ns) / 32 };
                 avg.set(next);
                 unsafe {
                     let shared = &mut *(ptr as *mut SharedState);
@@ -339,9 +321,7 @@ unsafe extern "system" fn present_hk(
             let h = WAIT_HANDLE.read().unwrap().get(&(p_this as usize)).copied();
             if let Some(h) = h {
                 cached.set(Some(h));
-                debug_print(format!(
-                    "render: cached frame-latency wait handle={h:#x} swapchain={p_this:?}"
-                ));
+                debug_print(format!("render: cached frame-latency wait handle={h:#x} swapchain={p_this:?}"));
             }
             h
         });
@@ -381,10 +361,7 @@ unsafe extern "system" fn present_hk(
         let original_present = ORIGINAL_PRESENT.unwrap();
         let mut hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
         if hr.is_err() && (present_flags.0 & DXGI_PRESENT_ALLOW_TEARING.0) != 0 {
-            debug_print(format!(
-                "Present failed with tearing flag: {:#X}, retrying fallback",
-                hr.0
-            ));
+            debug_print(format!("Present failed with tearing flag: {:#X}, retrying fallback", hr.0));
             let fallback_flags = DXGI_PRESENT(present_flags.0 & !DXGI_PRESENT_ALLOW_TEARING.0);
             hr = original_present(p_this, sync_interval, fallback_flags, p_present_parameters);
             debug_print(format!("render: Present fallback result={:#X}", hr.0));

@@ -81,8 +81,7 @@ pub struct ObsApi {
     pub gs_get_device_obj: unsafe extern "C" fn() -> *mut c_void,
     pub gs_texture_wrap_obj: unsafe extern "C" fn(obj: *mut c_void) -> *mut gs_texture_t,
     pub gs_texture_destroy: unsafe extern "C" fn(tex: *mut gs_texture_t),
-    pub gs_effect_get_param_by_name:
-        unsafe extern "C" fn(effect: *mut gs_effect_t, name: *const c_char) -> *mut gs_eparam_t,
+    pub gs_effect_get_param_by_name: unsafe extern "C" fn(effect: *mut gs_effect_t, name: *const c_char) -> *mut gs_eparam_t,
     pub gs_effect_set_texture: unsafe extern "C" fn(param: *mut gs_eparam_t, tex: *mut gs_texture_t),
     pub gs_draw_sprite: unsafe extern "C" fn(tex: *mut gs_texture_t, flip: u32, cx: u32, cy: u32),
 }

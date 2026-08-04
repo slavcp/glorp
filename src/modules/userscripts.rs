@@ -2,10 +2,8 @@ use regex::Regex;
 use std::{env, fs, io::Read, sync::LazyLock};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use windows::core::*;
-static METADATA_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
-static IIFE_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap());
+static METADATA_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?s)\A\s*\/\/ ==UserScript==.*?\/\/ ==\/UserScript=="#).unwrap());
+static IIFE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?s)^\s*(?:['\"]use strict['\"];?\s*)?\(.*\)\s*\(\s*\)\s*;?\s*$"#).unwrap());
 
 use crate::utils;
 
@@ -14,10 +12,7 @@ fn parse_metadata(content: &mut String) {
     if let Some(metadata_block) = METADATA_REGEX.find(content) {
         let metadata = metadata_block.as_str();
         if !metadata.contains("// @run-at document-start") {
-            *content = format!(
-                "document.addEventListener('DOMContentLoaded', function() {{\n{}\n}});",
-                content
-            );
+            *content = format!("document.addEventListener('DOMContentLoaded', function() {{\n{}\n}});", content);
         }
     }
 }
@@ -57,9 +52,7 @@ pub fn load(webview: &ICoreWebView2, social: bool) -> Result<()> {
 
             let parsed = parse(content);
 
-            unsafe {
-                webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(parsed).as_ptr()), None)?
-            }
+            unsafe { webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(parsed).as_ptr()), None)? }
         }
     }
 

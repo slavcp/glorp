@@ -52,14 +52,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
 
     let fps_limit = crate::CONFIG.lock().unwrap().get::<u64>("fpsLimit").unwrap_or(0);
     unsafe {
-        if let Ok(mapping) = CreateFileMappingW(
-            INVALID_HANDLE_VALUE,
-            None,
-            PAGE_READWRITE,
-            0,
-            24,
-            w!("GlorpFrameTiming"),
-        ) {
+        if let Ok(mapping) = CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, 24, w!("GlorpFrameTiming")) {
             let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
             if !view.Value.is_null() {
                 std::ptr::write_bytes(view.Value as *mut u8, 0, 24);
@@ -82,17 +75,9 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     };
 
     if config_bool("hardFlip", true) {
-        fs::rename(
-            webview2_folder.join("OLD_vk_swiftshader.dll"),
-            webview2_folder.join("vk_swiftshader.dll"),
-        )
-        .ok();
+        fs::rename(webview2_folder.join("OLD_vk_swiftshader.dll"), webview2_folder.join("vk_swiftshader.dll")).ok();
     } else {
-        fs::rename(
-            webview2_folder.join("vk_swiftshader.dll"),
-            webview2_folder.join("OLD_vk_swiftshader.dll"),
-        )
-        .ok();
+        fs::rename(webview2_folder.join("vk_swiftshader.dll"), webview2_folder.join("OLD_vk_swiftshader.dll")).ok();
     }
 
     let main_window = window::Window::new_core(&start_mode, args, env, state);
@@ -170,18 +155,10 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             args.TryGetWebMessageAsString(&mut message).ok();
         }
         let message_string = take_pwstr(message);
-        handlers::handle_web_message(
-            &webview,
-            &main_window_for_message,
-            &discord_client_for_message,
-            &message_string,
-        )
+        handlers::handle_web_message(&webview, &main_window_for_message, &discord_client_for_message, &message_string)
     }));
     unsafe {
-        main_window
-            .webview
-            .add_WebMessageReceived(&web_message_handler, &mut web_message_token)
-            .ok();
+        main_window.webview.add_WebMessageReceived(&web_message_handler, &mut web_message_token).ok();
     }
 
     unsafe {

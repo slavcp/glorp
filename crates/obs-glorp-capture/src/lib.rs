@@ -1,13 +1,10 @@
 //! OBS source plugin — "Glorp Capture" (consumer side of the shared-texture capture pair).
 //!
 //! Loaded by OBS into `obs64.exe`. In `obs_module_load` we register an input video source that:
-//!   1. discovers the producer (the WebView2 GPU process running `render.dll`) via §10 scan,
+//!   1. discovers the producer (the WebView2 GPU process running `render.dll`)
 //!   2. opens the producer's named shared texture on OBS's own D3D11 device
 //!      (`gs_get_device_obj` -> `ID3D11Device1::OpenSharedResourceByName` -> `gs_texture_wrap_obj`),
 //!   3. renders it each video frame with the stock draw effect (zero-copy, GPU-only).
-//!
-//! Discovery + reopening are driven from `video_tick`, so the source also self-heals when the
-//! GPU process is respawned under a new PID (§11).
 
 #![allow(non_snake_case, unsafe_op_in_unsafe_fn)]
 

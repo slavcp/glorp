@@ -110,14 +110,7 @@ pub fn capture_init() {
         let info_name = wide(&format!("GlorpCaptureInfo_{pid}"));
         let event_name = wide(&format!("GlorpCaptureFrame_{pid}"));
 
-        let mapping = match CreateFileMappingW(
-            INVALID_HANDLE_VALUE,
-            None,
-            PAGE_READWRITE,
-            0,
-            INFO_SIZE as u32,
-            PCWSTR(info_name.as_ptr()),
-        ) {
+        let mapping = match CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, INFO_SIZE as u32, PCWSTR(info_name.as_ptr())) {
             Ok(m) => m,
             Err(e) => {
                 crate::debug_print(format!("capture: CreateFileMappingW failed: {e}"));
@@ -176,10 +169,7 @@ pub fn capture_on_swapchain(_swapchain: *mut c_void, device: Option<ID3D11Device
     if let Ok(mut guard) = CAPTURE.lock()
         && let Some(c) = guard.as_mut()
     {
-        crate::debug_print(format!(
-            "capture: swap chain changed, device available: {}",
-            device.is_some()
-        ));
+        crate::debug_print(format!("capture: swap chain changed, device available: {}", device.is_some()));
         c.release_shared();
         if device.is_some() {
             c.device = device;

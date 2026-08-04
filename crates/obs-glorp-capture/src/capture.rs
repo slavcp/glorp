@@ -1,11 +1,3 @@
-//! Consumer side of the OBS shared-texture capture — discovering the producer and driving the
-//! shared control block.
-//!
-//! The producer is the **WebView2 GPU process** running `render.dll` (as `vk_swiftshader.dll`).
-//! Because only that process ever publishes `GlorpCaptureInfo_<pid>`, scanning every
-//! `msedgewebview2.exe` and validating magic/version disambiguates the GPU process out of the
-//! crowd — and naturally re-discovers it after a GPU-process crash/respawn under a new PID.
-
 #![allow(non_camel_case_types, dead_code)]
 
 use windows::{
@@ -110,12 +102,7 @@ fn try_attach(pid: u32) -> Option<Session> {
         // Frame event is optional for correctness (we poll frame_counter), so a failure here is
         // non-fatal — pass a null/invalid handle.
         let event_name = wide(&format!("GlorpCaptureFrame_{pid}"));
-        let frame_event = OpenEventW(
-            SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE),
-            false,
-            PCWSTR(event_name.as_ptr()),
-        )
-        .unwrap_or_default();
+        let frame_event = OpenEventW(SYNCHRONIZATION_ACCESS_RIGHTS(SYNCHRONIZE), false, PCWSTR(event_name.as_ptr())).unwrap_or_default();
 
         Some(Session {
             pid,

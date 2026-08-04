@@ -18,13 +18,9 @@ impl Config {
     pub fn load() -> Config {
         fn load_defaults() -> HashMap<String, Value> {
             let defaults_json = include_str!("./cSettings.json");
-            let settings_info: HashMap<String, SettingInfo> =
-                serde_json::from_str(defaults_json).unwrap_or_else(|_| HashMap::new());
+            let settings_info: HashMap<String, SettingInfo> = serde_json::from_str(defaults_json).unwrap_or_else(|_| HashMap::new());
 
-            settings_info
-                .iter()
-                .map(|(key, info)| (key.clone(), info.default_value.clone()))
-                .collect()
+            settings_info.iter().map(|(key, info)| (key.clone(), info.default_value.clone())).collect()
         }
         let client_dir: String = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp";
         let settings_path: String = client_dir + "\\settings.json";
@@ -35,18 +31,10 @@ impl Config {
         }
 
         // recursively create dir
-        let mut settings_file = OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .truncate(false)
-            .open(&settings_path)
-            .unwrap();
+        let mut settings_file = OpenOptions::new().write(true).read(true).create(true).truncate(false).open(&settings_path).unwrap();
 
         if settings_file.metadata().unwrap().len() == 0 {
-            settings_file
-                .write_all(serde_json::to_string_pretty(&defaults).unwrap().as_bytes())
-                .ok();
+            settings_file.write_all(serde_json::to_string_pretty(&defaults).unwrap().as_bytes()).ok();
         }
 
         let mut settings_string = String::new();
@@ -70,9 +58,7 @@ impl Config {
     }
 
     pub fn get<T: serde::de::DeserializeOwned>(&self, setting: &str) -> Option<T> {
-        self.data
-            .get(setting)
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
+        self.data.get(setting).and_then(|v| serde_json::from_value(v.clone()).ok())
     }
 
     pub fn set<T: serde::Serialize>(&mut self, setting: &str, value: T) {

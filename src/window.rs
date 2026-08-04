@@ -54,12 +54,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new_core(
-        start_mode: &str,
-        args: String,
-        env: Option<ICoreWebView2Environment>,
-        state: Option<WindowState>,
-    ) -> Self {
+    pub fn new_core(start_mode: &str, args: String, env: Option<ICoreWebView2Environment>, state: Option<WindowState>) -> Self {
         let (hwnd, state) = create_window(start_mode, false, state);
         let (controller, env, webview) = create_webview2(hwnd, args, env);
         let widget_wnd = unsafe {
@@ -268,13 +263,9 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
             let w = rect.right - rect.left;
             let h = rect.bottom - rect.top;
 
-            let clamped_x = rect
-                .left
-                .clamp(monitor.rcWork.left, monitor.rcWork.left.max(monitor.rcWork.right - w));
+            let clamped_x = rect.left.clamp(monitor.rcWork.left, monitor.rcWork.left.max(monitor.rcWork.right - w));
 
-            let clamped_y = rect
-                .top
-                .clamp(monitor.rcWork.top, monitor.rcWork.top.max(monitor.rcWork.bottom - h));
+            let clamped_y = rect.top.clamp(monitor.rcWork.top, monitor.rcWork.top.max(monitor.rcWork.bottom - h));
 
             (clamped_x, clamped_y, w, h)
         };
@@ -303,12 +294,8 @@ pub fn create_window(start_mode: &str, is_subwindow: bool, init_state: Option<Wi
     }
 }
 
-pub fn create_core_webview2_controller_async<F>(
-    hwnd: HWND,
-    env: ICoreWebView2Environment,
-    state: WindowState,
-    callback: F,
-) where
+pub fn create_core_webview2_controller_async<F>(hwnd: HWND, env: ICoreWebView2Environment, state: WindowState, callback: F)
+where
     F: FnOnce(std::result::Result<ICoreWebView2Controller, Error>) + Send + 'static,
 {
     let env_ = env.clone();
@@ -363,10 +350,7 @@ pub fn create_webview2(
                 Box::new(move |environment_created_handler| {
                     CreateCoreWebView2EnvironmentWithOptions(
                         PCWSTR(utils::create_utf_string(current_dir.to_string_lossy() + "\\\\WebView2").as_ptr()),
-                        PCWSTR(
-                            utils::create_utf_string(env::var("USERPROFILE").unwrap() + "\\\\Documents\\\\glorp")
-                                .as_ptr(),
-                        ),
+                        PCWSTR(utils::create_utf_string(env::var("USERPROFILE").unwrap() + "\\\\Documents\\\\glorp").as_ptr()),
                         &ICoreWebView2EnvironmentOptions::from(options),
                         &environment_created_handler,
                     )
@@ -392,10 +376,7 @@ pub fn create_webview2(
             let (tx, rx) = sync::mpsc::channel();
 
             CreateCoreWebView2ControllerCompletedHandler::wait_for_async_operation(
-                Box::new(move |handler| {
-                    env.CreateCoreWebView2Controller(hwnd, &handler)
-                        .map_err(webview2_com::Error::WindowsError)
-                }),
+                Box::new(move |handler| env.CreateCoreWebView2Controller(hwnd, &handler).map_err(webview2_com::Error::WindowsError)),
                 Box::new(move |error, controller| {
                     error?;
                     let controller = controller.ok_or_else(|| windows::core::Error::from(E_POINTER))?;
@@ -438,14 +419,7 @@ pub fn set_wv_settings(webview: &ICoreWebView2, controller: &ICoreWebView2Contro
         let controller = controller.cast::<ICoreWebView2Controller4>().unwrap();
 
         controller.SetAllowExternalDrop(false).ok();
-        controller
-            .SetDefaultBackgroundColor(COREWEBVIEW2_COLOR {
-                A: 255,
-                R: 0,
-                G: 0,
-                B: 0,
-            })
-            .ok();
+        controller.SetDefaultBackgroundColor(COREWEBVIEW2_COLOR { A: 255, R: 0, G: 0, B: 0 }).ok();
         let webview2_settings = webview.Settings().unwrap().cast::<ICoreWebView2Settings9>().unwrap();
 
         let _ = webview2_settings.SetIsReputationCheckingRequired(false);
@@ -499,10 +473,7 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                 window
                     .webview
                     .ExecuteScript(
-                        PCWSTR(
-                            utils::create_utf_string(format!("window.glorp.handleMouseWheel({})", scroll_amount))
-                                .as_ptr(),
-                        ),
+                        PCWSTR(utils::create_utf_string(format!("window.glorp.handleMouseWheel({})", scroll_amount)).as_ptr()),
                         None,
                     )
                     .ok();
@@ -543,10 +514,7 @@ unsafe extern "system" fn wnd_proc_main(hwnd: HWND, msg: u32, wparam: WPARAM, lp
                     string = serde_json::to_string(&string).unwrap_or_else(|_| String::new());
                     window
                         .webview
-                        .ExecuteScript(
-                            PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs({})", string)).as_ptr()),
-                            None,
-                        )
+                        .ExecuteScript(PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs({})", string)).as_ptr()), None)
                         .ok();
                 }
             }
@@ -601,10 +569,7 @@ unsafe extern "system" fn wnd_proc_subwindow(hwnd: HWND, msg: u32, wparam: WPARA
                 if let Ok(string) = String::from_utf8(data.to_vec()) {
                     window
                         .webview
-                        .ExecuteScript(
-                            PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs('{}')", string)).as_ptr()),
-                            None,
-                        )
+                        .ExecuteScript(PCWSTR(utils::create_utf_string(format!("window.glorp.parseArgs('{}')", string)).as_ptr()), None)
                         .ok();
                 }
             }

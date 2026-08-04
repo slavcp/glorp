@@ -89,9 +89,7 @@ pub fn HIWORD(l: usize) -> usize {
 }
 
 pub fn settings_dir() -> path::PathBuf {
-    path::PathBuf::from(env::var("USERPROFILE").unwrap())
-        .join("Documents")
-        .join("glorp")
+    path::PathBuf::from(env::var("USERPROFILE").unwrap()).join("Documents").join("glorp")
 }
 
 pub fn config_bool(setting: &str, default: bool) -> bool {
@@ -99,11 +97,7 @@ pub fn config_bool(setting: &str, default: bool) -> bool {
 }
 
 pub fn config_string(setting: &str, default: impl Into<String>) -> String {
-    CONFIG
-        .lock()
-        .unwrap()
-        .get::<String>(setting)
-        .unwrap_or_else(|| default.into())
+    CONFIG.lock().unwrap().get::<String>(setting).unwrap_or_else(|| default.into())
 }
 
 pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
@@ -134,11 +128,7 @@ pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {
         }
     }
     unsafe {
-        if let BOOL(1) = EnumChildWindows(
-            Some(parent),
-            Some(enum_child_proc),
-            LPARAM(&mut data as *mut (HWND, &str) as _),
-        ) {
+        if let BOOL(1) = EnumChildWindows(Some(parent), Some(enum_child_proc), LPARAM(&mut data as *mut (HWND, &str) as _)) {
             eprint!("Could not find child window")
         }
 
@@ -166,11 +156,7 @@ pub fn kill(wanted_process_name: &str) {
 
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
-                let len = entry
-                    .szExeFile
-                    .iter()
-                    .position(|&c| c == 0)
-                    .unwrap_or(entry.szExeFile.len());
+                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
                 if entry.szExeFile[..len].windows(target_len).any(|w| w == target_slice)
                     && entry.th32ProcessID != current_pid
                     && let Ok(process) = OpenProcess(PROCESS_TERMINATE, false, entry.th32ProcessID)

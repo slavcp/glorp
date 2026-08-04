@@ -52,9 +52,7 @@ static SPACE_UP: INPUT = INPUT {
 static SCROLL_SENDER: LazyLock<Sender<()>> = LazyLock::new(|| {
     let (tx, rx) = channel();
     thread::spawn(move || {
-        debug_print(format!("webview: rampboost input thread started id={}", unsafe {
-            GetCurrentThreadId()
-        }));
+        debug_print(format!("webview: rampboost input thread started id={}", unsafe { GetCurrentThreadId() }));
         while rx.recv().is_ok() {
             unsafe {
                 let down = SendInput(&[SPACE_DOWN], mem::size_of::<INPUT>() as i32);
@@ -104,26 +102,16 @@ impl ChromeWindows {
             // set proc for chrome_window
             let original_proc_1 = GetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC);
             debug_print(format!("webview: original chrome wndproc={original_proc_1:#x}"));
-            PREV_WNDPROC_1 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
-                original_proc_1,
-            );
+            PREV_WNDPROC_1 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(original_proc_1);
             let previous = SetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC, wnd_proc_1 as *const () as isize);
             debug_print(format!("webview: installed chrome wndproc, previous={previous:#x}"));
 
             // set proc for chrome_renderwidget
             let original_proc_2 = GetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC);
             debug_print(format!("webview: original render widget wndproc={original_proc_2:#x}"));
-            PREV_WNDPROC_2 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(
-                original_proc_2,
-            );
-            let previous = SetWindowLongPtrW(
-                self.chrome_renderwidget,
-                GWLP_WNDPROC,
-                wnd_proc_widget as *const () as isize,
-            );
-            debug_print(format!(
-                "webview: installed render widget wndproc, previous={previous:#x}"
-            ));
+            PREV_WNDPROC_2 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(original_proc_2);
+            let previous = SetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC, wnd_proc_widget as *const () as isize);
+            debug_print(format!("webview: installed render widget wndproc, previous={previous:#x}"));
         }
     }
 
@@ -131,15 +119,8 @@ impl ChromeWindows {
         unsafe {
             let mut data = (HWND::default(), class_name);
 
-            if let BOOL(1) = EnumChildWindows(
-                Some(parent),
-                Some(find_child_window),
-                LPARAM(&mut data as *mut (HWND, &str) as _),
-            ) {
-                debug_print(format!(
-                    "webview: EnumChildWindows failed parent={:?} class={class_name}",
-                    parent
-                ));
+            if let BOOL(1) = EnumChildWindows(Some(parent), Some(find_child_window), LPARAM(&mut data as *mut (HWND, &str) as _)) {
+                debug_print(format!("webview: EnumChildWindows failed parent={:?} class={class_name}", parent));
             }
 
             data.0
@@ -221,10 +202,7 @@ fn attach() {
 
         thread::spawn(move || {
             THREAD_ID.store(GetCurrentThreadId(), sync::atomic::Ordering::Relaxed);
-            debug_print(format!(
-                "webview: WinEvent message thread started id={}",
-                GetCurrentThreadId()
-            ));
+            debug_print(format!("webview: WinEvent message thread started id={}", GetCurrentThreadId()));
             let mut msg: MSG = MSG::default();
             // check whenever a window is created if it has the attribute Chrome.WindowTranslucent (the one that warns about pointer lock) and if it does, destroy it
             let hook = SetWinEventHook(
@@ -307,23 +285,12 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN
-            | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => CallWindowProcW(
-                PREV_WNDPROC_1,
-                window,
-                message,
-                WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                lparam,
-            ),
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
+                CallWindowProcW(PREV_WNDPROC_1, window, message, WPARAM(wparam.0 & !MK_LBUTTON.0 as usize), lparam)
+            }
             WM_MOUSEMOVE => {
                 if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
-                    return CallWindowProcW(
-                        PREV_WNDPROC_1,
-                        window,
-                        message,
-                        WPARAM(wparam.0 & !MK_LBUTTON.0 as usize),
-                        lparam,
-                    );
+                    return CallWindowProcW(PREV_WNDPROC_1, window, message, WPARAM(wparam.0 & !MK_LBUTTON.0 as usize), lparam);
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -387,12 +354,7 @@ unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WP
 }
 
 #[unsafe(no_mangle)]
-unsafe extern "system" fn wnd_proc_widget_rampboost(
-    window: HWND,
-    message: u32,
-    wparam: WPARAM,
-    lparam: LPARAM,
-) -> LRESULT {
+unsafe extern "system" fn wnd_proc_widget_rampboost(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         match message {
             WM_MOUSEWHEEL | WM_MOUSEHWHEEL | WM_POINTERWHEEL | WM_POINTERHWHEEL => {
@@ -419,15 +381,7 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(
     }
 }
 
-unsafe extern "system" fn window_event_proc(
-    _hook: HWINEVENTHOOK,
-    _event: u32,
-    hwnd: HWND,
-    _id_object: i32,
-    _id_child: i32,
-    _thread: u32,
-    _time: u32,
-) {
+unsafe extern "system" fn window_event_proc(_hook: HWINEVENTHOOK, _event: u32, hwnd: HWND, _id_object: i32, _id_child: i32, _thread: u32, _time: u32) {
     unsafe {
         let prop = GetPropW(hwnd, w!("Chrome.WindowTranslucent"));
         if !prop.is_invalid() {

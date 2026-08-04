@@ -56,8 +56,7 @@ fn main() {
                 if let Some(new_js) = modules::lifecycle::check_minor_update() {
                     _tx.send(new_js).ok();
                     unsafe {
-                        PostThreadMessageW(main_thread_id, constants::WM_MINOR_UPDATE_READY, WPARAM(0), LPARAM(0))
-                            .unwrap();
+                        PostThreadMessageW(main_thread_id, constants::WM_MINOR_UPDATE_READY, WPARAM(0), LPARAM(0)).unwrap();
                     }
                 }
             });
@@ -85,9 +84,7 @@ fn main() {
             unsafe {
                 window
                     .webview
-                    .RemoveScriptToExecuteOnDocumentCreated(PCWSTR(
-                        utils::create_utf_string(&*SCRIPT_ID.lock().unwrap()).as_ptr(),
-                    ))
+                    .RemoveScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(&*SCRIPT_ID.lock().unwrap()).as_ptr()))
                     .ok();
                 window
                     .webview
@@ -109,10 +106,7 @@ fn main() {
 
                     let payload = format!("{{\"fpsInfo\":{}}}", fps);
                     unsafe {
-                        window
-                            .webview
-                            .PostWebMessageAsJson(PCWSTR(utils::create_utf_string(payload).as_ptr()))
-                            .ok();
+                        window.webview.PostWebMessageAsJson(PCWSTR(utils::create_utf_string(payload).as_ptr())).ok();
                     }
                 }
             }

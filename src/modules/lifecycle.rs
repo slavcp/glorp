@@ -17,12 +17,7 @@ pub fn read_js_bundle() -> io::Result<String> {
     let dir = current_exe.parent().unwrap();
 
     let frontend_path = dir.join("resources/bundle.js");
-    let mut js_bundle = fs::OpenOptions::new()
-        .write(true)
-        .read(true)
-        .create(true)
-        .truncate(false)
-        .open(&frontend_path)?;
+    let mut js_bundle = fs::OpenOptions::new().write(true).read(true).create(true).truncate(false).open(&frontend_path)?;
 
     if let Ok(metadata) = js_bundle.metadata()
         && metadata.len() > 0
@@ -50,8 +45,7 @@ pub fn check_minor_update() -> Option<String> {
     };
     let resouce_folder = env::current_exe().unwrap().parent().unwrap().join("resources");
 
-    let current_ver =
-        fs::read_to_string(resouce_folder.join("bundle_version")).unwrap_or_else(|_| String::from("0.0.0"));
+    let current_ver = fs::read_to_string(resouce_folder.join("bundle_version")).unwrap_or_else(|_| String::from("0.0.0"));
 
     let parsed_current_ver = match semver::Version::parse(current_ver.trim()) {
         Ok(v) => v,
@@ -185,10 +179,7 @@ pub fn set_panic_hook() -> io::Result<()> {
             Message: {}\n\
             \nStack Trace:\n{}\n",
             {
-                let loc_string = panic_info
-                    .location()
-                    .map(|loc| loc.to_string())
-                    .unwrap_or_else(|| "Unknown".to_string());
+                let loc_string = panic_info.location().map(|loc| loc.to_string()).unwrap_or_else(|| "Unknown".to_string());
                 loc_string.to_string()
             },
             panic_info
@@ -235,12 +226,7 @@ pub fn set_panic_hook() -> io::Result<()> {
 
 pub fn register_instance() {
     unsafe {
-        CreateMutexW(
-            None,
-            false,
-            PCWSTR(create_utf_string(constants::INSTANCE_MUTEX).as_ptr()),
-        )
-        .ok();
+        CreateMutexW(None, false, PCWSTR(create_utf_string(constants::INSTANCE_MUTEX).as_ptr())).ok();
 
         if GetLastError() == ERROR_ALREADY_EXISTS {
             eprintln!("Instance already running");
@@ -256,12 +242,7 @@ pub fn register_instance() {
                 lpData: data_bytes.as_ptr() as *mut c_void,
             };
             if let Ok(hwnd) = FindWindowExW(None, None, w!("krunker_webview"), PCWSTR::null()) {
-                SendMessageW(
-                    hwnd,
-                    WM_COPYDATA,
-                    Some(WPARAM(0)),
-                    Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)),
-                );
+                SendMessageW(hwnd, WM_COPYDATA, Some(WPARAM(0)), Some(LPARAM(&copy_data as *const COPYDATASTRUCT as isize)));
             } else {
                 SendMessageW(
                     FindWindowW(w!("krunker_webview_subwindow"), PCWSTR::null()).unwrap(),

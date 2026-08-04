@@ -22,24 +22,14 @@ fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2) ->
                 swaps.extend(sub_swaps);
             }
         } else if file_type.is_file() {
-            let relative_path = entry
-                .path()
-                .strip_prefix(&root_dir)
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .replace("\\", "/");
+            let relative_path = entry.path().strip_prefix(&root_dir).unwrap().to_str().unwrap().replace("\\", "/");
             unsafe {
-                let url = (
-                    format!("*://krunker.io/{}*", relative_path),
-                    format!("*://*.krunker.io/{}*", relative_path),
-                );
+                let url = (format!("*://krunker.io/{}*", relative_path), format!("*://*.krunker.io/{}*", relative_path));
 
                 for url_part in [&url.0, &url.1] {
-                    if let Err(e) = window.AddWebResourceRequestedFilter(
-                        PCWSTR(utils::create_utf_string(url_part).as_ptr()),
-                        COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-                    ) {
+                    if let Err(e) =
+                        window.AddWebResourceRequestedFilter(PCWSTR(utils::create_utf_string(url_part).as_ptr()), COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL)
+                    {
                         eprintln!("Failed to add web resource requested filter: {}", e);
                     }
                 }
@@ -47,9 +37,7 @@ fn recurse_swap(root_dir: PathBuf, swap_dir: PathBuf, window: &ICoreWebView2) ->
             unsafe {
                 let file_content = fs::read(entry.path()).unwrap();
                 let stream = CreateStreamOnHGlobal(HGLOBAL::default(), true).unwrap();
-                stream
-                    .Write(file_content.as_ptr() as *const _, file_content.len() as u32, None)
-                    .unwrap();
+                stream.Write(file_content.as_ptr() as *const _, file_content.len() as u32, None).unwrap();
                 stream.Seek(0, STREAM_SEEK_SET, None).ok();
                 swaps.insert(relative_path, stream);
             }

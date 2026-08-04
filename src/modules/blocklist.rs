@@ -15,10 +15,7 @@ struct UserBlocklist {
 fn load_defaults(webview_window: &ICoreWebView2, defaults: Vec<String>) {
     for url in defaults {
         unsafe {
-            let _ = webview_window.AddWebResourceRequestedFilter(
-                PCWSTR(utils::create_utf_string(url).as_ptr()),
-                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-            );
+            let _ = webview_window.AddWebResourceRequestedFilter(PCWSTR(utils::create_utf_string(url).as_ptr()), COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
         };
     }
 }
@@ -37,13 +34,7 @@ pub fn load(webview_window: &ICoreWebView2) {
 
     let defaults: Vec<String> = serde_json::from_str(constants::DEFAULT_BLOCKLIST).unwrap();
     let blocklist_path: String = env::var("USERPROFILE").unwrap() + "\\Documents\\glorp\\user_blocklist.json";
-    let mut blocklist_file = if let Ok(file) = fs::OpenOptions::new()
-        .write(true)
-        .read(true)
-        .create(true)
-        .truncate(false)
-        .open(&blocklist_path)
-    {
+    let mut blocklist_file = if let Ok(file) = fs::OpenOptions::new().write(true).read(true).create(true).truncate(false).open(&blocklist_path) {
         file
     } else {
         eprintln!("can't open blocklist file");
@@ -83,10 +74,7 @@ pub fn load(webview_window: &ICoreWebView2) {
 
     for url in final_url_blocklist {
         unsafe {
-            let _ = webview_window.AddWebResourceRequestedFilter(
-                PCWSTR(utils::create_utf_string(url).as_ptr()),
-                COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
-            );
+            let _ = webview_window.AddWebResourceRequestedFilter(PCWSTR(utils::create_utf_string(url).as_ptr()), COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
         };
     }
 }
