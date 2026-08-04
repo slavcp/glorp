@@ -73,6 +73,7 @@ struct Capture {
 
 impl Drop for Capture {
     fn drop(&mut self) {
+        crate::debug_print(format!("capture: dropping state for pid {}", self.pid));
         unsafe {
             let mapping = HANDLE(self.mapping as *mut _);
             if !mapping.0.is_null() {
@@ -94,6 +95,9 @@ impl Capture {
     /// Close the published name-handle and release the shared texture so it is re-created lazily
     /// (first use, or on the current swap chain / dims).
     fn release_shared(&mut self) {
+        if self.shared_handle.is_some() || self.shared_tex.is_some() {
+            crate::debug_print("capture: releasing published shared texture");
+        }
         if let Some(h) = self.shared_handle.take() {
             unsafe {
                 let _ = CloseHandle(HANDLE(h as *mut _));
@@ -118,6 +122,7 @@ const INFO_SIZE: usize = 64;
 /// frame-timing feature keeps working. Called from `attach()`.
 pub fn capture_init() {
     let pid = unsafe { GetCurrentProcessId() };
+    crate::debug_print(format!("capture: initialization started for pid {pid}"));
     unsafe {
         let info_name = wide(&format!("GlorpCaptureInfo_{pid}"));
         let event_name = wide(&format!("GlorpCaptureFrame_{pid}"));
@@ -208,7 +213,10 @@ fn ensure_shared_tex(c: &mut Capture, w: u32, h: u32, format: u32) {
 
     c.release_shared();
 
-    let Some(device) = c.device.as_ref() else { return };
+    let Some(device) = c.device.as_ref() else {
+        crate::debug_print("capture: shared texture creation deferred because no D3D11 device is available");
+        return;
+    };
 
     let desc = D3D11_TEXTURE2D_DESC {
         Width: w,
@@ -227,13 +235,19 @@ fn ensure_shared_tex(c: &mut Capture, w: u32, h: u32, format: u32) {
         crate::debug_print("capture: CreateTexture2D failed");
         return;
     }
-    let Some(tex) = tex else { return };
+    let Some(tex) = tex else {
+        crate::debug_print("capture: CreateTexture2D succeeded without returning a texture");
+        return;
+    };
 
     // Publish a name so the OBS process can open it by name (raw handles never cross processes).
     let tex_name = wide(&format!("GlorpCaptureTex_{}", c.pid));
     let res: IDXGIResource1 = match tex.cast() {
         Ok(r) => r,
-        Err(_) => return,
+        Err(error) => {
+            crate::debug_print(format!("capture: texture cast to IDXGIResource1 failed: {error}"));
+            return;
+        }
     };
     match unsafe { res.CreateSharedHandle(None, GENERIC_ALL.0, PCWSTR(tex_name.as_ptr())) } {
         Ok(h) => {
@@ -332,8 +346,10 @@ pub fn capture_on_present(swapchain: *mut c_void) {
 /// Best-effort cleanup on `DLL_PROCESS_DETACH`. Dropping the state closes the kernel handles and
 /// releases the COM objects; named objects vanish when their last handle closes (process exit too).
 pub fn capture_cleanup() {
+    crate::debug_print("capture: cleanup started");
     if let Ok(mut guard) = CAPTURE.lock() {
         *guard = None;
     }
     INFO_PTR.store(0, Ordering::Release);
+    crate::debug_print("capture: cleanup completed");
 }
