@@ -9,11 +9,14 @@ use std::{
     },
     thread,
 };
-use windows::Win32::UI::Input::*;
 use windows::Win32::{
     Foundation::*,
-    System::{Diagnostics::Debug::*, SystemServices::*, Threading::*},
-    UI::{Accessibility::*, Input::KeyboardAndMouse::*, WindowsAndMessaging::*},
+    System::{Diagnostics::Debug::*, LibraryLoader::GetModuleHandleW, SystemServices::*, Threading::*},
+    UI::{
+        Accessibility::*,
+        Input::{KeyboardAndMouse::*, *},
+        WindowsAndMessaging::*,
+    },
 };
 use windows::core::*;
 
@@ -78,6 +81,53 @@ static HOOK_HANDLE: AtomicUsize = AtomicUsize::new(0);
 struct ChromeWindows {
     chrome_window: HWND,
     chrome_renderwidget: HWND,
+}
+
+unsafe extern "system" fn dummy_wnd_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
+}
+
+fn spawn_injected_audio_window() {
+    let hinstance = unsafe { GetModuleHandleW(None).unwrap().into() };
+
+    let class_name = w!("Audio_Target_Class");
+    let wc = WNDCLASSW {
+        lpfnWndProc: Some(dummy_wnd_proc),
+        hInstance: hinstance,
+        lpszClassName: class_name,
+        ..Default::default()
+    };
+    unsafe { RegisterClassW(&wc) };
+
+    let hwnd = unsafe {
+        CreateWindowExW(
+            WS_EX_LAYERED,
+            class_name,
+            w!("audio window"),
+            WS_POPUP | WS_VISIBLE,
+            0,
+            0,
+            100,
+            100,
+            None,
+            None,
+            Some(hinstance),
+            None,
+        )
+        .unwrap()
+    };
+
+    unsafe {
+        // makes window transparent
+        let _ = SetLayeredWindowAttributes(hwnd, COLORREF(0), 0, LWA_ALPHA);
+
+        // set an invisible owner window
+        // drops it from the taskbar
+        let desktop_hwnd = GetDesktopWindow();
+        SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, desktop_hwnd.0 as isize);
+    }
+
+    std::thread::park()
 }
 
 impl ChromeWindows {
@@ -198,6 +248,10 @@ fn attach() {
 
                 Sleep(5000);
             }
+        });
+
+        thread::spawn(move || {
+            spawn_injected_audio_window();
         });
 
         thread::spawn(move || {
