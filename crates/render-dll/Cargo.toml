@@ -8,7 +8,7 @@ name = "render"
 crate-type = ["cdylib"]
 
 [dependencies]
-windows = { version = "0.62", features = [
+windows = { version = "0.62.2", features = [
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_Dxgi_Common",
