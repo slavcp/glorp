@@ -58,7 +58,7 @@
 	"obsCapturePlugin": {
 		"name": "OBS Capture Plugin",
 		"id": "obsCapturePlugin",
-		"description": "Install the Glorp Capture source into OBS. This changes the OBS installation and may require administrator permission.",
+		"description": "Installs Glorp Capture as a source into OBS. Requires OBS to be closed and may require administrator permission. \n To record audio add an 'Application Audio capture and select the 'glorp audio window'",
 		"type": "checkbox",
 		"category": "Main",
 		"defaultValue": false
@@ -132,15 +132,6 @@
 		"category": "UI",
 		"defaultValue": true
 	},
-	"renderStats": {
-		"name": "Render Fps",
-		"description": "makes fps counter show how many times an image is presented to the screen, not how many times the game loop runs \n",
-		"id": "renderStats",
-		"type": "checkbox",
-		"category": "UI",
-		"defaultValue": false,
-		"needsRestart": true
-	},
 	"menuTimer": {
 		"name": "Menu Timer",
 		"id": "menuTimer",
@@ -206,21 +197,41 @@
 		"defaultValue": true,
 		"needsRefresh": true
 	},
+	"renderStats": {
+		"name": "Show Present FPS Counter",
+		"description": "Makes another FPS counter that shows how many frames are presented to the screen next to the default one \n",
+		"id": "renderStats",
+		"type": "checkbox",
+		"category": "Tweaks",
+		"defaultValue": false,
+		"needsRestart": true
+	},
+	"gameFpsLimit": {
+		"name": "Game FPS Limit",
+		"description": "The maximum FPS the game logic will run at \n0 = uncapped",
+		"id": "gameFpsLimit",
+		"type": "slider",
+		"category": "Tweaks",
+		"defaultValue": 0,
+		"min": 0,
+		"max": 2000,
+		"step": 5
+	},
 	"fpsLimit": {
-		"name": "FPS Limit",
-		"description": "Limits displayed frames. Set to 0 for unlimited.",
-		"id": "fpsLimit",
+		"name": "Present FPS Limit",
+		"description": "The amount of frames that get presented to the screen \nalways ≤ than the FPS outputted by the game\n displayed only with the 'Show Render FPS Counter' setting \n0 = uncapped .",
+		"id": "RenderFpsLimit",
 		"type": "slider",
 		"category": "Tweaks",
 		"defaultValue": 0,
 		"min": 0,
 		"max": 1000,
-		"step": 1
+		"step": 5
 	},
 	"throttle": {
 		"name": "CPU Throttling",
 		"id": "throttle",
-		"description": "Throttle CPU, value is the multiplier (2 is 50%), ONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
+		"description": "Throttle CPU, value is the multiplier (2 is 50%), \nONLY USE IF YOUR GAME EXPERIENCES INSTABILITY",
 		"type": "slider",
 		"min": 1,
 		"max": 3,
@@ -248,14 +259,5 @@
 		"defaultValue": "Normal",
 		"needsRestart": true,
 		"options": ["High", "Above Normal", "Normal", "Below Normal", "Low", "Idle"]
-	},
-	"hardFlip": {
-		"name": "Hook DXGI Swapchain Creation",
-		"id": "hardFlip",
-		"description": "Reduce latency by tweaking swapchain settings; keep on unless experiencing crashes",
-		"type": "checkbox",
-		"category": "Tweaks",
-		"defaultValue": true,
-		"needsRestart": true
 	}
 }

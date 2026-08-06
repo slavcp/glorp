@@ -1,4 +1,4 @@
-use crate::utils::{config_bool, config_string};
+use crate::utils::config;
 use crate::{constants, handlers, modules, utils, window};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use std::{
@@ -50,7 +50,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     webview2_folder.pop();
     webview2_folder = webview2_folder.join("WebView2");
 
-    let fps_limit = crate::CONFIG.lock().unwrap().get::<u64>("fpsLimit").unwrap_or(0);
+    let fps_limit = config("RenderFpsLimit", 0);
     unsafe {
         if let Ok(mapping) = CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, 24, w!("GlorpFrameTiming")) {
             let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
@@ -63,34 +63,30 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     }
 
     let mut args = modules::flaglist::load();
-    if config_bool("uncapFps", true) {
+    if config("uncapFps", true) {
         args.push_str(" --disable-frame-rate-limit");
     }
 
-    let start_mode = config_string("startMode", "Remember Previous");
+    let start_mode = config("startMode", "Remember Previous".to_string());
     let state = if start_mode == "Remember Previous" {
-        crate::CONFIG.lock().unwrap().get::<window::WindowState>("lastPosition")
+        config("lastPosition", None::<window::WindowState>)
     } else {
         None
     };
 
-    if config_bool("hardFlip", true) {
-        fs::rename(webview2_folder.join("OLD_vk_swiftshader.dll"), webview2_folder.join("vk_swiftshader.dll")).ok();
-    } else {
-        fs::rename(webview2_folder.join("vk_swiftshader.dll"), webview2_folder.join("OLD_vk_swiftshader.dll")).ok();
-    }
+    fs::rename(webview2_folder.join("OLD_vk_swiftshader.dll"), webview2_folder.join("vk_swiftshader.dll")).ok();
 
     let main_window = window::Window::new_core(&start_mode, args, env, state);
     let discord_client: Arc<Mutex<Option<DiscordIpcClient>>> = Arc::new(Mutex::new(None));
-    if config_bool("discordRPC", true) {
+    if config("discordRPC", true) {
         let mut client = DiscordIpcClient::new(constants::DISCORD_CLIENT_ID);
         client.connect().ok();
         *discord_client.lock().unwrap() = Some(client);
     }
 
-    modules::priority::set(config_string("webviewPriority", "Normal").as_str());
+    modules::priority::set(config("webviewPriority", "Normal".to_string()));
 
-    if config_bool("userscripts", true)
+    if config("userscripts", true)
         && let Err(e) = modules::userscripts::load(&main_window.webview, false)
     {
         eprintln!("Failed to load userscripts: {}", e);
@@ -136,7 +132,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
             .ok();
     }
 
-    if config_bool("realPing", false) {
+    if config("realPing", false) {
         modules::ping::load(&main_window.webview);
     }
 

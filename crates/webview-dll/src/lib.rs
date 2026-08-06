@@ -103,7 +103,7 @@ fn spawn_injected_audio_window() {
         CreateWindowExW(
             WS_EX_LAYERED,
             class_name,
-            w!("audio window"),
+            w!("glorp audio window"),
             WS_POPUP | WS_VISIBLE,
             0,
             0,

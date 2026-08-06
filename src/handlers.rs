@@ -1,4 +1,4 @@
-use crate::utils::{config_bool, debug_print};
+use crate::utils::{config, debug_print};
 use crate::{modules, utils, window};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use std::{
@@ -39,7 +39,7 @@ pub fn set_permission_requested_handler(webview: &ICoreWebView2, token: &mut i64
 
 pub fn set_web_resource_requested_handler(webview: &ICoreWebView2, env: &ICoreWebView2Environment, token: &mut i64) {
     let env_clone = env.clone();
-    let swaps = if config_bool("swapper", true) {
+    let swaps = if config("swapper", true) {
         modules::swapper::load(webview)
     } else {
         std::collections::HashMap::new()
@@ -137,7 +137,7 @@ pub fn set_new_window_requested_handler(webview: &ICoreWebView2, env: &ICoreWebV
             let controller = controller.unwrap();
             let webview = unsafe { controller.CoreWebView2().unwrap() };
             if uri.contains("krunker.io/social.html")
-                && config_bool("userscripts", false)
+                && config("userscripts", false)
                 && let Err(e) = modules::userscripts::load(&webview, true)
             {
                 println!("can't load userscripts on social window {}", e);
@@ -167,7 +167,7 @@ pub fn set_handlers<T: utils::EnvironmentRef>(webview: &ICoreWebView2, env_wrapp
 
     set_permission_requested_handler(webview, &mut token);
 
-    if config_bool("blocklist", true) {
+    if config("blocklist", true) {
         modules::blocklist::load(webview);
     }
 
@@ -215,7 +215,7 @@ pub fn handle_web_message(
         ["set-config", setting, value] => {
             crate::CONFIG.lock().unwrap().set(setting, parse_web_message_value(value));
 
-            if *setting == "fpsLimit"
+            if *setting == "RenderFpsLimit"
                 && let Ok(fps_limit) = value.parse::<u64>()
             {
                 let ptr = crate::app::SHARED_STATS_PTR.load(std::sync::atomic::Ordering::SeqCst);
@@ -246,7 +246,7 @@ pub fn handle_web_message(
         }
         ["throttle", status] => {
             let setting = if *status == "game" { "throttle" } else { "inMenuThrottle" };
-            utils::set_cpu_throttling(webview, crate::CONFIG.lock().unwrap().get::<f32>(setting).unwrap_or(1.0));
+            utils::set_cpu_throttling(webview, config(setting, 1.0));
         }
         ["close"] => unsafe {
             PostQuitMessage(0);

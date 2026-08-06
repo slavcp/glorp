@@ -4,8 +4,8 @@ use windows::Win32::{
     System::{Diagnostics::ToolHelp::*, Threading::*},
 };
 
-pub fn set(level: &str) {
-    let priority_class = match level {
+pub fn set(level: impl AsRef<str>) {
+    let priority_class = match level.as_ref() {
         "High" => HIGH_PRIORITY_CLASS,
         "Above Normal" => ABOVE_NORMAL_PRIORITY_CLASS,
         "Below Normal" => BELOW_NORMAL_PRIORITY_CLASS,

@@ -136,8 +136,22 @@ impl Window {
             VK_F4 | VK_F6 => {
                 utils::set_cpu_throttling(&self.webview, 1.0);
                 unsafe {
-                    self.webview.Navigate(w!("https://krunker.io")).ok();
-                    // WM_USER with wparam = 0 (unlocked)
+                    let mut raw_uri = PWSTR::null();
+                    self.webview.Source(&mut raw_uri).ok();
+
+                    let current_url = take_pwstr(raw_uri);
+
+                    let target_url = current_url
+                        .split_once("game=")
+                        .map(|(_before, after)| after.trim())
+                        .filter(|id| !id.is_empty())
+                        .map(|id| format!("https://krunker.io/?exclude={}", id))
+                        .unwrap_or_else(|| "https://krunker.io/".to_string());
+
+                    let navigate_uri = HSTRING::from(&target_url);
+                    self.webview.Navigate(&navigate_uri).ok();
+
+                    // wparam = 0 (unlocked)
                     PostMessageW(self.widget_wnd, WM_USER, WPARAM(0), LPARAM(0)).ok();
                 }
             }
@@ -145,7 +159,7 @@ impl Window {
                 utils::set_cpu_throttling(&self.webview, 1.0);
                 unsafe {
                     self.webview.Reload().ok();
-                    // WM_USER with wparam = 0 (unlocked)
+                    // wparam = 0 (unlocked)
                     PostMessageW(self.widget_wnd, WM_USER, WPARAM(0), LPARAM(0)).ok();
                 }
             }

@@ -92,12 +92,8 @@ pub fn settings_dir() -> path::PathBuf {
     path::PathBuf::from(env::var("USERPROFILE").unwrap()).join("Documents").join("glorp")
 }
 
-pub fn config_bool(setting: &str, default: bool) -> bool {
+pub fn config<T: serde::de::DeserializeOwned>(setting: &str, default: T) -> T {
     CONFIG.lock().unwrap().get(setting).unwrap_or(default)
-}
-
-pub fn config_string(setting: &str, default: impl Into<String>) -> String {
-    CONFIG.lock().unwrap().get::<String>(setting).unwrap_or_else(|| default.into())
 }
 
 pub fn find_child_window_by_class(parent: HWND, class_name: &str) -> HWND {

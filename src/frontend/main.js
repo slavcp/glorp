@@ -17,6 +17,8 @@ document.addEventListener(
 	() => {
 		// load noticeable style changes and stuff that requires hooks earlier
 
+		import("./modules/gameFpsLimit.js");
+
 		const baseCSS = document.createElement("style");
 		baseCSS.innerHTML = styles;
 		document.head.append(baseCSS);

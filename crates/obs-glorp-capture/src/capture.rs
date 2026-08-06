@@ -149,6 +149,5 @@ pub fn discover() -> Option<Session> {
         }
         let _ = CloseHandle(snapshot);
     }
-    super::debug_print("capture: producer not found");
     None
 }

@@ -47,10 +47,10 @@ fn main() {
     let (_tx, rx) = sync::mpsc::channel::<String>();
     #[cfg(feature = "auto-update")]
     {
-        use utils::config_bool;
+        use utils::config;
         use windows::Win32::Foundation::{LPARAM, WPARAM};
         let main_thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
-        if config_bool("checkUpdates", true) {
+        if config("checkUpdates", true) {
             std::thread::spawn(move || {
                 modules::lifecycle::check_major_update();
                 if let Some(new_js) = modules::lifecycle::check_minor_update() {
@@ -62,7 +62,7 @@ fn main() {
             });
         }
     }
-    if utils::config_bool("renderStats", false) {
+    if utils::config("renderStats", false) {
         unsafe {
             SetTimer(None, 1, 100, None);
         }
