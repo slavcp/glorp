@@ -74,6 +74,17 @@ Object.defineProperty(window, "gameLoaded", {
 		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #f5479b" onclick="playSelect(),showWindow(4)"> <span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">color_lens</span></div>
 		    <div class="compMenBtnS" onmouseenter='SOUND.play("tick_0",.1)' style="background-color: #5ce05a" onclick="playSelect(),window.openRankedMenu()"><span class="material-icons" style="color:#fff;font-size:40px;vertical-align:middle;margin-bottom:12px">star</span></div>`;
 
+		// classic social button
+		let svelteCode;
+		for (const cl of document.querySelector("#clientExit .menuItemTitle").classList) {
+			if (cl.startsWith("svelte-")) {
+				svelteCode = cl;
+				break;
+			}
+		}
+		document.querySelector("#menuItemContainer").innerHTML +=
+			`<div onclick="window.open('./social.html')" class="menuItem ${svelteCode}"><span class="material-icons-outlined menuItemIcon ${svelteCode}">open_in_new</span><div class="menuItemTitle ${svelteCode}">Classic Social</div></div>`;
+
 		import("./notifications.js");
 		import("./settings.js");
 		import("./modules/changelog.js");
