@@ -45,3 +45,17 @@ window.closWind = (...args) => {
 	window.chrome.webview.postMessage("throttle, menu");
 	return originalclosWind.apply(this, args);
 };
+
+window.glorp.bindShoot = () => {
+	window.changeCont("shoot", 1, undefined);
+	const eventOptions = {
+		key: "F20",
+		code: "F20",
+		keyCode: 131,
+		which: 131,
+		bubbles: true,
+		cancelable: true,
+	};
+	window.dispatchEvent(new KeyboardEvent("keydown", eventOptions));
+	window.dispatchEvent(new KeyboardEvent("keyup", eventOptions));
+};

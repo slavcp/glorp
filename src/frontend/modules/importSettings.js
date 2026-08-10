@@ -65,4 +65,5 @@ window.importSettings = () => {
 
 	importTxtElement.value = JSON.stringify(json);
 	originalimportSettings();
+	window.glorp.bindShoot();
 };

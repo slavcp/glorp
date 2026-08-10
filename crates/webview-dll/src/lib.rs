@@ -323,6 +323,19 @@ extern "system" fn find_child_window(handle: HWND, lparam: LPARAM) -> BOOL {
 unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
         match message {
+            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
+                if DRAG_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                    return CallWindowProcW(PREV_WNDPROC_1, window, WM_KEYDOWN, WPARAM(VK_F20.0 as usize), lparam);
+                }
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+            }
+            WM_LBUTTONUP => {
+                CallWindowProcW(PREV_WNDPROC_1, window, WM_KEYUP, WPARAM(VK_F20.0 as usize), lparam);
+                CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
+            }
+            WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
+                CallWindowProcW(PREV_WNDPROC_1, window, message, WPARAM(wparam.0 & !MK_LBUTTON.0 as usize), lparam)
+            }
             WM_CHAR => LRESULT(1),
             WM_QUIT => {
                 debug_print("webview: chrome wndproc received WM_QUIT");
@@ -338,9 +351,6 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                     debug_print(format!("webview: redirected Escape focus to client result={result:?}"));
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
-            }
-            WM_LBUTTONDOWN | WM_LBUTTONDBLCLK | WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
-                CallWindowProcW(PREV_WNDPROC_1, window, message, WPARAM(wparam.0 & !MK_LBUTTON.0 as usize), lparam)
             }
             WM_MOUSEMOVE => {
                 if DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {

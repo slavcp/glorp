@@ -200,7 +200,7 @@ unsafe extern "system" fn create_swapchain_hk(
             capture::capture_on_swapchain(*ppswapchain, device);
             if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
                 swap_chain2
-                    .SetMaximumFrameLatency(1)
+                    .SetMaximumFrameLatency(2)
                     .unwrap_or_else(|e| debug_print(format!("Failed to set latency: {:?}", e)));
 
                 let waitable_obj = swap_chain2.GetFrameLatencyWaitableObject();
@@ -361,10 +361,7 @@ unsafe extern "system" fn present_hk(
         let original_present = ORIGINAL_PRESENT.unwrap();
         let mut hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
         if hr.is_err() && (present_flags.0 & DXGI_PRESENT_ALLOW_TEARING.0) != 0 {
-            debug_print(format!(
-                "Present failed with tearing flag: {:#X}, retrying fallback",
-                hr.0
-            ));
+            debug_print(format!("Present failed with tearing flag: {:#X}, retrying fallback", hr.0));
             let fallback_flags = DXGI_PRESENT(present_flags.0 & !DXGI_PRESENT_ALLOW_TEARING.0);
             hr = original_present(p_this, sync_interval, fallback_flags, p_present_parameters);
             debug_print(format!("render: Present fallback result={:#X}", hr.0));

@@ -16,7 +16,7 @@ document.addEventListener(
 	"DOMContentLoaded",
 	() => {
 		// load noticeable style changes and stuff that requires hooks earlier
-
+		window.localStorage.setItem("cont_shoot1Key_alt", "131");
 		import("./modules/gameFpsLimit.js");
 
 		const baseCSS = document.createElement("style");
