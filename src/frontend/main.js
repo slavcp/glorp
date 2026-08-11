@@ -6,7 +6,14 @@ window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 
 window.glorp = new Promise((resolve) => {
-	window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
+	function handler(event) {
+		if (event?.data?.settings || event?.data?.version) {
+			window.chrome.webview.removeEventListener("message", handler);
+			resolve(event.data);
+		}
+	}
+
+	window.chrome.webview.addEventListener("message", handler);
 	window.chrome.webview.postMessage("get-info");
 }).then((data) => (window.glorp = data));
 

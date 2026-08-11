@@ -11,7 +11,7 @@ use std::{
 };
 use windows::Win32::{
     Foundation::*,
-    System::{Diagnostics::Debug::*, LibraryLoader::GetModuleHandleW, SystemServices::*, Threading::*},
+    System::{LibraryLoader::GetModuleHandleW, SystemServices::*, Threading::*},
     UI::{
         Accessibility::*,
         Input::{KeyboardAndMouse::*, *},
@@ -19,12 +19,6 @@ use windows::Win32::{
     },
 };
 use windows::core::*;
-
-fn debug_print(message: impl AsRef<str>) {
-    let mut wide: Vec<u16> = message.as_ref().encode_utf16().collect();
-    wide.push(0);
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
-}
 
 static SPACE_DOWN: INPUT = INPUT {
     r#type: INPUT_KEYBOARD,
@@ -52,21 +46,37 @@ static SPACE_UP: INPUT = INPUT {
     },
 };
 
+#[macro_export]
+macro_rules! debug_print {
+    ($($arg:tt)*) => {
+        if cfg!(feature = "verbose-logs") {
+            let msg = format!($($arg)*);
+            let wide: Vec<u16> = msg.encode_utf16().chain(Some(0)).collect();
+            #[allow(unused_unsafe)]
+            unsafe {
+                ::windows::Win32::System::Diagnostics::Debug::OutputDebugStringW(
+                    ::windows::core::PCWSTR(wide.as_ptr()),
+                );
+            }
+        }
+    };
+}
+
 static SCROLL_SENDER: LazyLock<Sender<()>> = LazyLock::new(|| {
     let (tx, rx) = channel();
     thread::spawn(move || {
-        debug_print(format!("webview: rampboost input thread started id={}", unsafe { GetCurrentThreadId() }));
+        debug_print!("webview: rampboost input thread started id={}", unsafe { GetCurrentThreadId() });
         while rx.recv().is_ok() {
             unsafe {
                 let down = SendInput(&[SPACE_DOWN], mem::size_of::<INPUT>() as i32);
                 Sleep(5);
                 let up = SendInput(&[SPACE_UP], mem::size_of::<INPUT>() as i32);
                 if down != 1 || up != 1 {
-                    debug_print(format!("webview: rampboost SendInput incomplete down={down} up={up}"));
+                    debug_print!("webview: rampboost SendInput incomplete down={down} up={up}");
                 }
             }
         }
-        debug_print("webview: rampboost input thread ended");
+        debug_print!("webview: rampboost input thread ended");
     });
     tx
 });
@@ -125,9 +135,13 @@ fn spawn_injected_audio_window() {
         // drops it from the taskbar
         let desktop_hwnd = GetDesktopWindow();
         SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, desktop_hwnd.0 as isize);
-    }
 
-    std::thread::park()
+        let mut msg = MSG::default();
+        while GetMessageW(&mut msg, Some(hwnd), 0, 0).into() {
+            let _ = TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    }
 }
 
 impl ChromeWindows {
@@ -136,32 +150,34 @@ impl ChromeWindows {
             chrome_window: Self::find_child_window_by_class(parent, "Chrome_WidgetWin_1"),
             chrome_renderwidget: Self::find_child_window_by_class(parent, "Chrome_RenderWidgetHostHWND"),
         };
-        debug_print(format!(
+        debug_print!(
             "webview: child windows parent={:?} chrome={:?} render_widget={:?}",
-            parent, windows.chrome_window, windows.chrome_renderwidget
-        ));
+            parent,
+            windows.chrome_window,
+            windows.chrome_renderwidget,
+        );
         windows
     }
 
     unsafe fn set_window_procs(&self) {
         unsafe {
             if self.chrome_window.0.is_null() || self.chrome_renderwidget.0.is_null() {
-                debug_print("webview: cannot install window procedures because a Chrome child window is missing");
+                debug_print!("webview: cannot install window procedures because a Chrome child window is missing");
                 return;
             }
             // set proc for chrome_window
             let original_proc_1 = GetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC);
-            debug_print(format!("webview: original chrome wndproc={original_proc_1:#x}"));
+            debug_print!("webview: original chrome wndproc={original_proc_1:#x}");
             PREV_WNDPROC_1 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(original_proc_1);
-            let previous = SetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC, wnd_proc_1 as *const () as isize);
-            debug_print(format!("webview: installed chrome wndproc, previous={previous:#x}"));
+            let _previous = SetWindowLongPtrW(self.chrome_window, GWLP_WNDPROC, wnd_proc_1 as *const () as isize);
+            debug_print!("webview: installed chrome wndproc, previous={_previous:#x}");
 
             // set proc for chrome_renderwidget
             let original_proc_2 = GetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC);
-            debug_print(format!("webview: original render widget wndproc={original_proc_2:#x}"));
+            debug_print!("webview: original render widget wndproc={original_proc_2:#x}");
             PREV_WNDPROC_2 = transmute::<isize, Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>>(original_proc_2);
-            let previous = SetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC, wnd_proc_widget as *const () as isize);
-            debug_print(format!("webview: installed render widget wndproc, previous={previous:#x}"));
+            let _previous = SetWindowLongPtrW(self.chrome_renderwidget, GWLP_WNDPROC, wnd_proc_widget as *const () as isize);
+            debug_print!("webview: installed render widget wndproc, previous={_previous:#x}");
         }
     }
 
@@ -170,7 +186,7 @@ impl ChromeWindows {
             let mut data = (HWND::default(), class_name);
 
             if let BOOL(1) = EnumChildWindows(Some(parent), Some(find_child_window), LPARAM(&mut data as *mut (HWND, &str) as _)) {
-                debug_print(format!("webview: EnumChildWindows failed parent={:?} class={class_name}", parent));
+                debug_print!("webview: EnumChildWindows failed parent={:?} class={class_name}", parent);
             }
 
             data.0
@@ -182,11 +198,11 @@ impl ChromeWindows {
 extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
     match call_reason {
         DLL_PROCESS_ATTACH => {
-            debug_print("webview: DLL_PROCESS_ATTACH");
+            debug_print!("webview: DLL_PROCESS_ATTACH");
             attach()
         }
         DLL_PROCESS_DETACH => {
-            debug_print("webview: DLL_PROCESS_DETACH");
+            debug_print!("webview: DLL_PROCESS_DETACH");
             detach()
         }
         _ => (),
@@ -196,41 +212,41 @@ extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) {
 static THREAD_ID: AtomicU32 = AtomicU32::new(0);
 
 fn detach() {
-    debug_print("webview: detaching hooks and message thread");
+    debug_print!("webview: detaching hooks and message thread");
     unsafe {
         let hook_raw = HOOK_HANDLE.load(sync::atomic::Ordering::Relaxed);
         if hook_raw != 0 {
-            let result = UnhookWinEvent(HWINEVENTHOOK(hook_raw as _));
-            debug_print(format!("webview: UnhookWinEvent result={result:?}"));
+            let _result = UnhookWinEvent(HWINEVENTHOOK(hook_raw as _));
+            debug_print!("webview: UnhookWinEvent result={_result:?}");
         }
 
         //  terminate the message loop otherwise launching just crashes if webview2 is still running
         let thread_id = THREAD_ID.load(sync::atomic::Ordering::Relaxed);
         if thread_id != 0 {
-            let result = PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0));
-            debug_print(format!("webview: posted message-thread shutdown result={result:?}"));
+            let _result = PostThreadMessageW(thread_id, WM_QUIT, WPARAM(0), LPARAM(0));
+            debug_print!("webview: posted message-thread shutdown result={_result:?}");
         }
     }
 }
 
 fn attach() {
-    debug_print("webview: attach started");
+    debug_print!("webview: attach started");
     unsafe {
         let parent = match FindWindowW(w!("krunker_webview"), PCWSTR::null()) {
             Ok(parent) => parent,
-            Err(error) => {
-                debug_print(format!("webview: main window not found: {error}"));
+            Err(_error) => {
+                debug_print!("webview: main window not found: {_error}");
                 return;
             }
         };
-        debug_print(format!("webview: found main window={parent:?}"));
+        debug_print!("webview: found main window={parent:?}");
         WINDOW_HANDLE.store(parent.0, sync::atomic::Ordering::Relaxed);
         let chrome_windows = ChromeWindows::get(parent);
         chrome_windows.set_window_procs();
 
         // thread to check if the parent window has disappeared
         thread::spawn(move || {
-            debug_print("webview: parent-window monitor thread started");
+            debug_print!("webview: parent-window monitor thread started");
             loop {
                 let current_parent = HWND(WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed));
 
@@ -239,7 +255,7 @@ fn attach() {
 
                     if let Ok(new_parent) = new_parent {
                         WINDOW_HANDLE.store(new_parent.0, sync::atomic::Ordering::Relaxed);
-                        debug_print(format!("webview: main window recreated={new_parent:?}"));
+                        debug_print!("webview: main window recreated={new_parent:?}");
 
                         let new_chrome_windows = ChromeWindows::get(new_parent);
                         new_chrome_windows.set_window_procs();
@@ -256,7 +272,7 @@ fn attach() {
 
         thread::spawn(move || {
             THREAD_ID.store(GetCurrentThreadId(), sync::atomic::Ordering::Relaxed);
-            debug_print(format!("webview: WinEvent message thread started id={}", GetCurrentThreadId()));
+            debug_print!("webview: WinEvent message thread started id={}", GetCurrentThreadId());
             let mut msg: MSG = MSG::default();
             // check whenever a window is created if it has the attribute Chrome.WindowTranslucent (the one that warns about pointer lock) and if it does, destroy it
             let hook = SetWinEventHook(
@@ -269,14 +285,14 @@ fn attach() {
                 WINEVENT_OUTOFCONTEXT,
             );
             HOOK_HANDLE.store(hook.0 as usize, sync::atomic::Ordering::Relaxed);
-            debug_print(format!("webview: SetWinEventHook handle={:?}", hook));
+            debug_print!("webview: SetWinEventHook handle={:?}", hook);
 
             loop {
                 if GetMessageW(&mut msg, None, 0, 0).into() {
                     let _ = TranslateMessage(&msg);
                     DispatchMessageW(&msg);
                 } else {
-                    debug_print("webview: message loop ended");
+                    debug_print!("webview: message loop ended");
                     break;
                 }
             }
@@ -338,7 +354,7 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
             }
             WM_CHAR => LRESULT(1),
             WM_QUIT => {
-                debug_print("webview: chrome wndproc received WM_QUIT");
+                debug_print!("webview: chrome wndproc received WM_QUIT");
                 detach();
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -347,8 +363,8 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
                 if wparam.0 == VK_ESCAPE.0 as usize && DRAG_STATUS.load(sync::atomic::Ordering::Relaxed) {
                     // glorp.exe (not the webview)
                     let glorp = WINDOW_HANDLE.load(sync::atomic::Ordering::Relaxed);
-                    let result = SetFocus(Some(HWND(glorp)));
-                    debug_print(format!("webview: redirected Escape focus to client result={result:?}"));
+                    let _result = SetFocus(Some(HWND(glorp)));
+                    debug_print!("webview: redirected Escape focus to client result={_result:?}");
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
@@ -396,11 +412,11 @@ unsafe extern "system" fn wnd_proc_widget(window: HWND, message: u32, wparam: WP
                 // 1 = change proc to wnd_proc_widget_rampboost
                 // 2 or 0 = allow-drag status
                 if wparam.0 == 1 {
-                    debug_print("webview: enabling rampboost window procedure");
+                    debug_print!("webview: enabling rampboost window procedure");
                     SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget_rampboost as *const () as isize);
                 } else {
                     DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
-                    debug_print(format!("webview: drag status={}", wparam.0 == 2));
+                    debug_print!("webview: drag status={}", wparam.0 == 2);
                 }
                 LRESULT(1)
             }
@@ -434,11 +450,11 @@ unsafe extern "system" fn wnd_proc_widget_rampboost(window: HWND, message: u32, 
                 // 3 = change proc to wnd_proc_widget
                 // 2 or 0 = allow-drag status
                 if wparam.0 == 3 {
-                    debug_print("webview: disabling rampboost window procedure");
+                    debug_print!("webview: disabling rampboost window procedure");
                     SetWindowLongPtrW(window, GWLP_WNDPROC, wnd_proc_widget as *const () as isize);
                 } else {
                     DRAG_STATUS.store(wparam.0 == 2, sync::atomic::Ordering::Relaxed);
-                    debug_print(format!("webview: rampboost drag status={}", wparam.0 == 2));
+                    debug_print!("webview: rampboost drag status={}", wparam.0 == 2);
                 }
                 LRESULT(1)
             }
@@ -451,7 +467,7 @@ unsafe extern "system" fn window_event_proc(_hook: HWINEVENTHOOK, _event: u32, h
     unsafe {
         let prop = GetPropW(hwnd, w!("Chrome.WindowTranslucent"));
         if !prop.is_invalid() {
-            debug_print(format!("webview: destroying translucent Chrome window={hwnd:?}"));
+            debug_print!("webview: destroying translucent Chrome window={hwnd:?}");
             PostMessageW(Some(hwnd), WM_DESTROY, WPARAM(0), LPARAM(0)).ok();
         }
     }

@@ -1,4 +1,4 @@
-use crate::utils::{self, debug_print};
+use crate::{debug_print, utils};
 use std::{fs, path::PathBuf};
 use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
@@ -63,7 +63,7 @@ pub fn set_plugin_installed(webview: &ICoreWebView2, install: bool) {
         crate::CONFIG.lock().unwrap().set("obsCapturePlugin", false);
     }
 
-    debug_print(&message);
+    debug_print!("{}", &message);
 
     let payload = serde_json::json!({ "type": "obs-plugin", "ok": ok, "message": message });
     if let Ok(json) = serde_json::to_string(&payload) {
@@ -93,8 +93,8 @@ pub fn handle_cli_flags() -> bool {
     let uninstall = args.iter().any(|arg| arg == "--uninstall-obs-plugin");
 
     if install || uninstall {
-        if let Err(error) = run_plugin_operation(install) {
-            debug_print(format!("elevated OBS plugin operation failed: {error}"));
+        if let Err(_error) = run_plugin_operation(install) {
+            debug_print!("elevated OBS plugin operation failed: {_error:?}");
         }
         return true;
     }

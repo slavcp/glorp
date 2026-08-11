@@ -69,53 +69,49 @@ fn main() {
     }
     let mut last_render_stats: Option<(u64, u64)> = None;
     let mut msg: MSG = MSG::default();
-    loop {
-        let has_msg = unsafe { GetMessageW(&mut msg, None, 0, 0).as_bool() };
-        if !has_msg {
-            break;
-        }
+    while unsafe { GetMessageW(&mut msg, None, 0, 0).into() } {
         unsafe {
             _ = TranslateMessage(&msg);
         }
+
         if msg.message == constants::WM_MINOR_UPDATE_READY
             && let Ok(js_content) = rx.try_recv()
         {
-            println!("updating js, {}", *SCRIPT_ID.lock().unwrap());
+            let script_id = SCRIPT_ID.lock().unwrap();
+            println!("updating js, {}", *script_id);
+
+            let old_script_str = utils::create_utf_string(&*script_id);
+            let new_script_str = utils::create_utf_string(js_content);
+
             unsafe {
-                window
-                    .webview
-                    .RemoveScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(&*SCRIPT_ID.lock().unwrap()).as_ptr()))
-                    .ok();
-                window
-                    .webview
-                    .AddScriptToExecuteOnDocumentCreated(PCWSTR(utils::create_utf_string(js_content).as_ptr()), None)
-                    .ok();
+                window.webview.RemoveScriptToExecuteOnDocumentCreated(PCWSTR(old_script_str.as_ptr())).ok();
+                window.webview.AddScriptToExecuteOnDocumentCreated(PCWSTR(new_script_str.as_ptr()), None).ok();
             }
         }
+
         if msg.message == WM_TIMER {
             let ptr = app::SHARED_STATS_PTR.load(Ordering::SeqCst);
             if ptr != 0 {
-                let (frame_ns, fps) = unsafe {
-                    let shared = &*(ptr as *const app::SharedStats);
-                    (shared.frame_ns, shared.fps)
-                };
-                let current = (fps, frame_ns);
+                let shared = unsafe { &*(ptr as *const app::SharedStats) };
+                let current = (shared.fps, shared.frame_ns);
 
-                if fps > 0 && last_render_stats != Some(current) {
+                if shared.fps > 0 && last_render_stats != Some(current) {
                     last_render_stats = Some(current);
 
-                    let payload = format!("{{\"fpsInfo\":{}}}", fps);
+                    let payload = format!("{{\"fpsInfo\":{}}}", shared.fps);
+                    let payload_str = utils::create_utf_string(payload);
+
                     unsafe {
-                        window.webview.PostWebMessageAsJson(PCWSTR(utils::create_utf_string(payload).as_ptr())).ok();
+                        window.webview.PostWebMessageAsJson(PCWSTR(payload_str.as_ptr())).ok();
                     }
                 }
             }
         }
+
         unsafe {
             DispatchMessageW(&msg);
         }
     }
-    // code here runs after window is closed
 
     CONFIG.lock().unwrap().save();
 }

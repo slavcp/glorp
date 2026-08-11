@@ -97,7 +97,7 @@ fn try_attach(pid: u32) -> Option<Session> {
             return None;
         }
 
-        super::debug_print(format!("capture: producer discovered (pid {pid})"));
+        crate::debug_print!("capture: producer discovered (pid {pid})");
 
         // Frame event is optional for correctness (we poll frame_counter), so a failure here is
         // non-fatal — pass a null/invalid handle.

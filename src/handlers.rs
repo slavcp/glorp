@@ -1,5 +1,4 @@
-use crate::utils::{config, debug_print};
-use crate::{modules, utils, window};
+use crate::{debug_print, modules, utils, utils::config, window};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient, activity};
 use std::{
     process, result,
@@ -180,6 +179,7 @@ pub fn send_info(webview: &ICoreWebView2) {
     let mut info_map = serde_json::Map::new();
     info_map.insert("settings".to_string(), serde_json::json!(&*crate::CONFIG.lock().unwrap()));
     info_map.insert("version".to_string(), serde_json::Value::String(version.to_string()));
+
     let launch_args = crate::LAUNCH_ARGS.lock().unwrap();
     if !launch_args.is_empty() {
         info_map.insert("launchArgs".to_string(), serde_json::Value::String(launch_args.join(" ")));
@@ -187,8 +187,10 @@ pub fn send_info(webview: &ICoreWebView2) {
     drop(launch_args);
 
     let info_json = serde_json::to_string_pretty(&info_map).unwrap();
+
+    let info_str = utils::create_utf_string(info_json);
     unsafe {
-        webview.PostWebMessageAsJson(PCWSTR(utils::create_utf_string(info_json).as_ptr())).ok();
+        webview.PostWebMessageAsJson(PCWSTR(info_str.as_ptr())).ok();
     }
 }
 
@@ -209,7 +211,7 @@ pub fn handle_web_message(
     message_string: &str,
 ) -> result::Result<(), windows::core::Error> {
     let parts: Vec<&str> = message_string.split(", ").map(|s| s.trim()).collect();
-    debug_print(format!("web message: {message_string}"));
+    debug_print!("web message: {message_string}");
 
     match parts.as_slice() {
         ["set-config", setting, value] => {

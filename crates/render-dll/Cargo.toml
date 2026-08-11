@@ -22,3 +22,6 @@ windows = { version = "0.62.2", features = [
     "Win32_System_Threading",
 ]}
 minhook = "0.9.*"
+
+[features]
+verbose-logs = []

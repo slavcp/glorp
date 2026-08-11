@@ -8,10 +8,7 @@ use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2;
 use windows::{
     Win32::{
         Foundation::{CloseHandle, HWND, LPARAM},
-        System::{
-            Diagnostics::{Debug::OutputDebugStringW, ToolHelp::*},
-            Threading::*,
-        },
+        System::{Diagnostics::ToolHelp::*, Threading::*},
         UI::WindowsAndMessaging::*,
     },
     core::*,
@@ -190,8 +187,18 @@ pub fn atomic_write(path: &impl AsRef<Path>, data: &impl convert::AsRef<[u8]>) -
     Ok(())
 }
 
-pub(crate) fn debug_print(message: impl AsRef<str>) {
-    let mut wide: Vec<u16> = message.as_ref().encode_utf16().collect();
-    wide.push(0);
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
+#[macro_export]
+macro_rules! debug_print {
+    ($($arg:tt)*) => {
+        if cfg!(feature = "verbose-logs") {
+            let msg = format!($($arg)*);
+            let wide: Vec<u16> = msg.encode_utf16().chain(Some(0)).collect();
+            #[allow(unused_unsafe)]
+            unsafe {
+                ::windows::Win32::System::Diagnostics::Debug::OutputDebugStringW(
+                    ::windows::core::PCWSTR(wide.as_ptr()),
+                );
+            }
+        }
+    };
 }

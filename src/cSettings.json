@@ -123,7 +123,7 @@
 		"type": "checkbox",
 		"category": "Game",
 		"defaultValue": true,
-		"needsRestart": true
+		"needsRefresh": true
 	},
 	"exitButton": {
 		"name": "Exit Button",
@@ -189,7 +189,7 @@
 		"defaultValue": true
 	},
 	"rawInput": {
-		"name": "Raw Input (!)",
+		"name": "Raw Input",
 		"id": "rawInput",
 		"description": "Lower latency, greater precision, fixes mouse flicks",
 		"type": "checkbox",

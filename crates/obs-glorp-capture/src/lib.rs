@@ -21,7 +21,6 @@ use windows::{
     Win32::{
         Foundation::GENERIC_ALL,
         Graphics::Direct3D11::{ID3D11Device, ID3D11Device1, ID3D11Texture2D},
-        System::Diagnostics::Debug::OutputDebugStringW,
     },
     core::{Interface, PCWSTR},
 };
@@ -34,6 +33,21 @@ const STALL_RETRY: Duration = Duration::from_secs(1);
 /// NOT from `obs_module_load`, where the main thread has no gs context yet.
 static BACKEND_OK: AtomicI8 = AtomicI8::new(-1);
 
+#[macro_export]
+macro_rules! debug_print {
+    ($($arg:tt)*) => {
+        if cfg!(feature = "verbose-logs") {
+            let msg = format!($($arg)*);
+            let wide: Vec<u16> = msg.encode_utf16().chain(Some(0)).collect();
+            #[allow(unused_unsafe)]
+            unsafe {
+                ::windows::Win32::System::Diagnostics::Debug::OutputDebugStringW(
+                    ::windows::core::PCWSTR(wide.as_ptr()),
+                );
+            }
+        }
+    };
+}
 fn backend_supported(api: &ObsApi) -> bool {
     match BACKEND_OK.load(Ordering::Relaxed) {
         1 => return true,
@@ -43,15 +57,9 @@ fn backend_supported(api: &ObsApi) -> bool {
     let ok = unsafe { (api.gs_get_device_type)() } == obsabi::GS_DEVICE_DIRECT3D_11;
     BACKEND_OK.store(if ok { 1 } else { 0 }, Ordering::Relaxed);
     if !ok {
-        debug_print("capture: only D3D11 backend supported");
+        debug_print!("capture: only D3D11 backend supported");
     }
     ok
-}
-
-fn debug_print(msg: impl AsRef<str>) {
-    let mut wide: Vec<u16> = msg.as_ref().encode_utf16().collect();
-    wide.push(0);
-    unsafe { OutputDebugStringW(PCWSTR(wide.as_ptr())) };
 }
 
 struct GlorpSource {
@@ -122,7 +130,7 @@ impl GlorpSource {
             drop(dev1); // release our QI reference
 
             let Ok(tex) = opened else {
-                debug_print(format!("capture: OpenSharedResourceByName failed for {name}"));
+                debug_print!("capture: OpenSharedResourceByName failed for {name}");
                 return;
             };
             let g = (api.gs_texture_wrap_obj)(Interface::as_raw(&tex));
@@ -133,7 +141,7 @@ impl GlorpSource {
             self.gs_tex = g;
             self.width = w;
             self.height = h;
-            debug_print(format!("capture: opened {name} {w}x{h}"));
+            debug_print!("capture: opened {name} {w}x{h}");
         }
     }
 }
@@ -145,7 +153,7 @@ unsafe extern "C" fn get_name(_data: *mut c_void) -> *const c_char {
 }
 
 unsafe extern "C" fn create(_settings: *mut obs_data_t, _source: *mut obs_source_t) -> *mut c_void {
-    debug_print("capture: source created");
+    debug_print!("capture: source created");
     Box::into_raw(Box::new(GlorpSource::new())) as *mut c_void
 }
 
@@ -153,11 +161,11 @@ unsafe extern "C" fn destroy(data: *mut c_void) {
     if data.is_null() {
         return;
     }
-    debug_print("capture: source destroyed");
+    debug_print!("capture: source destroyed");
     let s = &mut *(data as *mut GlorpSource);
     if let Some(mut sess) = s.session.take() {
         capture::set_reader_active(&sess, false);
-        debug_print(format!("capture: reader off (pid {})", sess.pid));
+        debug_print!("capture: reader off (pid {})", sess.pid);
         sess.close();
     }
     s.teardown_texture();
@@ -181,7 +189,7 @@ unsafe extern "C" fn video_tick(data: *mut c_void, _seconds: f32) {
             s.last_attempt = Instant::now();
             if let Some(sess) = capture::discover() {
                 capture::set_reader_active(&sess, true);
-                debug_print(format!("capture: reader on (pid {})", sess.pid));
+                debug_print!("capture: reader on (pid {})", sess.pid);
                 s.session = Some(sess);
             }
         }
@@ -196,7 +204,7 @@ unsafe extern "C" fn video_tick(data: *mut c_void, _seconds: f32) {
         // If the GPU process itself is gone, tear everything down and re-discover under the new
         // PID. If it's merely paused (game minimized / frozen), keep showing the last frame.
         if s.last_attempt.elapsed() >= STALL_RETRY && !capture::process_exists(sess.pid) {
-            debug_print(format!("capture: producer process exited (pid {})", sess.pid));
+            debug_print!("capture: producer process exited (pid {})", sess.pid);
             let mut old = s.session.take().unwrap();
             capture::set_reader_active(&old, false);
             old.close();
@@ -242,7 +250,7 @@ unsafe extern "C" fn video_render(data: *mut c_void, effect: *mut gs_effect_t) {
 #[unsafe(no_mangle)]
 pub extern "C" fn obs_module_load() -> bool {
     let Some(api) = OBS.as_ref() else {
-        debug_print("capture: obs.dll API not resolvable");
+        debug_print!("capture: obs.dll API not resolvable");
         return false;
     };
     // NOTE: no gs backend check here — the main thread has no gs context while loading modules,
@@ -272,7 +280,7 @@ pub extern "C" fn obs_module_load() -> bool {
     unsafe {
         (api.register_source)(&info, std::mem::size_of::<obs_source_info>());
     }
-    debug_print("capture: Glorp Capture source registered");
+    debug_print!("capture: Glorp Capture source registered");
     true
 }
 

@@ -26,6 +26,11 @@ strip = "symbols"
 packaged = []
 auto-update = ["packaged"]
 editor-ignore = []
+verbose-logs = [
+    "obs-glorp-capture/verbose-logs",
+    "render-dll/verbose-logs",
+    "webview-dll/verbose-logs",
+]
 
 [dependencies]
 windows = { version = "0.62.2", features = [
@@ -47,7 +52,6 @@ windows = { version = "0.62.2", features = [
        "Win32_Storage_FileSystem",
        "Win32_Security_Authorization",
 ] }
-
 webview2-com = { version = "0.39.1", default-features = false }
 ureq = { version = "3.3.*", features = ["rustls"], default-features = false }
 serde = { version = "1.0.*", features = ["derive"], default-features = false }
@@ -57,7 +61,9 @@ serde_json = "1.0.*"
 discord-rich-presence = "1.1.*"
 ping-rs = "0.1.*"
 dns-lookup = "3.0.*"
-
+obs-glorp-capture = { path = "crates/obs-glorp-capture", optional = true }
+render-dll = { path = "crates/render-dll", optional = true }
+webview-dll = { path = "crates/webview-dll", optional = true }
 
 [build-dependencies]
 embed-resource = "3.0.*"

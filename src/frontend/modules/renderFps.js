@@ -26,7 +26,6 @@ class RenderFps {
 			this.applyFpsDisplay(this.menuFPS);
 
 			this.listener = (event) => {
-				console.log(event);
 				const fps = event.data?.fpsInfo;
 				if (fps === undefined) return;
 
