@@ -200,7 +200,7 @@ unsafe extern "system" fn create_swapchain_hk(
             capture::capture_on_swapchain(*ppswapchain, device);
             if let Ok(swap_chain2) = swap_chain.cast::<IDXGISwapChain2>() {
                 swap_chain2
-                    .SetMaximumFrameLatency(2)
+                    .SetMaximumFrameLatency(1)
                     .unwrap_or_else(|e| debug_print(format!("Failed to set latency: {:?}", e)));
 
                 let waitable_obj = swap_chain2.GetFrameLatencyWaitableObject();

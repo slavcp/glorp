@@ -6,13 +6,17 @@ window.requestAnimationFrame = function (callback) {
 		const targetFps = window.glorp?.settings?.data?.gameFpsLimit ?? 0;
 
 		if (targetFps > 0) {
-			const targetInterval = 1000 / targetFps;
+			let targetInterval;
+			if (targetFps > 200) targetInterval = 1000 / (targetFps * 1.0055);
+			else targetInterval = 1000 / targetFps;
+
 			while (performance.now() < nextFrameTime) {}
 
 			const now = performance.now();
 
-			if (now - nextFrameTime > targetInterval) nextFrameTime = now + targetInterval;
-			else nextFrameTime += targetInterval;
+			if (now - nextFrameTime > targetInterval) {
+				nextFrameTime = now + targetInterval;
+			} else nextFrameTime += targetInterval;
 		} else nextFrameTime = performance.now();
 
 		callback(timestamp);

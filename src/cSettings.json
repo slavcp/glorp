@@ -219,7 +219,7 @@
 	},
 	"fpsLimit": {
 		"name": "Present FPS Limit",
-		"description": "The amount of frames that get presented to the screen \nalways ≤ than the FPS outputted by the game\n displayed only with the 'Show Present FPS Counter' setting \n0 = uncapped .",
+		"description": "The amount of frames that get presented to the screen \nalways ≤ than the FPS outputted by the game \ndisplayed only with the 'Show Present FPS Counter' setting \n0 = uncapped",
 		"id": "RenderFpsLimit",
 		"type": "slider",
 		"category": "Tweaks",
