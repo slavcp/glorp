@@ -5,12 +5,10 @@ let initialLoad = true;
 window.OffCliV = true;
 window.closeClient = () => window.chrome.webview.postMessage("close");
 
-(async () => {
-	window.glorp = await new Promise((resolve) => {
-		window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
-		window.chrome.webview.postMessage("get-info");
-	});
-})();
+window.glorp = new Promise((resolve) => {
+	window.chrome.webview.addEventListener("message", (event) => resolve(event.data), { once: true });
+	window.chrome.webview.postMessage("get-info");
+}).then((data) => (window.glorp = data));
 
 document.addEventListener(
 	"DOMContentLoaded",
