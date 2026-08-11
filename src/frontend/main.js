@@ -20,7 +20,7 @@ document.addEventListener(
 		import("./modules/gameFpsLimit.js");
 
 		const baseCSS = document.createElement("style");
-		baseCSS.innerHTML = styles;
+		baseCSS.textContent = styles;
 		document.head.append(baseCSS);
 
 		hook(HTMLCanvasElement, "addEventListener", (args) => {
@@ -48,7 +48,7 @@ document.addEventListener(
 			import("./components/clean.css").then((css) => {
 				const cleanCSS = document.createElement("style");
 				cleanCSS.id = "glorp_cleanCSS";
-				cleanCSS.innerHTML = css.default;
+				cleanCSS.textContent = css.default;
 				document.head.append(cleanCSS);
 			});
 		}
@@ -57,8 +57,12 @@ document.addEventListener(
 );
 
 Object.defineProperty(window, "gameLoaded", {
-	set(value) {
+	async set(value) {
 		if (!value) return;
+
+		// wait for window.glorp to resolve
+		if (window.glorp instanceof Promise) await window.glorp;
+
 		window.chrome.webview.postMessage("game-updated");
 		if (!initialLoad) return;
 		if (sessionStorage.getItem("justLaunched") === null) sessionStorage.setItem("justLaunched", true);
@@ -67,6 +71,7 @@ Object.defineProperty(window, "gameLoaded", {
 		initialLoad = false;
 		// console is disabled without this
 		localStorage.setItem("logs", true);
+
 		window.windows[0].toggleType({ checked: true });
 
 		// append ranked and mod button to comp host ui
@@ -82,9 +87,13 @@ Object.defineProperty(window, "gameLoaded", {
 				break;
 			}
 		}
-		document.querySelector("#menuItemContainer").innerHTML +=
-			`<div onclick="window.open('./social.html')" class="menuItem ${svelteCode}"><span class="material-icons-outlined menuItemIcon ${svelteCode}">open_in_new</span><div class="menuItemTitle ${svelteCode}">Classic Social</div></div>`;
 
+		document
+			.querySelector("#menuItemContainer")
+			.lastElementChild?.insertAdjacentHTML(
+				"beforebegin",
+				`<div onclick="window.open('./social.html')" class="menuItem ${svelteCode}"><span class="material-icons-outlined menuItemIcon ${svelteCode}">open_in_new</span><div class="menuItemTitle ${svelteCode}">Classic Social</div></div>`,
+			);
 		import("./notifications.js");
 		import("./settings.js");
 		import("./modules/changelog.js");
@@ -94,16 +103,16 @@ Object.defineProperty(window, "gameLoaded", {
 		import("./modules/fixes.js");
 		import("./modules/rankProgress.js");
 		import("./modules/importSettings.js");
-		if (window.glorp?.settings.data?.hsSound) import("./modules/hsSound.js");
-		if (window.glorp?.settings.data?.betterChat) import("./modules/betterChat.js");
-		if (window.glorp?.settings.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
-		if (window.glorp?.settings.data?.accountManager) import("./modules/accountManager.js");
-		if (window.glorp?.settings.data?.showPing) import("./modules/showPing.js");
-		if (window.glorp?.settings.data?.realPing) import("./modules/realPing.js");
-		if (window.glorp?.settings.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
-		if (window.glorp?.settings.data?.renderStats) import("./modules/renderFps.js");
+		if (window.glorp?.settings?.data?.hsSound) import("./modules/hsSound.js");
+		if (window.glorp?.settings?.data?.betterChat) import("./modules/betterChat.js");
+		if (window.glorp?.settings?.data?.hpEnemyCounter) import("./modules/hpEnemyCounter.js");
+		if (window.glorp?.settings?.data?.accountManager) import("./modules/accountManager.js");
+		if (window.glorp?.settings?.data?.showPing) import("./modules/showPing.js");
+		if (window.glorp?.settings?.data?.realPing) import("./modules/realPing.js");
+		if (window.glorp?.settings?.data?.exitButton) document.querySelector("#clientExit").style.display = "flex";
+		if (window.glorp?.settings?.data?.renderStats) import("./modules/renderFps.js");
 
-		if (window.glorp?.settings.data?.rampBoost && !window.checkCompMode()) {
+		if (window.glorp?.settings?.data?.rampBoost && !window.checkCompMode()) {
 			window.chrome.webview.postMessage("toggle-rboost, true");
 
 			const gameUpdateListener = (event) => {
@@ -162,7 +171,7 @@ Object.defineProperty(window, "gameLoaded", {
 		if (window.glorp?.settings.data?.textSelect) {
 			const textSelectCSS = document.createElement("style");
 			textSelectCSS.id = "textSelectCSS";
-			textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+			textSelectCSS.textContent = "#chatHolder * { user-select: text }";
 			document.head.append(textSelectCSS);
 		}
 
@@ -170,7 +179,7 @@ Object.defineProperty(window, "gameLoaded", {
 			import("./components/menuTimer.css").then((module) => {
 				const menuTimerCSS = document.createElement("style");
 				menuTimerCSS.id = "glorp_menuTimerCSS";
-				menuTimerCSS.innerHTML = module.default;
+				menuTimerCSS.textContent = module.default;
 				document.head.append(menuTimerCSS);
 			});
 		}

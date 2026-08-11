@@ -38,14 +38,14 @@ function semverCompare(a, b) {
 		overlay.append(host);
 		const shadow = host.attachShadow({ mode: "open" });
 		const container = document.createElement("div");
-		container.innerHTML = html.default;
+		container.textContent = html.default;
 
 		while (container.firstChild) shadow.append(container.firstChild);
 
 		const title = shadow.getElementById("changelogTitle");
 		if (title) title.textContent = `glorp ${version}`;
 		const content = shadow.getElementById("changelogContent");
-		if (content) content.innerHTML = "loading release notes...";
+		if (content) content.textContent = "loading release notes...";
 		const closeBtn = shadow.getElementById("closeChangelog");
 		if (closeBtn) closeBtn.onclick = () => overlay.remove();
 

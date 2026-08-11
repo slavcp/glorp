@@ -101,7 +101,7 @@ class RankProgress {
 		};
 		import("../components/rankProgress.css").then((css) => {
 			const rankProgressCSS = document.createElement("style");
-			rankProgressCSS.innerHTML = css.default;
+			rankProgressCSS.textContent = css.default;
 			document.head.append(rankProgressCSS);
 		});
 	}

@@ -30,7 +30,12 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 
 	switch (id) {
 		case "obsCapturePlugin":
-			if (value && !confirm("Install the Glorp Capture plugin into OBS? OBS must be closed, and Windows may ask for administrator permission.")) {
+			if (
+				value &&
+				!confirm(
+					"Install the Glorp Capture plugin into OBS? OBS must be closed, and Windows may ask for administrator permission.",
+				)
+			) {
 				document.querySelector("#obsCapturePlugin").checked = false;
 				return;
 			}
@@ -49,7 +54,7 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 				import("./components/menuTimer.css").then((css) => {
 					const menuTimerCSS = document.createElement("style");
 					menuTimerCSS.id = "glorp_menuTimerCSS";
-					menuTimerCSS.innerHTML = css.default;
+					menuTimerCSS.textContent = css.default;
 					document.head.append(menuTimerCSS);
 				});
 			} else {
@@ -61,7 +66,7 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 				import("./components/clean.css").then((css) => {
 					const cleanCSS = document.createElement("style");
 					cleanCSS.id = "glorp_cleanCSS";
-					cleanCSS.innerHTML = css.default;
+					cleanCSS.textContent = css.default;
 					document.head.append(cleanCSS);
 				});
 			} else {
@@ -73,7 +78,7 @@ window.glorp.settings.changeSetting = (id, value, slider) => {
 			if (value) {
 				const textSelectCSS = document.createElement("style");
 				textSelectCSS.id = "textSelect";
-				textSelectCSS.innerHTML = "#chatHolder * { user-select: text }";
+				textSelectCSS.textContent = "#chatHolder * { user-select: text }";
 				document.head.append(textSelectCSS);
 			} else {
 				document.querySelector("#textSelect")?.remove();
@@ -110,7 +115,7 @@ class SettingsManager {
 		this.settingsWindow.getCSettings = () => this.getCSettings();
 		window.chrome.webview.addEventListener("message", (event) => {
 			const response = event.data;
-			if (!response || response.type !== "obs-plugin") return;
+			if (response?.type !== "obs-plugin") return;
 			if (!response.ok) {
 				window.glorp.settings.data.obsCapturePlugin = false;
 				const checkbox = document.querySelector("#obsCapturePlugin");
