@@ -38,7 +38,7 @@ function semverCompare(a, b) {
 		overlay.append(host);
 		const shadow = host.attachShadow({ mode: "open" });
 		const container = document.createElement("div");
-		container.textContent = html.default;
+		container.innerHTML = html.default;
 
 		while (container.firstChild) shadow.append(container.firstChild);
 
