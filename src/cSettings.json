@@ -217,10 +217,10 @@
 		"max": 2000,
 		"step": 5
 	},
-	"fpsLimit": {
+	"renderFpsLimit": {
 		"name": "Present FPS Limit",
 		"description": "The amount of frames that get presented to the screen \nalways ≤ than the FPS outputted by the game \ndisplayed only with the 'Show Present FPS Counter' setting \n0 = uncapped",
-		"id": "RenderFpsLimit",
+		"id": "renderFpsLimit",
 		"type": "slider",
 		"category": "Tweaks",
 		"defaultValue": 0,

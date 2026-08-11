@@ -217,7 +217,7 @@ pub fn handle_web_message(
         ["set-config", setting, value] => {
             crate::CONFIG.lock().unwrap().set(setting, parse_web_message_value(value));
 
-            if *setting == "RenderFpsLimit"
+            if *setting == "renderFpsLimit"
                 && let Ok(fps_limit) = value.parse::<u64>()
             {
                 let ptr = crate::app::SHARED_STATS_PTR.load(std::sync::atomic::Ordering::SeqCst);

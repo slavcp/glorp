@@ -50,7 +50,7 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
     webview2_folder.pop();
     webview2_folder = webview2_folder.join("WebView2");
 
-    let fps_limit = config("RenderFpsLimit", 0);
+    let fps_limit = config("renderFpsLimit", 0);
     unsafe {
         if let Ok(mapping) = CreateFileMappingW(INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, 24, w!("GlorpFrameTiming")) {
             let view = MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, 24);
