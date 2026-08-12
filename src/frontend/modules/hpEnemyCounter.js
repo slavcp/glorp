@@ -37,6 +37,7 @@ class HpEnemyCounter {
 			}
 		} else {
 			window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+			this.observer?.disconnect();
 			this.numberDisplay.remove();
 		}
 	}
@@ -62,6 +63,8 @@ class HpEnemyCounter {
 		this.pointCounter = this.numberDisplay.querySelector(".pointVal");
 		document.querySelector(".topRightCounters").append(this.numberDisplay);
 
+		// re-enabling must not stack a second observer
+		this.observer?.disconnect();
 		this.observer = new MutationObserver(this.processTeamScores);
 		this.observer.observe(document.querySelector("#teamScores"), {
 			childList: true,

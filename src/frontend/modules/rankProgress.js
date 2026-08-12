@@ -92,9 +92,11 @@ class RankProgress {
 		window.openRankedMenu = () => {
 			origRanked.call();
 			this.observer.observe(document.querySelector(".rankedMenuModal"), { childList: true, subtree: true });
-			this.intervalId = setInterval(() => {
+
+			// intervals must only clear their OWN id
+			const intervalId = setInterval(() => {
 				if (!document.querySelector(".rankedMenuModal")) {
-					clearInterval(this.intervalId);
+					clearInterval(intervalId);
 					this.observer.disconnect();
 				}
 			}, 5000);
