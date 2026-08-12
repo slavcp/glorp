@@ -1,12 +1,12 @@
 [package]
 name = "glorp"
-version = "0.9.0"
+version = "0.9.1"
 description = "krunker"
 authors = ["slav"]
 edition = "2024"
 
 [package.metadata]
-js_bundle_version = "0.2.0"
+js_bundle_version = "0.2.1"
 
 [workspace]
 members = ["crates/*"]

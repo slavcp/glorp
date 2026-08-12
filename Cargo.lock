@@ -193,7 +193,7 @@ dependencies = [
 
 [[package]]
 name = "glorp"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "discord-rich-presence",
  "dns-lookup",
