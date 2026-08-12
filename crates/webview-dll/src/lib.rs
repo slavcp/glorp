@@ -11,6 +11,7 @@ use std::{
 };
 use windows::Win32::{
     Foundation::*,
+    Graphics::Dwm::*,
     System::{LibraryLoader::GetModuleHandleW, SystemServices::*, Threading::*},
     UI::{
         Accessibility::*,
@@ -112,7 +113,7 @@ fn spawn_injected_audio_window() {
 
     let hwnd = unsafe {
         CreateWindowExW(
-            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE,
             class_name,
             w!("glorp audio window"),
             WS_POPUP | WS_VISIBLE,
@@ -142,6 +143,15 @@ fn spawn_injected_audio_window() {
             let _ = TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
+
+        const DWMWA_CLOAK: u32 = 13;
+        let cloak_value: i32 = 1;
+        _ = DwmSetWindowAttribute(
+            hwnd,
+            DWMWINDOWATTRIBUTE(DWMWA_CLOAK.try_into().unwrap()),
+            &cloak_value as *const i32 as *const _,
+            std::mem::size_of::<i32>() as u32,
+        );
     }
 }
 

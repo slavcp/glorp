@@ -1,3 +1,4 @@
-/target/
-src/target
+/target/*
+!/target/!bundle.js
+!/target/!bundle_version
 /node_modules
