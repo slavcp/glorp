@@ -46,6 +46,9 @@ document.addEventListener(
 			if (!document.pointerLockElement) {
 				window.chrome.webview.postMessage("drag, true");
 				window.chrome.webview.postMessage("throttle, menu");
+			} else {
+				// JUST in case showWindow ids or requestPointerLock hook misses transition
+				window.chrome.webview.postMessage("throttle, game");
 			}
 		});
 
