@@ -250,6 +250,15 @@
 		"category": "Tweaks",
 		"defaultValue": 1.5
 	},
+	"hardFlip": {
+		"name": "DXGI Swapchain Hook",
+		"id": "hardFlip",
+		"description": "Hooks swapchain creation for frame pacing, the Present FPS limiter/counter and OBS capture. \nTurning it off can raise game FPS but disables those OBS features.",
+		"type": "checkbox",
+		"category": "Tweaks",
+		"defaultValue": true,
+		"needsRestart": true
+	},
 	"webviewPriority": {
 		"name": "Webview Priority",
 		"id": "webviewPriority",
