@@ -318,55 +318,6 @@ unsafe extern "system" fn present_hk(
         INITIALIZED.set(true);
     }
 
-    LAST_PRESENT.with(|last| {
-        let now = std::time::Instant::now();
-        if let Some(prev) = last.get() {
-            let frame_ns = now.duration_since(prev).as_nanos() as u64;
-            if cfg!(feature = "verbose-logs") {
-                DIAGNOSTIC_MAX_FRAME_NS.set(DIAGNOSTIC_MAX_FRAME_NS.get().max(frame_ns));
-            }
-            FRAME_NS_EMA.with(|avg| {
-                let next = if avg.get() == 0 { frame_ns } else { (avg.get() * 31 + frame_ns) / 32 };
-                avg.set(next);
-                unsafe {
-                    let shared = &mut *(ptr as *mut SharedState);
-                    let fps = 1_000_000_000 / next;
-
-                    shared.frame_ns = next;
-                    shared.fps = fps;
-                }
-            });
-        }
-
-        last.set(Some(now));
-        if cfg!(feature = "verbose-logs") {
-            DIAGNOSTIC_PRESENTS.set(DIAGNOSTIC_PRESENTS.get().wrapping_add(1));
-            let diagnostic_start = DIAGNOSTIC_START.get().unwrap_or_else(|| {
-                DIAGNOSTIC_START.set(Some(now));
-                now
-            });
-            if now.duration_since(diagnostic_start) >= std::time::Duration::from_secs(10) {
-                let ema_ns = FRAME_NS_EMA.get();
-                let ema_fps = 1_000_000_000u64.checked_div(ema_ns).unwrap_or(0);
-                let target_fps = unsafe { (*(ptr as *const SharedState)).target_fps };
-                let has_wait_handle = WAIT_HANDLE.read().unwrap().contains_key(&(p_this as usize));
-                debug_print!(
-                    "render: 10s stats thread_id={} presents={} ema_fps={} ema_ms={:.3} max_frame_ms={:.3} target_fps={} wait_handle={}",
-                    unsafe { GetCurrentThreadId() },
-                    DIAGNOSTIC_PRESENTS.get(),
-                    ema_fps,
-                    ema_ns as f64 / 1_000_000.0,
-                    DIAGNOSTIC_MAX_FRAME_NS.get() as f64 / 1_000_000.0,
-                    target_fps,
-                    has_wait_handle
-                );
-                DIAGNOSTIC_START.set(Some(now));
-                DIAGNOSTIC_PRESENTS.set(0);
-                DIAGNOSTIC_MAX_FRAME_NS.set(0);
-            }
-        }
-    });
-
     unsafe {
         let generation = WAIT_HANDLE_GENERATION.load(Ordering::Acquire);
         let handle_opt = CACHED_WAIT_HANDLES.with(|cache| {
@@ -385,6 +336,57 @@ unsafe extern "system" fn present_hk(
                 h
             }
         });
+
+        // track main swapchain only so the EMA and Present FPS aren't polluted
+        if handle_opt.is_some() {
+            LAST_PRESENT.with(|last| {
+                let now = std::time::Instant::now();
+                if let Some(prev) = last.get() {
+                    let frame_ns = now.duration_since(prev).as_nanos() as u64;
+                    if cfg!(feature = "verbose-logs") {
+                        DIAGNOSTIC_MAX_FRAME_NS.set(DIAGNOSTIC_MAX_FRAME_NS.get().max(frame_ns));
+                    }
+                    FRAME_NS_EMA.with(|avg| {
+                        let next = if avg.get() == 0 { frame_ns } else { (avg.get() * 31 + frame_ns) / 32 };
+                        avg.set(next);
+                        let shared = &mut *(ptr as *mut SharedState);
+                        // back-to-back presents can land within timer resolution so keep the div safe
+                        let fps = 1_000_000_000u64.checked_div(next).unwrap_or(0);
+
+                        shared.frame_ns = next;
+                        shared.fps = fps;
+                    });
+                }
+
+                last.set(Some(now));
+                if cfg!(feature = "verbose-logs") {
+                    DIAGNOSTIC_PRESENTS.set(DIAGNOSTIC_PRESENTS.get().wrapping_add(1));
+                    let diagnostic_start = DIAGNOSTIC_START.get().unwrap_or_else(|| {
+                        DIAGNOSTIC_START.set(Some(now));
+                        now
+                    });
+                    if now.duration_since(diagnostic_start) >= std::time::Duration::from_secs(10) {
+                        let ema_ns = FRAME_NS_EMA.get();
+                        let ema_fps = 1_000_000_000u64.checked_div(ema_ns).unwrap_or(0);
+                        let target_fps = (*(ptr as *const SharedState)).target_fps;
+                        let has_wait_handle = WAIT_HANDLE.read().unwrap().contains_key(&(p_this as usize));
+                        debug_print!(
+                            "render: 10s stats thread_id={} presents={} ema_fps={} ema_ms={:.3} max_frame_ms={:.3} target_fps={} wait_handle={}",
+                            GetCurrentThreadId(),
+                            DIAGNOSTIC_PRESENTS.get(),
+                            ema_fps,
+                            ema_ns as f64 / 1_000_000.0,
+                            DIAGNOSTIC_MAX_FRAME_NS.get() as f64 / 1_000_000.0,
+                            target_fps,
+                            has_wait_handle
+                        );
+                        DIAGNOSTIC_START.set(Some(now));
+                        DIAGNOSTIC_PRESENTS.set(0);
+                        DIAGNOSTIC_MAX_FRAME_NS.set(0);
+                    }
+                }
+            });
+        }
 
         let wait_started = std::time::Instant::now();
         if let Some(h) = handle_opt {
@@ -416,33 +418,40 @@ unsafe extern "system" fn present_hk(
             0
         };
 
-        // limiter
+        // limiter (main swapchain only)
         let target_fps = (*(ptr as *const SharedState)).target_fps;
-        if let Some(nanos) = 1_000_000_000u64.checked_div(target_fps) {
+        if handle_opt.is_some()
+            && let Some(nanos) = 1_000_000_000u64.checked_div(target_fps)
+        {
             let target_frame_time = std::time::Duration::from_nanos(nanos);
             let now = std::time::Instant::now();
             let prev_opt = { *GLOBAL_LIMIT_CLOCK.read().unwrap() };
 
-            if let Some(prev) = prev_opt {
-                let elapsed = now.duration_since(prev);
-                if elapsed < target_frame_time {
-                    let remaining = target_frame_time - elapsed;
-                    debug_print!(
-                        "render: limiter active on thread_id={} sleeping {:.2}ms to maintain target_fps={}",
-                        GetCurrentThreadId(),
-                        remaining.as_secs_f64() * 1000.0,
-                        target_fps
-                    );
-                    // sleep for the bulk, spin the last ~1ms for accuracy
-                    if remaining > std::time::Duration::from_millis(2) {
-                        thread::sleep(remaining - std::time::Duration::from_millis(1));
-                    }
-                    while prev.elapsed() < target_frame_time {
-                        std::hint::spin_loop();
-                    }
+            let deadline = match prev_opt {
+                Some(prev) => prev + target_frame_time,
+                None => now,
+            };
+            if now < deadline {
+                let remaining = deadline - now;
+                debug_print!(
+                    "render: limiter active on thread_id={} sleeping {:.2}ms to maintain target_fps={}",
+                    GetCurrentThreadId(),
+                    remaining.as_secs_f64() * 1000.0,
+                    target_fps
+                );
+                // spin the last ~1ms for accuracy
+                if remaining > std::time::Duration::from_millis(2) {
+                    thread::sleep(remaining - std::time::Duration::from_millis(1));
+                }
+                while std::time::Instant::now() < deadline {
+                    std::hint::spin_loop();
                 }
             }
-            *GLOBAL_LIMIT_CLOCK.write().unwrap() = Some(std::time::Instant::now());
+
+            // make sure sleep doesn't overshoot by scheduling next frame from deadline and not wakeup
+            let after = std::time::Instant::now();
+            let next_ref = if after.duration_since(deadline) > target_frame_time { after } else { deadline };
+            *GLOBAL_LIMIT_CLOCK.write().unwrap() = Some(next_ref);
         }
         // end of limiter
 
