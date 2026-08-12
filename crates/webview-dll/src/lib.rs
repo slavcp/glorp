@@ -85,6 +85,7 @@ static mut PREV_WNDPROC_1: WNDPROC = None;
 static mut PREV_WNDPROC_2: WNDPROC = None;
 
 static DRAG_STATUS: AtomicBool = AtomicBool::new(false);
+static F20_DOWN: AtomicBool = AtomicBool::new(false);
 static WINDOW_HANDLE: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 static HOOK_HANDLE: AtomicUsize = AtomicUsize::new(0);
 
@@ -111,14 +112,14 @@ fn spawn_injected_audio_window() {
 
     let hwnd = unsafe {
         CreateWindowExW(
-            WS_EX_LAYERED,
+            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
             class_name,
             w!("glorp audio window"),
             WS_POPUP | WS_VISIBLE,
-            0,
-            0,
-            100,
-            100,
+            -32000,
+            -32000,
+            1,
+            1,
             None,
             None,
             Some(hinstance),
@@ -341,12 +342,15 @@ unsafe extern "system" fn wnd_proc_1(window: HWND, message: u32, wparam: WPARAM,
         match message {
             WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => {
                 if DRAG_STATUS.load(std::sync::atomic::Ordering::Relaxed) {
+                    F20_DOWN.store(true, sync::atomic::Ordering::Relaxed);
                     return CallWindowProcW(PREV_WNDPROC_1, window, WM_KEYDOWN, WPARAM(VK_F20.0 as usize), lparam);
                 }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
             WM_LBUTTONUP => {
-                CallWindowProcW(PREV_WNDPROC_1, window, WM_KEYUP, WPARAM(VK_F20.0 as usize), lparam);
+                if F20_DOWN.swap(false, sync::atomic::Ordering::Relaxed) {
+                    CallWindowProcW(PREV_WNDPROC_1, window, WM_KEYUP, WPARAM(VK_F20.0 as usize), lparam);
+                }
                 CallWindowProcW(PREV_WNDPROC_1, window, message, wparam, lparam)
             }
             WM_RBUTTONDOWN | WM_RBUTTONDBLCLK | WM_XBUTTONDOWN | WM_NCXBUTTONDBLCLK | WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => {
