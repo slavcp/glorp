@@ -58,8 +58,12 @@ class BetterChat {
 	parseMessages(mutations) {
 		for (const mutation of mutations) {
 			for (const node of mutation.addedNodes) {
+				// text nodes have no querySelector, and a throw here aborts the whole mutation batch
+				if (!(node instanceof Element)) continue;
 				const chatItem = node.querySelector(".chatItem");
+				if (!chatItem) continue;
 				const chatMsg = chatItem.querySelector(".chatMsg");
+				if (!chatMsg) continue;
 				if (chatMsg.textContent.includes("Text & Voice Chat")) {
 					node.remove();
 					continue;

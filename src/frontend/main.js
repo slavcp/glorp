@@ -31,8 +31,6 @@ document.addEventListener(
 		hook(HTMLCanvasElement, "addEventListener", (args) => {
 			const [type, listener] = args;
 			if (type === "wheel") window.glorp.handleMouseWheel = (deltaY) => listener(new WheelEvent("wheel", { deltaY }));
-
-			if (type === "mousemove" || type === "drag") return;
 		});
 
 		hook(HTMLCanvasElement, "requestPointerLock", function (args, original) {
@@ -127,7 +125,7 @@ Object.defineProperty(window, "gameLoaded", {
 				if (event.data === "game-updated")
 					setTimeout(() => {
 						if (window.checkCompMode()) {
-							window.chrome.webview.removeEventListener("message", this.gameUpdateListener);
+							window.chrome.webview.removeEventListener("message", gameUpdateListener);
 							window.chrome.webview.postMessage("toggle-rboost, false");
 						}
 					}, 2000);
