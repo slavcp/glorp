@@ -253,13 +253,17 @@ pub fn handle_web_message(
         ["close"] => unsafe {
             PostQuitMessage(0);
         },
-        ["clear-cache"] => unsafe {
-            webview.CallDevToolsProtocolMethod(w!("Network.clearBrowserCache"), w!("{}"), None).ok();
-            webview
-                .CallDevToolsProtocolMethod(w!("Storage.clearDataForOrigin"), w!("{\"origin\": \"*\", \"storageTypes\": \"all\"}"), None)
-                .ok();
-            webview.Reload().ok();
-        },
+        ["clear-cache"] => {
+            // keep dedupe cache in sync
+            utils::set_cpu_throttling(webview, 1.0);
+            unsafe {
+                webview.CallDevToolsProtocolMethod(w!("Network.clearBrowserCache"), w!("{}"), None).ok();
+                webview
+                    .CallDevToolsProtocolMethod(w!("Storage.clearDataForOrigin"), w!("{\"origin\": \"*\", \"storageTypes\": \"all\"}"), None)
+                    .ok();
+                webview.Reload().ok();
+            }
+        }
         ["open", target] => {
             open_documents_subpath(target);
         }

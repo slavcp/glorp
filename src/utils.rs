@@ -166,7 +166,13 @@ pub fn kill(wanted_process_name: &str) {
     }
 }
 
+static LAST_THROTTLE_BITS: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1.0f32.to_bits());
+
 pub fn set_cpu_throttling(webview: &ICoreWebView2, value: f32) {
+    // dedupe identical rates so we don't restart the webviews throttling thread unnecessarily
+    if LAST_THROTTLE_BITS.swap(value.to_bits(), std::sync::atomic::Ordering::Relaxed) == value.to_bits() {
+        return;
+    }
     unsafe {
         webview
             .CallDevToolsProtocolMethod(
