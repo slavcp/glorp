@@ -74,7 +74,12 @@ pub fn create_main_window(env: Option<ICoreWebView2Environment>) -> window::Wind
         None
     };
 
-    fs::rename(webview2_folder.join("OLD_vk_swiftshader.dll"), webview2_folder.join("vk_swiftshader.dll")).ok();
+    // prevent dll sideloading on hardFlip render hook toggle so GPU process runs stock swapchain
+    if config("hardFlip", true) {
+        fs::rename(webview2_folder.join("OLD_vk_swiftshader.dll"), webview2_folder.join("vk_swiftshader.dll")).ok();
+    } else {
+        fs::rename(webview2_folder.join("vk_swiftshader.dll"), webview2_folder.join("OLD_vk_swiftshader.dll")).ok();
+    }
 
     let main_window = window::Window::new_core(&start_mode, args, env, state);
     let discord_client: Arc<Mutex<Option<DiscordIpcClient>>> = Arc::new(Mutex::new(None));

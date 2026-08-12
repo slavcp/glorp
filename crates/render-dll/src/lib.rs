@@ -113,6 +113,7 @@ static mut ORIGINAL_CREATE_SWAPCHAIN: Option<unsafe fn(*mut c_void, *mut c_void,
 static mut ORIGINAL_PRESENT: Option<unsafe fn(*mut c_void, u32, DXGI_PRESENT, *const DXGI_PRESENT_PARAMETERS) -> HRESULT> = None;
 
 static WAIT_HANDLE: LazyLock<RwLock<HashMap<usize, SendHandle>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+static WAIT_HANDLE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 static SHARED_MEM_PTR: AtomicU64 = AtomicU64::new(0);
 static MISSING_TIMING_MAPPING_LOGGED: AtomicBool = AtomicBool::new(false);
@@ -183,7 +184,18 @@ unsafe extern "system" fn create_swapchain_hk(
     unsafe {
         if (*pdesc).Width < 600 || (*pdesc).Height < 600 || MAIN_SWAPCHAIN_CREATED.load(Ordering::Acquire) {
             let original_fn = ORIGINAL_CREATE_SWAPCHAIN.unwrap();
-            return original_fn(this, pdevice, pdesc, prestricttooutput, ppswapchain);
+            let result = original_fn(this, pdevice, pdesc, prestricttooutput, ppswapchain);
+
+            // new swapchain creation can be on the same address as a destroyed one, so purge stale wait handle
+            if result.is_ok()
+                && !ppswapchain.is_null()
+                && WAIT_HANDLE.write().unwrap().remove(&(*ppswapchain as usize)).is_some()
+            {
+                debug_print!("render: purged stale wait handle for reused swapchain address {:?}", *ppswapchain);
+                // bump when WAIT_HANDLE changes so the per-thread caches in present_hk drop stale entries
+                WAIT_HANDLE_GENERATION.fetch_add(1, Ordering::Release);
+            }
+            return result;
         }
         debug_print!(
             "render: CreateSwapChainForComposition called original={}x{} buffers={} format={} flags={:#x}",
@@ -239,6 +251,7 @@ unsafe extern "system" fn create_swapchain_hk(
                         debug_print!("render: closing replaced swapchain wait handle={:?}", old_handle.0);
                         let _ = CloseHandle(old_handle.0);
                     }
+                    WAIT_HANDLE_GENERATION.fetch_add(1, Ordering::Release);
                 }
 
                 // don't release
@@ -274,15 +287,26 @@ unsafe extern "system" fn present_hk(
     }
 
     thread_local! {
-      static INITIALIZED: cell::Cell<bool> = const { cell::Cell::new(false) };
-      static LAST_PRESENT: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
-      static FRAME_NS_EMA: cell::Cell<u64> = const { cell::Cell::new(0) };
-      static LAST_REPORTED_MOVE_QPC: cell::Cell<i64> = const { cell::Cell::new(0) };
-      static DIAGNOSTIC_START: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
-      static DIAGNOSTIC_PRESENTS: cell::Cell<u64> = const { cell::Cell::new(0) };
-      static DIAGNOSTIC_MAX_FRAME_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static INITIALIZED: cell::Cell<bool> = const { cell::Cell::new(false) };
+        static LAST_PRESENT: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
+        static FRAME_NS_EMA: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static LAST_REPORTED_MOVE_QPC: cell::Cell<i64> = const { cell::Cell::new(0) };
+        static DIAGNOSTIC_START: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
+        static DIAGNOSTIC_PRESENTS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static DIAGNOSTIC_MAX_FRAME_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
 
-      static CACHED_WAIT_HANDLES: std::cell::RefCell<HashMap<usize, SendHandle>> = std::cell::RefCell::new(HashMap::new());
+        static CACHED_WAIT_HANDLES: std::cell::RefCell<HashMap<usize, SendHandle>> = std::cell::RefCell::new(HashMap::new());
+        static CACHED_WAIT_GENERATION: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static WAIT_TIMEOUT_STREAK: cell::Cell<u32> = const { cell::Cell::new(0) };
+
+        // per-thread perf accounting for wall-clock time matching help me debug, but can be removed
+        static PERF_WINDOW_START: cell::Cell<Option<std::time::Instant>> = const { cell::Cell::new(None) };
+        static PERF_PRESENTS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static PERF_WAIT_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static PERF_WAIT_MAX_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static PERF_PRESENT_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static PERF_PRESENT_MAX_NS: cell::Cell<u64> = const { cell::Cell::new(0) };
+        static PERF_TIMEOUTS: cell::Cell<u64> = const { cell::Cell::new(0) };
     }
     if !INITIALIZED.get() {
         let mut task_index = 0u32;
@@ -344,8 +368,13 @@ unsafe extern "system" fn present_hk(
     });
 
     unsafe {
+        let generation = WAIT_HANDLE_GENERATION.load(Ordering::Acquire);
         let handle_opt = CACHED_WAIT_HANDLES.with(|cache| {
             let mut map = cache.borrow_mut();
+            if CACHED_WAIT_GENERATION.get() != generation {
+                map.clear();
+                CACHED_WAIT_GENERATION.set(generation);
+            }
             if let Some(&h) = map.get(&(p_this as usize)) {
                 Some(h)
             } else {
@@ -357,9 +386,35 @@ unsafe extern "system" fn present_hk(
             }
         });
 
+        let wait_started = std::time::Instant::now();
         if let Some(h) = handle_opt {
-            let _ = WaitForSingleObjectEx(h.0, 1000, false);
+            // drop handle if the wait fails or times out repeatedly
+            let wait_result = WaitForSingleObjectEx(h.0, 100, false);
+            let drop_handle = if wait_result == WAIT_FAILED {
+                true
+            } else if wait_result == WAIT_TIMEOUT {
+                if cfg!(feature = "verbose-logs") {
+                    PERF_TIMEOUTS.set(PERF_TIMEOUTS.get() + 1);
+                }
+                let streak = WAIT_TIMEOUT_STREAK.get() + 1;
+                WAIT_TIMEOUT_STREAK.set(streak);
+                streak >= 3
+            } else {
+                WAIT_TIMEOUT_STREAK.set(0);
+                false
+            };
+            if drop_handle {
+                debug_print!("render: dropping unresponsive wait handle for swapchain {p_this:?} result={wait_result:?}");
+                WAIT_TIMEOUT_STREAK.set(0);
+                WAIT_HANDLE.write().unwrap().remove(&(p_this as usize));
+                WAIT_HANDLE_GENERATION.fetch_add(1, Ordering::Release);
+            }
         }
+        let wait_ns = if cfg!(feature = "verbose-logs") {
+            wait_started.elapsed().as_nanos() as u64
+        } else {
+            0
+        };
 
         // limiter
         let target_fps = (*(ptr as *const SharedState)).target_fps;
@@ -391,9 +446,12 @@ unsafe extern "system" fn present_hk(
         }
         // end of limiter
 
-        if sync_interval == 0 {
+        // if the DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING swapchain was created with ALLOW_TEARING, we can present with it.
+        // otheriwse it would fail with DXGI_ERROR_INVALID_CALL
+        if sync_interval == 0 && handle_opt.is_some() {
             present_flags |= DXGI_PRESENT_ALLOW_TEARING;
         }
+        let present_started = std::time::Instant::now();
         let original_present = ORIGINAL_PRESENT.unwrap();
         let mut hr = original_present(p_this, sync_interval, present_flags, p_present_parameters);
         if hr.is_err() && (present_flags.0 & DXGI_PRESENT_ALLOW_TEARING.0) != 0 {
@@ -406,6 +464,55 @@ unsafe extern "system" fn present_hk(
         // OBS capture (producer side): run after the original present so the back buffer is
         // stable before the CopyResource — gated internally on READER_ACTIVE.
         capture::capture_on_present(p_this);
+
+        if cfg!(feature = "verbose-logs") {
+            let present_ns = present_started.elapsed().as_nanos() as u64;
+            // report stalls (maybe it helps some other dev one day)
+            if wait_ns > 50_000_000 || present_ns > 50_000_000 {
+                debug_print!(
+                    "render: STALL thread={} swapchain={:?} wait_ms={:.1} present_ms={:.1} hr={:#X} had_handle={}",
+                    GetCurrentThreadId(),
+                    p_this,
+                    wait_ns as f64 / 1_000_000.0,
+                    present_ns as f64 / 1_000_000.0,
+                    hr.0,
+                    handle_opt.is_some()
+                );
+            }
+            PERF_PRESENTS.set(PERF_PRESENTS.get() + 1);
+            PERF_WAIT_NS.set(PERF_WAIT_NS.get() + wait_ns);
+            PERF_WAIT_MAX_NS.set(PERF_WAIT_MAX_NS.get().max(wait_ns));
+            PERF_PRESENT_NS.set(PERF_PRESENT_NS.get() + present_ns);
+            PERF_PRESENT_MAX_NS.set(PERF_PRESENT_MAX_NS.get().max(present_ns));
+            let window_start = PERF_WINDOW_START.get().unwrap_or_else(|| {
+                let now = std::time::Instant::now();
+                PERF_WINDOW_START.set(Some(now));
+                now
+            });
+            if window_start.elapsed() >= std::time::Duration::from_secs(5) {
+                let n = PERF_PRESENTS.get().max(1);
+                debug_print!(
+                    "render: perf thread={} swapchain={:?} presents={} fps={:.0} wait_avg_ms={:.2} wait_max_ms={:.1} present_avg_ms={:.2} present_max_ms={:.1} timeouts={} had_handle={}",
+                    GetCurrentThreadId(),
+                    p_this,
+                    n,
+                    n as f64 / window_start.elapsed().as_secs_f64(),
+                    PERF_WAIT_NS.get() as f64 / n as f64 / 1_000_000.0,
+                    PERF_WAIT_MAX_NS.get() as f64 / 1_000_000.0,
+                    PERF_PRESENT_NS.get() as f64 / n as f64 / 1_000_000.0,
+                    PERF_PRESENT_MAX_NS.get() as f64 / 1_000_000.0,
+                    PERF_TIMEOUTS.get(),
+                    handle_opt.is_some()
+                );
+                PERF_WINDOW_START.set(Some(std::time::Instant::now()));
+                PERF_PRESENTS.set(0);
+                PERF_WAIT_NS.set(0);
+                PERF_WAIT_MAX_NS.set(0);
+                PERF_PRESENT_NS.set(0);
+                PERF_PRESENT_MAX_NS.set(0);
+                PERF_TIMEOUTS.set(0);
+            }
+        }
 
         hr
     }
