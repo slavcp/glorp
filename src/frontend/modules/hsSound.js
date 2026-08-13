@@ -8,7 +8,7 @@ class HsSound {
 	}
 
 	setupSoundHook() {
-		if (window.SOUND && window.SOUND.play) {
+		if (window.SOUND?.play) {
 			this.originalPlay = window.SOUND.play;
 			this.toggle(true);
 		} else setTimeout(() => this.setupSoundHook(), 100);
