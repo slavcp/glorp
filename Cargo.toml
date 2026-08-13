@@ -19,6 +19,7 @@ incremental = true
 codegen-units = 1
 lto = true
 opt-level = 3
+# needed for crash logging
 debug-assertions = true
 strip = "symbols"
 
