@@ -4,26 +4,23 @@ Glorp uses unorthodox methods in attempt of fixing the issues modern chromium po
 
 # Why is the client getting marked as a trojan?
 
-- **The installer is not signed:** digital signatures help verify software, but in the case of such a small open source project, paying for a license is not feasible, so antiviruses will mark it as malicious.
-  ~~- **DLL Injection:** Glorp utilizes DLL injection, a technique used for running code in the context of another application's space, something that is often used for malicious purposes. I assure you that the client only uses this for the user's convenience.~~
-  THIS HAS BEEN REPLACED WITH PLAIN OLD TRICKERY (DLL hijacking) BUT IT MAY STILL GET FLAGGED
+- **Installer is not signed:** digital signatures help verify software, but in the case of a small open source project, paying for a license is not feasible, so antiviruses will mark it as malicious.
 
-I strongly urge you to **review the source code** if you have any doubts.
+Review the source code if you have any doubts.
 
 ## Features
 
-- [x] **Proper** Raw input
-- [x] Increased performance
-- [x] Hook DXGI parameters in an attempt of lowering latency
-- [x] Optimized URL blocklist (only ~50 entries, fully customizable)
+- [x] Raw input
+- [x] DXGI hooks in an attempt of lowering latency
+- [x] Light URL blocklist (customizable)
 - [x] Resource swapper
 - [x] Custom script support
 - [x] Account Manager
-- [x] Queue ranked without the game open
-- [x] Find out your real ping to the servers
+- [x] Queue ranked externally
 - [x] CPU Throttler
-- [x] Lightweight autoupdater
+- [x] Autoupdater
 - [x] Basic shortcuts (F11 - toggle fullscreen, F6 new lobby)
+- [x] OBS game capture support via plugin
 - [x] and more...
 
 ## Potential issues
@@ -34,6 +31,7 @@ Consider using the CPU Throttler in such scenario
 ## Building
 
 - Prerequisites:
+  - [Git LFS](https://git-lfs.com) `git lfs install`
   - [Rust & Cargo](https://rustup.rs/)
   - [Microsoft Visual C++](https://visualstudio.microsoft.com/downloads/)
   - [Node](https://nodejs.org/)
