@@ -6,6 +6,7 @@
 .signup-rewards-container,
 #tlInfHold,
 #gameNameHolder,
+#menuClassContainerInner,
 #termsInfo,
 #bubbleContainer,
 #instructions:only-child,
@@ -20,6 +21,10 @@
 #streamContainerNew,
 #editorBtnM {
 	display: none !important;
+}
+
+#menuClassContainer:before {
+	background: initial!important;
 }
 
 .verticalSeparator,
