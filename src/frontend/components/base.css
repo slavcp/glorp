@@ -19,8 +19,9 @@
 	z-index: 9;
 }
 
-#teamSelector {
-    bottom: 0 !important;
+#teamSelector{
+	bottom: 0 !important;
+	display: block !important
 }
 
 div #setHed_local,
